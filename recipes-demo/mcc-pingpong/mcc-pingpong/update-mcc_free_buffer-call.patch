@@ -1,0 +1,19 @@
+commit c7db59e08ff1dfb30ae4aba8d6274b0cc8a0f228
+Author: Anthony Felice <tony.felice@timesys.com>
+Date:   Mon Apr 15 19:24:06 2013 -0400
+
+    Update call to mcc_free_buffer to comply with API change.
+
+diff --git a/src/pingpong.c b/src/pingpong.c
+index 3d49fc8..5850059 100644
+--- a/src/pingpong.c
++++ b/src/pingpong.c
+@@ -121,7 +121,7 @@ int main(int argc, char** argv)
+        		return 1;
+         }
+ 
+-        mcc_free_buffer(null, data);
++        mcc_free_buffer(data);
+     }
+ 
+     mcc_destroy(node_num);
