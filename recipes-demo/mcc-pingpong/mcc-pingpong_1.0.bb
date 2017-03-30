@@ -9,7 +9,7 @@ RDEPENDS_${PN} = "libmcc mqxboot"
 
 inherit autotools
 
-SRC_URI = "${TIMESYS_MIRROR}/m/mcc-pingpong/mcc-pingpong-${PV}/mcc-pingpong-${PV}.tar.bz2 \
+SRC_URI = "${TIMESYS_REPO}/m/mcc-pingpong/mcc-pingpong-${PV}/mcc-pingpong-${PV}.tar.bz2 \
            file://update-mcc_free_buffer-call.patch"
 
 SRC_URI[md5sum] = "a03417c37f97849baa794e37d88e0cd2"
