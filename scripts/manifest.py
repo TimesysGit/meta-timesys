@@ -49,7 +49,7 @@ if cooker.start():
 
     # get all the layers currently used
     layer_info = { lyr['name'] : dict(collection=lyr.get('collection', 'UNKNOWN'), remote=lyr['remote'].decode('utf-8'), rev=lyr['revision'].decode('utf-8'), branch=lyr['branch'].decode('utf-8')) for lyr in get_layer_info(cooker) }
-    manifest = dict(layers=layer_info, packages=dict(), image=target, distro=cooker.data.get('DISTRO_CODENAME'))
+    manifest = dict(layers=layer_info, packages=dict(), image=target, distro=cooker.data.get('DISTRO_CODENAME'), distro_version=cooker.data.get('DISTRO_VERSION'), machine=cooker.data.get('MACHINE'))
     preffiles = []
     items = dict() # pkg -> { version, layers : [{ info }] }
 
