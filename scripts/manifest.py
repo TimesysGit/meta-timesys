@@ -53,6 +53,10 @@ if cooker.start():
     preffiles = []
     items = dict() # pkg -> { version, layers : [{ info }] }
 
+    cve_match = re.compile("CVE:( CVE\-\d{4}\-\d+)+")
+    cve_patch_name_match = re.compile("(CVE\-\d{4}\-\d+)+")
+    patched_cves = dict()
+
     # iterate over the recipes which would be built (pn-buildlist)
     for p in depgraph['pn']:
         pref = preferred_versions[p]
@@ -70,6 +74,35 @@ if cooker.start():
         branch = info['branch']
 
         manifest['packages'][p] = dict(version=p_version, layer=lyr, branch=branch)
+
+        for key,value in cooker.recipecache.file_checksums[realfn[0]].iteritems():
+            patches = value.split()
+            for patch in patches:
+                patch_file,_,patch_data = patch.partition(':')
+                if patch_file.endswith('.patch') and patch_data == 'True':
+                    with open(patch_file, "r") as f:
+                        try:
+                            patch_text = f.read()
+                        except UnicodeDecodeError:
+                            logger.info ("Failed to read patch %s" %  patch_file)
+                            f.close()
+                    match = cve_match.search(patch_text)
+                    if match:
+                        cves = patch_text[match.start()+5:match.end()]
+                        for cve in cves.split():
+                            try:
+                                patched_cves[cve].append(patch_file)
+                            except KeyError:
+                                patched_cves[cve] = [patch_file]
+                    else:
+                        match = cve_patch_name_match.search(patch_file)
+                        if match:
+                            cve = match.group(1)
+                            try:
+                                patched_cves[cve].append(patch_file)
+                            except KeyError:
+                                patched_cves[cve] = [patch_file]
+    manifest["patched_cves"] = patched_cves
 
     import pprint
     pp = pprint.PrettyPrinter(indent=2)
