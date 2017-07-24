@@ -59,6 +59,9 @@ if cooker.start():
 
     # iterate over the recipes which would be built (pn-buildlist)
     for p in depgraph['pn']:
+        if p.endswith('-native'):
+            continue
+
         pref = preferred_versions[p]
         realfn = bb.cache.Cache.virtualfn2realfn(pref[1])
         preffile = realfn[0]
