@@ -109,14 +109,10 @@ if cooker.start():
                                 patched_cves[cve] = [patch_file]
     manifest["patched_cves"] = patched_cves
 
-    import pprint
-    pp = pprint.PrettyPrinter(indent=2)
-    pp.pprint(manifest)
-    # dump the manifest.
     s = json.dumps(manifest, indent=2)
     with open(ofile, "w") as f:
         f.write(s)
-
+    print('Done. Wrote manifest to "%s"' % ofile)
     cooker.shutdown()
 else:
     logger.error("Failed to start cooker. Exiting...")
