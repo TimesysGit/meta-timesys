@@ -94,7 +94,8 @@ if cooker.start():
                         cves = patch_text[match.start()+5:match.end()]
                         for cve in cves.split():
                             try:
-                                patched_cves[cve].append(patch_file)
+                                if patch_file not in patched_cves[cve]:
+                                    patched_cves[cve].append(patch_file)
                             except KeyError:
                                 patched_cves[cve] = [patch_file]
                     else:
@@ -102,7 +103,8 @@ if cooker.start():
                         if match:
                             cve = match.group(1)
                             try:
-                                patched_cves[cve].append(patch_file)
+                                if patch_file not in patched_cves[cve]:
+                                    patched_cves[cve].append(patch_file)
                             except KeyError:
                                 patched_cves[cve] = [patch_file]
     manifest["patched_cves"] = patched_cves
