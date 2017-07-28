@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import pprint
 import os
 import sys
 
@@ -12,6 +11,7 @@ sys.path.insert(1, os.path.join(topdir, 'lib'))
 
 import llapi
 
+NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
 
 def print_usage():
     apidoc = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LINUXLINK_SERVER
@@ -32,11 +32,17 @@ def read_manifest(manifest_file):
 
 def print_cves(result):
     for cve in result:
-        print('\nPackage: %s' % cve['package'])
+        print('\nRecipe:  %s' % cve['package'])
         print('CVE ID:  %s' % cve['cve_id'])
+        print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
         print('CVSS:    %s' % cve['cvss'])
         print('Status:  %s' % cve['status'])
-        print('Summary: %s' % cve['summary'])
+        if cve['status'] == 'Fixed':
+            patches = cve.get('fixedby')
+            if patches:
+                print('Patched by:')
+                for patch in patches:
+                    print('\t%s' % patch)
 
 
 if __name__ == '__main__':
