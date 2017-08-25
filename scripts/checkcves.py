@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import json
 import os
 import sys
 
@@ -12,6 +11,7 @@ sys.path.insert(1, os.path.join(topdir, 'lib'))
 import llapi
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
+
 
 def print_usage():
     apidoc = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LINUXLINK_SERVER
@@ -67,4 +67,7 @@ if __name__ == '__main__':
     print('Requesting image analysis from LinuxLink ...')
     result = llapi.api_post(email, key, resource, {'manifest': manifest})
     result = result.get('cves', [])
-    print_cves(result)
+    if not result:
+        print('No results.')
+    else:
+        print_cves(result)
