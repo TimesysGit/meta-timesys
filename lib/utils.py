@@ -46,6 +46,14 @@ def is_useful_dep(cooker, pkg, dep):
         not is_nopackages(cooker, dep)
 
 
+def git_subprocess(args):
+    try:
+        output = subprocess.check_output(['git'] + args)[:-1]
+    except subprocess.CalledProcessError:
+        output = b'UNKNOWN'
+    return output.decode('utf-8', 'replace')
+
+
 def get_layer_info(cooker):
     all_info = []
     for lyr in cooker.data.getVar("BBLAYERS", True).split():
@@ -55,10 +63,10 @@ def get_layer_info(cooker):
         # gather info about the layer dir we are in
         name = os.path.basename(lyr)
         try:
-            remote = subprocess.check_output(['git', 'config', '--get', 'remote.origin.url'])[:-1]
-            prefix = subprocess.check_output(['git', 'rev-parse', '--show-prefix'])[:-1]
-            revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'])[:-1]
-            branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])[:-1]
+            remote = git_subprocess(['config', '--get', 'remote.origin.url'])
+            prefix = git_subprocess(['rev-parse', '--show-prefix'])
+            revision = git_subprocess(['rev-parse', 'HEAD'])
+            branch = git_subprocess(['rev-parse', '--abbrev-ref', 'HEAD'])
         except subprocess.CalledProcessError:
             remote = 'UNKNOWN'
             prefix = 'UNKNOWN'
