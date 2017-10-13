@@ -62,17 +62,17 @@ def get_layer_info(cooker):
         os.chdir(lyr)
         # gather info about the layer dir we are in
         name = os.path.basename(lyr)
-        try:
-            remote = git_subprocess(['config', '--get', 'remote.origin.url'])
-            prefix = git_subprocess(['rev-parse', '--show-prefix'])
-            revision = git_subprocess(['rev-parse', 'HEAD'])
-            branch = git_subprocess(['rev-parse', '--abbrev-ref', 'HEAD'])
-        except subprocess.CalledProcessError:
-            remote = 'UNKNOWN'
-            prefix = 'UNKNOWN'
-            revision = 'UNKNOWN'
-            branch = 'UNKNOWN'
         info = { 'name' : name, 'remote' : remote, 'revision' : revision, 'branch' : branch }
+        # remote can be tricky: can't assume git new enough for
+        # 'remote get-url', or that remote name will be 'origin', or that
+        # reflog hasn't been purged, so we're doing this in 2 commands
+        remotes = git_subprocess(['remote']).split('\n')
+        remote_name = 'origin' if 'origin' in remotes else remotes[0]
+        remote = git_subprocess(['config', '--get',
+                                 'remote.%s.url' % remote_name])
+        prefix = git_subprocess(['rev-parse', '--show-prefix'])
+        revision = git_subprocess(['rev-parse', 'HEAD'])
+        branch = git_subprocess(['rev-parse', '--abbrev-ref', 'HEAD'])
         if len(prefix) > 0:
             info['prefix'] = prefix
         # get the collection name by reading the layer.conf
