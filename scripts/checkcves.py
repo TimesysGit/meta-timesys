@@ -3,12 +3,7 @@
 import os
 import sys
 
-# need to add our lib folder to import path
-bindir = os.path.dirname(os.path.abspath(__file__))
-topdir = os.path.dirname(bindir)
-sys.path.insert(1, os.path.join(topdir, 'lib'))
-
-import llapi
+from lib import llapi
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
 

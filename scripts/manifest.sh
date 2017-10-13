@@ -22,8 +22,8 @@ if [ -z "${BITBAKE}" ]; then
 	exit 1
 fi
 
-BBLIBDIR=$(readlink -f $(dirname ${BITBAKE})/..)
-MANIFEST_PY=$(dirname $0)/manifest.py
+BBLIBDIR=$(readlink -f "$(dirname "${BITBAKE}")/..")
+MANIFEST_PY=$(dirname "$(readlink -f "$0")")/lib/manifest.py
 
 echo "Running manifest script. This takes some time using bitbake: ${BBLIBDIR}"
 ${MANIFEST_PY} ${BBLIBDIR} $@

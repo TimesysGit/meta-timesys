@@ -13,10 +13,7 @@ broot = sys.argv[1]
 target = sys.argv[2]
 ofile = sys.argv[3]
 
-# add bitbake's lib and our layer's lib folders to import path
-bindir = os.path.dirname(__file__)
-topdir = os.path.dirname(bindir)
-sys.path[0:0] = [os.path.join(broot, 'lib'), os.path.join(topdir, 'lib')]
+sys.path.insert(0, os.path.join(broot, 'lib'))
 
 import bb
 import bb.tinfoil
