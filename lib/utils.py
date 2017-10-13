@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 import fnmatch
-import itertools
 import os
 import sys
 import re
 import subprocess
 import bisect
 import logging
-import tempfile
 
 import bb.msg
 import bb.providers
-import backport
 import bb.cache
 
 __logger_name = 'BitBake'
@@ -62,7 +59,6 @@ def get_layer_info(cooker):
         os.chdir(lyr)
         # gather info about the layer dir we are in
         name = os.path.basename(lyr)
-        info = { 'name' : name, 'remote' : remote, 'revision' : revision, 'branch' : branch }
         # remote can be tricky: can't assume git new enough for
         # 'remote get-url', or that remote name will be 'origin', or that
         # reflog hasn't been purged, so we're doing this in 2 commands
@@ -73,18 +69,12 @@ def get_layer_info(cooker):
         prefix = git_subprocess(['rev-parse', '--show-prefix'])
         revision = git_subprocess(['rev-parse', 'HEAD'])
         branch = git_subprocess(['rev-parse', '--abbrev-ref', 'HEAD'])
+        info = {'name': name,
+                'remote': remote,
+                'revision': revision,
+                'branch': branch}
         if len(prefix) > 0:
             info['prefix'] = prefix
-        # get the collection name by reading the layer.conf
-        with open('conf/layer.conf', 'r') as lcnf:
-            for line in lcnf:
-                result = re.match('^BBFILE_COLLECTIONS\s+\+=\s+\"([^\"]+)\"$', line)
-                if result is not None:
-                    info['collection'] = result.group(1)
-                    deps = cooker.data.getVar('LAYERDEPENDS_%s' % info['collection'], '')
-                    info['depends'] = deps.strip().split() if deps is not None else []
-            lcnf.close()
-        # return to old working dir
         machines = []
         try:
             for f in os.listdir('conf/machine'):
@@ -112,9 +102,11 @@ def is_whitelisted(whitelist_patterns, filename):
 def get_layer_name(layerdir):
     return os.path.basename(layerdir.rstrip(os.sep))
 
+
 def get_file_layerdir(cooker, filename):
     layer = bb.utils.get_file_layer(filename, cooker.data)
     return cooker.bbfile_collections.get(layer, None)
+
 
 def get_file_layer(cooker, filename):
     layerdir = get_file_layerdir(cooker, filename)
