@@ -27,18 +27,19 @@ def read_manifest(manifest_file):
 
 
 def print_cves(result):
-    for cve in result:
-        print('\nRecipe:  %s' % cve['package'])
-        print('CVE ID:  %s' % cve['cve_id'])
-        print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
-        print('CVSS:    %s' % cve['cvss'])
-        print('Status:  %s' % cve['status'])
-        if cve['status'] == 'Fixed':
-            patches = cve.get('fixedby')
-            if patches:
-                print('Patched by:')
-                for patch in patches:
-                    print('\t%s' % patch)
+    for pkg,info in result.iteritems():
+        for cve in info:
+            print('\nRecipe:  %s' % pkg)
+            print('CVE ID:  %s' % cve['cve_id'])
+            print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
+            print('CVSS:    %s' % cve['cvss'])
+            print('Status:  %s' % cve['status'])
+            if cve['status'] == 'Fixed':
+                patches = cve.get('fixedby')
+                if patches:
+                    print('Patched by:')
+                    for patch in patches:
+                        print('\t%s' % patch)
 
 
 if __name__ == '__main__':
