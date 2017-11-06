@@ -18,7 +18,8 @@ sys.path.insert(0, os.path.join(broot, 'lib'))
 import bb
 import bb.tinfoil
 from backport import generatePkgDepTreeData
-from utils import get_file_layer, get_layer_info
+from utils import get_file_layer, get_layer_info, get_images_from_cache, \
+is_valid_image
 
 logger = logging.getLogger('BitBake')
 
@@ -90,6 +91,15 @@ def layer_dict(lyr):
 
 if __name__ == '__main__':
     tf = setup_tinfoil(tracking=True)
+    if not is_valid_image(tf.cooker, target):
+        images = get_images_from_cache(tf.cooker)
+        print("Unable to find image: %s\n" % target)
+        print("Please select an image from the following list:")
+        for img in images:
+            print(img)
+        tf.shutdown()
+        sys.exit(1)
+
     distro = tf.config_data.get('DISTRO_CODENAME') or tf.config_data.get('DISTRO_NAME')
     layer_info = {lyr['name']: layer_dict(lyr) for lyr in get_layer_info(tf.cooker)}
 

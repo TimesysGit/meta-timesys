@@ -121,12 +121,12 @@ def is_native(pkg):
 
 
 def get_fn(cooker, p):
-    return cooker.recipecache.pkg_pn[p][0]
+    return cooker.recipecaches[''].pkg_pn[p][0]
 
 
 def __has_class(cls, cooker, p):
     fn = get_fn(cooker, p)
-    return "%s.bbclass" % cls in [os.path.basename(b) for b in cooker.recipecache.inherits[fn]]
+    return "%s.bbclass" % cls in [os.path.basename(b) for b in cooker.recipecaches[''].inherits[fn]]
 
 
 def is_kernel(cooker, p):
@@ -147,3 +147,16 @@ def dict_insort(d, k, v):
             bisect.insort_left(d[k], v)
     except KeyError:
         d[k] = [v]
+
+
+def get_images_from_cache(cooker):
+    images = []
+    for img in cooker.recipecaches[''].pkg_pn:
+        if not is_image(cooker, img): continue
+        images.append(img)
+    return images
+
+
+def is_valid_image(cooker, image):
+    images = get_images_from_cache(cooker)
+    return image in images
