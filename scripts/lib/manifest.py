@@ -23,6 +23,7 @@ is_valid_image
 
 logger = logging.getLogger('BitBake')
 
+manifest_version = "1.1"
 
 def setup_tinfoil(tracking=False):
     tinfoil = bb.tinfoil.Tinfoil(tracking=tracking)
@@ -110,6 +111,7 @@ if __name__ == '__main__':
                     layers=layer_info,
                     machine=tf.config_data.get('MACHINE'),
                     packages=dict(),
+                    manifest_version=manifest_version)
 
     latest_versions, preferred_versions = bb.providers.findProviders(
                                               tf.config_data,
