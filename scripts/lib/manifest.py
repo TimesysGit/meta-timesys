@@ -100,7 +100,6 @@ if __name__ == '__main__':
                     layers=layer_info,
                     machine=tf.config_data.get('MACHINE'),
                     packages=dict(),
-                    patched_cves=dict())
 
     latest_versions, preferred_versions = bb.providers.findProviders(
                                               tf.config_data,
@@ -127,10 +126,10 @@ if __name__ == '__main__':
         branch = info.get('branch', 'UNKNOWN')
         cves = find_patched_cves(tf.cooker_data, realfn)
 
-        manifest['patched_cves'].update(cves)
         manifest['packages'][p] = dict(version=p_version,
                                        layer=lyr,
-                                       branch=branch)
+                                       branch=branch,
+                                       patched_cves=cves)
 
     s = json.dumps(manifest, indent=2, sort_keys=True)
     with open(ofile, "w") as f:
