@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 
 from lib import llapi
 
@@ -59,10 +60,14 @@ if __name__ == '__main__':
         sys.exit(1)
 
     manifest = read_manifest(manifest_file)
-    print('Requesting image analysis from LinuxLink ...')
-    result = llapi.api_post(email, key, resource, {'manifest': manifest})
-    result = result.get('cves', [])
-    if not result:
-        print('No results.')
+    manifest_json=json.loads(manifest)
+    if len(manifest_json['packages']) > 0:
+        print('Requesting image analysis from LinuxLink ...')
+        result = llapi.api_post(email, key, resource, {'manifest': manifest})
+        result = result.get('cves', [])
+        if not result:
+            print('No results.')
+        else:
+            print_cves(result)
     else:
-        print_cves(result)
+        print('No packages found in manifest.\nPlease confirm %s is a valid image' % manifest_json["image"])
