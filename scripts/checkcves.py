@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from datetime import datetime
 import os
 import sys
 import json
@@ -30,9 +31,11 @@ def print_cves(result):
     for pkg,info in result.iteritems():
         for cve in info:
             print('\nRecipe:  %s' % pkg)
+            print('Version: %s' % cve['version'])
             print('CVE ID:  %s' % cve['cve_id'])
             print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
-            print('CVSS:    %s' % cve['cvss'])
+            print('CVSSv2:  %s' % cve['cvss'])
+            print('Vector:  %s' % cve['vector'])
             print('Status:  %s' % cve['status'])
             if cve['status'] == 'Fixed':
                 patches = cve.get('fixedby')
@@ -69,6 +72,7 @@ if __name__ == '__main__':
         if not result:
             print('No results.')
         else:
+            print('Date: %s' % datetime.utcnow())
             print_cves(result)
     else:
         print('No packages found in manifest.\nPlease confirm %s is a valid image' % manifest_json["image"])
