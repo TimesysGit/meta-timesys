@@ -51,9 +51,9 @@ def git_subprocess(args):
     return output.decode('utf-8', 'replace')
 
 
-def get_layer_info(cooker):
+def get_layer_info(config_data):
     all_info = []
-    for lyr in cooker.data.getVar("BBLAYERS", True).split():
+    for lyr in config_data.getVar("BBLAYERS").split():
         # change working dir to layer for git commands
         curdir = os.getcwd()
         os.chdir(lyr)
@@ -103,17 +103,17 @@ def get_layer_name(layerdir):
     return os.path.basename(layerdir.rstrip(os.sep))
 
 
-def get_file_layerdir(cooker, filename):
-    layer = bb.utils.get_file_layer(filename, cooker.data)
-    return cooker.bbfile_collections.get(layer, None)
-
-
-def get_file_layer(cooker, filename):
-    layerdir = get_file_layerdir(cooker, filename)
+def get_file_layer(tinfoil, filename):
+    layerdir = get_file_layerdir(tinfoil, filename)
     if layerdir:
         return get_layer_name(layerdir)
     else:
-        return None
+        return '?'
+
+
+def get_file_layerdir(tinfoil, filename):
+    layer = bb.utils.get_file_layer(filename, tinfoil.config_data)
+    return tinfoil.config_data.bbfile_collections.get(layer, None)
 
 
 def is_native(pkg):
@@ -160,3 +160,15 @@ def get_images_from_cache(cooker):
 def is_valid_image(cooker, image):
     images = get_images_from_cache(cooker)
     return image in images
+
+
+def get_patch_list(recipedata):
+    src_files = bb.fetch2.get_checksum_file_list(recipedata).split()
+    patches = []
+
+    for f in src_files:
+        fn, real = f.rsplit(':')
+        base, ext = os.path.splitext(os.path.basename(fn))
+        if (real == 'True') and (ext in ('.diff', '.patch')):
+            patches.append(fn)
+    return patches

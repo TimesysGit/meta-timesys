@@ -19,69 +19,59 @@ import bb
 import bb.tinfoil
 from backport import generatePkgDepTreeData
 from utils import get_file_layer, get_layer_info, get_images_from_cache, \
-is_valid_image
+                  is_valid_image, is_native, get_patch_list
+
+# patch cooker to use backported fn
+bb.cooker.BBCooker.generatePkgDepTreeData = generatePkgDepTreeData
 
 logger = logging.getLogger('BitBake')
 
 manifest_version = "1.1"
 
+
 def setup_tinfoil(tracking=False):
     tinfoil = bb.tinfoil.Tinfoil(tracking=tracking)
     tinfoil.logger.setLevel(logger.getEffectiveLevel())
 
-    options = bb.tinfoil.TinfoilConfigParameters(parse_only=True, dry_run=True)
-    tinfoil.config.setConfigParameters(options)
-    tinfoil.cooker.featureset.setFeature(bb.cooker.CookerFeatures.HOB_EXTRA_CACHES)
+    options = bb.tinfoil.TinfoilConfigParameters(False,
+                                                 parse_only=True,
+                                                 dry_run=True)
+    tinfoil.prepare(config_params=options)
+    tinfoil.run_command('setFeatures', ['bb.cooker.CookerFeatures.HOB_EXTRA_CACHES'])
 
+    # this part is from bitbake/lib/bblayers:
     tinfoil.bblayers = (tinfoil.config_data.getVar('BBLAYERS', True) or "").split()
     layerconfs = tinfoil.config_data.varhistory.get_variable_items_files(
         'BBFILE_COLLECTIONS', tinfoil.config_data)
-    tinfoil.cooker.bbfile_collections = {
+    tinfoil.config_data.bbfile_collections = {
         layer: os.path.dirname(os.path.dirname(path))
         for layer, path in layerconfs.items()}
 
-    # on this instance, use backported generatePkgDepTreeData()
-    tinfoil.cooker.generatePkgDepTreeData = \
-        generatePkgDepTreeData.__get__(tinfoil.cooker, tinfoil.cooker.__class__)
-
-    tinfoil.prepare()
     return tinfoil
 
 
-def find_patched_cves(cooker_data, realfn):
-    # iterate over the recipes which would be built (pn-buildlist)
-    cve_match = re.compile("CVE:( CVE\-\d{4}\-\d+)+")
-    cve_patch_name_match = re.compile("(CVE\-\d{4}\-\d+)+")
+def find_patched_cves(tf, realfn, recipedata):
+    cve_pattern = re.compile("(CVE\-\d{4}\-\d+)+")
     patched_cves = dict()
-    for key, value in cooker_data.file_checksums[realfn[0]].items():
-        patches = value.split()
-        for patch in patches:
-            patch_file, _, patch_data = patch.partition(':')
-            if patch_file.endswith('.patch') and patch_data == 'True':
-                with open(patch_file, "rb") as f:
-                    try:
-                        patch_text = f.read().decode('utf-8', 'replace')
-                    except UnicodeDecodeError:
-                        logger.info("Failed to read patch %s" % patch_file)
-                        f.close()
-                match = cve_match.search(patch_text)
-                if match:
-                    cves = patch_text[match.start()+5:match.end()]
-                    for cve in cves.split():
-                        try:
-                            if patch_file not in patched_cves[cve]:
-                                patched_cves[cve].append(patch_file)
-                        except KeyError:
-                            patched_cves[cve] = [patch_file]
-                else:
-                    match = cve_patch_name_match.search(patch_file)
-                    if match:
-                        cve = match.group(1)
-                        try:
-                            if patch_file not in patched_cves[cve]:
-                                patched_cves[cve].append(patch_file)
-                        except KeyError:
-                            patched_cves[cve] = [patch_file]
+
+    for patch in get_patch_list(recipedata):
+        # do quick check for CVE ID in file name first, else check patch body
+        cves = cve_pattern.findall(patch)
+        if not cves:
+            try:
+                with open(patch, 'rb') as f:
+                    content = f.read().decode('utf-8', 'replace')
+            except (OSError, IOError, UnicodeDecodeError) as e:
+                logger.warning("Failed to read patch: %s: %s" % (patch, e))
+                continue
+            cves = cve_pattern.findall(content)
+
+        for cve in cves:
+            try:
+                if patch not in patched_cves[cve]:
+                    patched_cves[cve].append(patch)
+            except KeyError:
+                patched_cves[cve] = [patch]
     return patched_cves
 
 
@@ -102,7 +92,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     distro = tf.config_data.get('DISTRO_CODENAME') or tf.config_data.get('DISTRO_NAME')
-    layer_info = {lyr['name']: layer_dict(lyr) for lyr in get_layer_info(tf.cooker)}
+
+    layer_info = {lyr['name']: layer_dict(lyr) for lyr in get_layer_info(tf.config_data)}
 
     manifest = dict(date=datetime.utcnow().isoformat(),
                     distro=distro,
@@ -113,32 +104,46 @@ if __name__ == '__main__':
                     packages=dict(),
                     manifest_version=manifest_version)
 
-    latest_versions, preferred_versions = bb.providers.findProviders(
-                                              tf.config_data,
-                                              tf.cooker_data,
-                                              tf.cooker_data.pkg_pn)
+    tf.set_event_mask(['bb.event.DepTreeGenerated',
+                       'bb.command.CommandFailed',
+                       'bb.command.CommandCompleted'])
 
-    depgraph = tf.cooker.generatePkgDepTreeData([target], 'build')
+    ret = tf.run_command('generateDepTreeEvent', [target], 'build')
+
+    depgraph = None
+    if ret:
+        while True:
+            event = tf.wait_event(1)
+            if event:
+                if isinstance(event, bb.event.DepTreeGenerated):
+                    depgraph = event._depgraph
+                elif isinstance(event, bb.command.CommandFailed):
+                    logger.error(str(event.error))
+                    sys.exit(2)
+                elif isinstance(event, bb.command.CommandCompleted):
+                    break
+                elif isinstance(event, logging.LogRecord):
+                    logger.handle(event)
+
+    if not depgraph:
+        logger.error('Failed to generate a depgraph for this image!')
+        sys.exit(2)
+
     for p in depgraph['pn']:
-        if p.endswith('-native'):
+        recipeinfo = tf.parse_recipe(p)
+        if is_native(p):
             continue
 
-        pref = preferred_versions[p]
-        realfn = bb.cache.virtualfn2realfn(pref[1])
-        preffile = realfn[0]
-        # We only display once per recipe, we should prefer non extended
-        # versions of the recipe if present (so e.g. in OpenEmbedded, openssl
-        # rather than nativesdk-openssl which would otherwise sort first).
-        if realfn[1] and realfn[0] in tf.cooker_data.pkg_fn:
-            continue
+        fn = tf.get_recipe_file(p)
+        (pe, pv, pr) = tf.cooker_data.pkg_pepvpr[fn]
+        realfn = bb.cache.virtualfn2realfn(fn)[0]
 
-        lyr = get_file_layer(tf.cooker, preffile)
-        p_version = str("%s" % (pref[0][1]))
+        lyr = get_file_layer(tf, realfn)
         info = layer_info.get(lyr)
         branch = info.get('branch', 'UNKNOWN')
-        cves = find_patched_cves(tf.cooker_data, realfn)
+        cves = find_patched_cves(tf, realfn, recipeinfo)
 
-        manifest['packages'][p] = dict(version=p_version,
+        manifest['packages'][p] = dict(version=pv,
                                        layer=lyr,
                                        branch=branch,
                                        patched_cves=cves)
