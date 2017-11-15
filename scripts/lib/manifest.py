@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright (C) 2017 Timesys Corporation
 
 from datetime import datetime
@@ -124,7 +124,7 @@ if __name__ == '__main__':
             continue
 
         pref = preferred_versions[p]
-        realfn = bb.cache.virtualfn2realfn(pref[1])
+        realfn = bb.cache.Cache.virtualfn2realfn(pref[1])
         preffile = realfn[0]
         # We only display once per recipe, we should prefer non extended
         # versions of the recipe if present (so e.g. in OpenEmbedded, openssl

@@ -42,12 +42,13 @@ def generatePkgDepTreeData(self, pkgs_to_build, task):
     """
     Create a dependency tree of pkgs_to_build, returning the data.
     """
-    if not task.startswith("do_"):
-        task = "do_%s" % task
-
     _, taskdata = self.prepareTreeData(pkgs_to_build, task)
+    tasks_fnid = []
+    if len(taskdata.tasks_name) != 0:
+        for task in xrange(len(taskdata.tasks_name)):
+            tasks_fnid.append(taskdata.tasks_fnid[task])
 
-    seen_fns = []
+    seen_fnids = []
     depend_tree = {}
     depend_tree["depends"] = {}
     depend_tree["pn"] = {}
@@ -62,53 +63,51 @@ def generatePkgDepTreeData(self, pkgs_to_build, task):
             cachefields = getattr(cache_class, 'cachefields', [])
             extra_info = extra_info + cachefields
 
-    tids = []
-    for mc in taskdata:
-        for tid in taskdata[mc].taskentries:
-            tids.append(tid)
-
-    for tid in tids:
-        (mc, fn, taskname, taskfn) = bb.runqueue.split_tid_mcfn(tid)
-
-        pn = self.recipecaches[mc].pkg_fn[taskfn]
-        pn = self.add_mc_prefix(mc, pn)
+    for task in xrange(len(tasks_fnid)):
+        fnid = tasks_fnid[task]
+        fn = taskdata.fn_index[fnid]
+        pn = self.recipecache.pkg_fn[fn]
 
         if pn not in depend_tree["pn"]:
             depend_tree["pn"][pn] = {}
-            depend_tree["pn"][pn]["filename"] = taskfn
-            version  = "%s:%s-%s" % self.recipecaches[mc].pkg_pepvpr[taskfn]
+            depend_tree["pn"][pn]["filename"] = fn
+            version  = "%s:%s-%s" % self.recipecache.pkg_pepvpr[fn]
             depend_tree["pn"][pn]["version"] = version
-            rdepends = self.recipecaches[mc].rundeps[taskfn]
-            rrecs = self.recipecaches[mc].runrecs[taskfn]
-            depend_tree["pn"][pn]["inherits"] = self.recipecaches[mc].inherits.get(taskfn, None)
+            rdepends = self.recipecache.rundeps[fn]
+            rrecs = self.recipecache.runrecs[fn]
+            depend_tree["pn"][pn]["inherits"] = self.recipecache.inherits.get(fn, None)
 
             # for all extra attributes stored, add them to the dependency tree
             for ei in extra_info:
-                depend_tree["pn"][pn][ei] = vars(self.recipecaches[mc])[ei][taskfn]
+                depend_tree["pn"][pn][ei] = vars(self.recipecache)[ei][fn]
 
-        if taskfn not in seen_fns:
-            seen_fns.append(taskfn)
+        if fnid not in seen_fnids:
+            seen_fnids.append(fnid)
 
             depend_tree["depends"][pn] = []
-            for dep in taskdata[mc].depids[taskfn]:
+            for dep in taskdata.depids[fnid]:
+                item = taskdata.build_names_index[dep]
                 pn_provider = ""
-                if dep in taskdata[mc].build_targets and taskdata[mc].build_targets[dep]:
-                    fn_provider = taskdata[mc].build_targets[dep][0]
-                    pn_provider = self.recipecaches[mc].pkg_fn[fn_provider]
+                targetid = taskdata.getbuild_id(item)
+                if targetid in taskdata.build_targets and taskdata.build_targets[targetid]:
+                    id = taskdata.build_targets[targetid][0]
+                    fn_provider = taskdata.fn_index[id]
+                    pn_provider = self.recipecache.pkg_fn[fn_provider]
                 else:
-                    pn_provider = dep
-                pn_provider = self.add_mc_prefix(mc, pn_provider)
+                    pn_provider = item
                 depend_tree["depends"][pn].append(pn_provider)
 
             depend_tree["rdepends-pn"][pn] = []
-            for rdep in taskdata[mc].rdepids[taskfn]:
+            for rdep in taskdata.rdepids[fnid]:
+                item = taskdata.run_names_index[rdep]
                 pn_rprovider = ""
-                if rdep in taskdata[mc].run_targets and taskdata[mc].run_targets[rdep]:
-                    fn_rprovider = taskdata[mc].run_targets[rdep][0]
-                    pn_rprovider = self.recipecaches[mc].pkg_fn[fn_rprovider]
+                targetid = taskdata.getrun_id(item)
+                if targetid in taskdata.run_targets and taskdata.run_targets[targetid]:
+                    id = taskdata.run_targets[targetid][0]
+                    fn_rprovider = taskdata.fn_index[id]
+                    pn_rprovider = self.recipecache.pkg_fn[fn_rprovider]
                 else:
-                    pn_rprovider = rdep
-                pn_rprovider = self.add_mc_prefix(mc, pn_rprovider)
+                    pn_rprovider = item
                 depend_tree["rdepends-pn"][pn].append(pn_rprovider)
 
             depend_tree["rdepends-pkg"].update(rdepends)
