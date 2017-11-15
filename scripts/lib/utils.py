@@ -45,7 +45,7 @@ def is_useful_dep(cooker, pkg, dep):
 
 def git_subprocess(args):
     try:
-        output = subprocess.check_output(['git'] + args)[:-1]
+        output = subprocess.check_output(['git'] + args, stderr=subprocess.DEVNULL)[:-1]
     except subprocess.CalledProcessError:
         output = b'UNKNOWN'
     return output.decode('utf-8', 'replace')
