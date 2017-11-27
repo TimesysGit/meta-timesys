@@ -20,14 +20,12 @@ import bb.tinfoil
 from utils import get_file_layer, get_layer_info, get_images_from_cache, \
                   is_valid_image, is_native, get_patch_list
 
-logger = logging.getLogger('BitBake')
 
 manifest_version = "1.1"
 
 
 def setup_tinfoil(tracking=False):
     tinfoil = bb.tinfoil.Tinfoil(tracking=tracking)
-    tinfoil.logger.setLevel(logger.getEffectiveLevel())
 
     options = bb.tinfoil.TinfoilConfigParameters(False,
                                                  parse_only=True,
@@ -58,7 +56,7 @@ def find_patched_cves(tf, realfn, recipedata):
                 with open(patch, 'rb') as f:
                     content = f.read().decode('utf-8', 'replace')
             except (OSError, IOError, UnicodeDecodeError) as e:
-                logger.warning("Failed to read patch: %s: %s" % (patch, e))
+                tf.logger.warning("Failed to read patch: %s: %s" % (patch, e))
                 continue
             cves = cve_pattern.findall(content)
 
@@ -114,16 +112,16 @@ if __name__ == '__main__':
                 if isinstance(event, bb.event.DepTreeGenerated):
                     depgraph = event._depgraph
                 elif isinstance(event, bb.command.CommandFailed):
-                    logger.error(str(event.error))
+                    tf.logger.error(str(event.error))
                     tf.shutdown()
                     sys.exit(2)
                 elif isinstance(event, bb.command.CommandCompleted):
                     break
                 elif isinstance(event, logging.LogRecord):
-                    logger.handle(event)
+                    tf.logger.handle(event)
 
     if not depgraph:
-        logger.error('Failed to generate a depgraph for this image!')
+        tf.logger.error('Failed to generate a depgraph for this image!')
         tf.shutdown()
         sys.exit(2)
 
