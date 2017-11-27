@@ -32,8 +32,8 @@ def setup_tinfoil(tracking=False):
     options = bb.tinfoil.TinfoilConfigParameters(False,
                                                  parse_only=True,
                                                  dry_run=True)
-    tinfoil.prepare(config_params=options)
-    tinfoil.run_command('setFeatures', ['bb.cooker.CookerFeatures.HOB_EXTRA_CACHES'])
+    tinfoil.prepare(config_params=options,
+                    extra_features=[bb.cooker.CookerFeatures.HOB_EXTRA_CACHES])
 
     # this part is from bitbake/lib/bblayers:
     tinfoil.bblayers = (tinfoil.config_data.getVar('BBLAYERS', True) or "").split()
