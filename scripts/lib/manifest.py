@@ -82,8 +82,8 @@ def layer_dict(lyr):
 
 if __name__ == '__main__':
     tf = setup_tinfoil(tracking=True)
-    if not is_valid_image(tf.cooker, target):
-        images = get_images_from_cache(tf.cooker)
+    images = get_images_from_cache(tf)
+    if not is_valid_image(tf, target, images=images):
         print("Unable to find image: %s\n" % target)
         print("Please select an image from the following list:")
         for img in images:
@@ -119,6 +119,7 @@ if __name__ == '__main__':
                     depgraph = event._depgraph
                 elif isinstance(event, bb.command.CommandFailed):
                     logger.error(str(event.error))
+                    tf.shutdown()
                     sys.exit(2)
                 elif isinstance(event, bb.command.CommandCompleted):
                     break
@@ -127,6 +128,7 @@ if __name__ == '__main__':
 
     if not depgraph:
         logger.error('Failed to generate a depgraph for this image!')
+        tf.shutdown()
         sys.exit(2)
 
     for p in depgraph['pn']:

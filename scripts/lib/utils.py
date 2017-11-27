@@ -1,47 +1,9 @@
-#!/usr/bin/env python
 import fnmatch
 import os
-import sys
 import re
 import subprocess
 import bisect
-import logging
-
-import bb.msg
-import bb.providers
-import bb.cache
-
-__logger_name = 'BitBake'
-logger = logging.getLogger(__logger_name)
-
-
-def create_logger():
-    logger = logging.getLogger(__logger_name)
-    console = logging.StreamHandler(sys.stdout)
-    errconsole = logging.StreamHandler(sys.stderr)
-    format_str = "%(levelname)s: %(message)s"
-    format = bb.msg.BBLogFormatter(format_str)
-    bb.msg.addDefaultlogFilter(console, bb.msg.BBLogFilterStdOut)
-    bb.msg.addDefaultlogFilter(errconsole, bb.msg.BBLogFilterStdErr)
-    bb.providers.logger.setLevel(logging.DEBUG)
-    console.setFormatter(format)
-    errconsole.setFormatter(format)
-    logger.addHandler(console)
-    logger.addHandler(errconsole)
-    return logger
-
-
-def get_eof_pos(fn):
-    with open(fn, 'a') as f:
-        return f.tell()
-    return -1
-
-
-def is_useful_dep(cooker, pkg, dep):
-    return dep in cooker.recipecache.pkg_pn and \
-        dep != pkg and not is_native(dep) and not is_kernel(cooker, dep) and \
-        not is_nopackages(cooker, dep)
-
+import bb  # needs bitbake/lib in python path
 
 def git_subprocess(args):
     try:
@@ -120,25 +82,12 @@ def is_native(pkg):
     return pkg.startswith('nativesdk-') or pkg.endswith('-native')
 
 
-def get_fn(cooker, p):
-    return cooker.recipecaches[''].pkg_pn[p][0]
+def is_kernel(recipe):
+    return 'kernel' in recipe.inherits()
 
 
-def __has_class(cls, cooker, p):
-    fn = get_fn(cooker, p)
-    return "%s.bbclass" % cls in [os.path.basename(b) for b in cooker.recipecaches[''].inherits[fn]]
-
-
-def is_kernel(cooker, p):
-    return __has_class('kernel', cooker, p)
-
-
-def is_image(cooker, p):
-    return __has_class('image', cooker, p)
-
-
-def is_nopackages(cooker, p):
-    return __has_class('nopackages', cooker, p)
+def is_image(recipe):
+    return 'image' in recipe.inherits()
 
 
 def dict_insort(d, k, v):
@@ -149,16 +98,15 @@ def dict_insort(d, k, v):
         d[k] = [v]
 
 
-def get_images_from_cache(cooker):
-    images = []
-    for img in cooker.recipecaches[''].pkg_pn:
-        if not is_image(cooker, img): continue
-        images.append(img)
+def get_images_from_cache(tinfoil):
+    images = [r.pn for r in tinfoil.all_recipes(sort=False) if is_image(r)]
+    images.sort()
     return images
 
 
-def is_valid_image(cooker, image):
-    images = get_images_from_cache(cooker)
+def is_valid_image(tinfoil, image, images=None):
+    if not images:
+        images = get_images_from_cache(tinfoil)
     return image in images
 
 
