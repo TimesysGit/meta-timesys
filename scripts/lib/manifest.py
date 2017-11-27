@@ -17,12 +17,8 @@ sys.path.insert(0, os.path.join(broot, 'lib'))
 
 import bb
 import bb.tinfoil
-from backport import generatePkgDepTreeData
 from utils import get_file_layer, get_layer_info, get_images_from_cache, \
                   is_valid_image, is_native, get_patch_list
-
-# patch cooker to use backported fn
-bb.cooker.BBCooker.generatePkgDepTreeData = generatePkgDepTreeData
 
 logger = logging.getLogger('BitBake')
 
