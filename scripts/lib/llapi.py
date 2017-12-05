@@ -21,17 +21,20 @@ def create_hmac(key, msg):
     return base64.b64encode(sig)
 
 
+# This raises an error if it can't read or decode a file that's present, but
+# leaves it to the caller to decide what to do with empty values.
 def read_keyfile(key_file):
     try:
         with open(key_file, 'r') as f:
             key_info = json.load(f, encoding='utf-8')
+    except (OSError, IOError, UnicodeDecodeError):
+            email, key = (None, None)
     except Exception:
-        raise Exception("Unable to read key file: %s" % key_file)
+        raise Exception("Unable to parse key file: %s" % key_file)
+    else:
+        email = key_info.get('email', '').strip()
+        key = key_info.get('key', '').strip()
 
-    email = key_info.get('email', '').strip()
-    key = key_info.get('key', '').strip()
-    if not email or not key:
-        raise Exception("Invalid or missing data in key file")
     return (email, key)
 
 
