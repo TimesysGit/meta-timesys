@@ -35,7 +35,10 @@ def print_demo_notice(bad_key=False):
 
     print('The script will continue in demo mode, which will link you to '
           'temporarily available online results only.\n'
-          'You will not be able to subscribe for notifications!\n\n'
+          'You will need to login or register for a free account in order to '
+          'see the report.\n\n'
+          'You can not subscribe for recurring CVE notifications without an '
+          'active subscription!\n\n'
           'For more information on the security notification service, visit:\n'
           '%s\n'
           % INFO_PAGE)
