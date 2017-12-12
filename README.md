@@ -1,7 +1,7 @@
 What is meta-timesys
 ====================
 
-This layer provides scripts related security and customer support, recipe source mirroring, demos, recipe modifications, etc.
+This Yocto layer provides scripts for image manifest generation used for security monitoring and notification, customer support, recipe source mirroring, recipe modifications, demos, etc.
 
 Some of the features are aimed at Timesys customers with active subscriptions.  Using these features requires an API Keyfile, which you can learn about setting up from the LinuxLink document here:
 
