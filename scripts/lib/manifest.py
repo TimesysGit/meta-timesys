@@ -23,7 +23,7 @@ is_valid_image
 
 logger = logging.getLogger('BitBake')
 
-manifest_version = "1.1"
+manifest_version = "1.2"
 
 def setup_tinfoil(tracking=False):
     tinfoil = bb.tinfoil.Tinfoil(tracking=tracking)
@@ -142,6 +142,14 @@ if __name__ == '__main__':
                                        layer=lyr,
                                        branch=branch,
                                        patched_cves=cves)
+
+        recipe_info = tf.parse_recipe_file(preffile)
+        cve_product = recipe_info.get('CVE_PRODUCT')
+        if cve_product:
+            cve_version = p_version.split("+git")[0]
+            manifest['packages'][p]['cve_product'] = cve_product
+            manifest['packages'][p]['cve_version'] = cve_version
+
 
     s = json.dumps(manifest, indent=2, sort_keys=True)
     with open(ofile, "w") as f:
