@@ -21,7 +21,7 @@ from utils import get_file_layer, get_layer_info, get_images_from_cache, \
                   is_valid_image, is_native, get_patch_list
 
 
-manifest_version = "1.1"
+manifest_version = "1.2"
 
 
 def setup_tinfoil(tracking=False):
@@ -138,11 +138,17 @@ if __name__ == '__main__':
         info = layer_info.get(lyr)
         branch = info.get('branch', 'UNKNOWN')
         cves = find_patched_cves(tf, realfn, recipeinfo)
-
         manifest['packages'][p] = dict(version=pv,
                                        layer=lyr,
                                        branch=branch,
                                        patched_cves=cves)
+
+        cve_product = recipeinfo.getVar('CVE_PRODUCT')
+        if cve_product:
+            cve_version = pv.split("+git")[0]
+            manifest['packages'][p]['cve_product'] = cve_product
+            manifest['packages'][p]['cve_version'] = cve_version
+
 
     s = json.dumps(manifest, indent=2, sort_keys=True)
     with open(ofile, "w") as f:
