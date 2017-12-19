@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import sys
 import json
@@ -11,15 +12,14 @@ API_DOC = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LINUXLINK_SERVER
 INFO_PAGE = 'https://www.timesys.com/open-source-embedded/security-update-management/'
 
 
-def print_usage():
-    print('Usage: %s <manifest file>\n\n'
-          'This script sends a json manifest file for an image to LinuxLink '
-          'to check the CVE status of the recipes.\n\n'
-          'Subscribing to notifications requires a LinuxLink API keyfile, and '
-          'an active LinuxLink subscription.\n\n'
-          'See this document for keyfile information:\n'
-          '%s\n\n'
-          % (sys.argv[0], API_DOC))
+def get_usage():
+    return('This script sends a json manifest file for an image to LinuxLink '
+           'to check the CVE status of the recipes.\n\n'
+           'Subscribing to notifications requires a LinuxLink API keyfile, and '
+           'an active LinuxLink subscription.\n\n'
+           'See this document for keyfile information:\n'
+           '%s\n\n'
+           % API_DOC)
 
 
 def print_demo_notice(bad_key=False):
@@ -44,6 +44,18 @@ def print_demo_notice(bad_key=False):
           % INFO_PAGE)
 
 
+def handle_cmdline_args():
+    parser = argparse.ArgumentParser(description=get_usage())
+    parser.add_argument('-s', '--subscribe',
+                        help='Subscribe to weekly email reports for this manifest',
+                        action='store_true',
+                        default=False,
+                        dest='subscribe')
+    parser.add_argument('manifest', help='JSON image manifest file to check')
+    return parser.parse_args()
+
+
+
 def read_manifest(manifest_file):
     try:
         with open(manifest_file, 'rb') as f:
@@ -56,16 +68,11 @@ def read_manifest(manifest_file):
 
 def print_cves(result, demo=False):
     if demo:
-        report_url = '%s%s' % (llapi.LINUXLINK_SERVER, result['report_path'])
         print('CVE Summary:\n'
               '    Unfixed: %d\n'
-              '    Fixed: %d\n\n'
-              'View complete report online at:\n'
-              '%s\n\n'
-              'Note: The above URL will expire after one day.'
+              '    Fixed: %d'
               % (result['unfixed_count'],
-                 result['fixed_count'],
-                 report_url))
+                 result['fixed_count']))
         return
 
     for pkg, info in result.iteritems():
@@ -85,23 +92,25 @@ def print_cves(result, demo=False):
                         print('\t%s' % patch)
 
 
+def print_url(result, demo=False):
+    report_url = '%s%s' % (llapi.LINUXLINK_SERVER, result['report_path'])
+    print('\nView the complete report online at:\n%s\n' % report_url)
+    if demo:
+        print('Note: The above URL will expire after one day.')
+
+
 if __name__ == '__main__':
     resource = '/api/cves/reports/yocto/'
     home_dir = os.path.expanduser('~')
     key_file = os.getenv('KEY_FILE', '%s/timesys/linuxlink_key' % home_dir)
     demo = False
-
-    try:
-        manifest_file = sys.argv[1]
-    except IndexError:
-        print_usage()
-        sys.exit(1)
+    args = handle_cmdline_args()
 
     try:
         email, key = llapi.read_keyfile(key_file)
     except Exception as e:
         print('Error: %s\n' % e)
-        print_usage()
+        print(get_usage())
         sys.exit(1)
 
     # If there was no proper API keyfile, operate in demo mode.
@@ -110,25 +119,45 @@ if __name__ == '__main__':
         resource += 'demo/'
         print_demo_notice(bad_key=True)
 
-    manifest = read_manifest(manifest_file)
+    manifest = read_manifest(args.manifest)
     manifest_json = json.loads(manifest)
-    if len(manifest_json['packages']) > 0:
-        print('Requesting image analysis from LinuxLink ...')
-        result = llapi.api_post(email, key, resource, {'manifest': manifest})
-        cves = result.get('cves', [])
-        print('--------')
-        print('Date: %s\n' % result['date'])
-        if not cves:
-            print('No results.')
-        else:
-            # If no subscription or bogus user/key, it will have fallen back to
-            # demo mode to give results
-            demo_result = result.get('demo', False)
-            if not demo and demo_result:
-                print_demo_notice()
-                demo = demo_result
-            print_cves(cves, demo=demo)
-    else:
+
+    if len(manifest_json['packages']) == 0:
         print('No packages found in manifest.\n'
               'Please confirm that "%s" is a valid image'
               % manifest_json["image"])
+        sys.exit(1)
+
+    print('Requesting image analysis from LinuxLink ...')
+    result = llapi.api_post(email, key, resource,
+                            {'manifest': manifest,
+                             'subscribe': args.subscribe})
+    cves = result.get('cves', [])
+
+    print('--------')
+    print('Date: %s\n' % result['date'])
+    if not cves:
+        print('No results.')
+        sys.exit(0)
+
+    # If no LinuxLink subscription or bogus user/key, it will have fallen back
+    # to demo mode
+    demo_result = result.get('demo', False)
+    if not demo and demo_result:
+        print_demo_notice()
+        demo = demo_result
+
+    # If notification subscription was requested but there was no LinuxLink
+    # account / seat:
+    sub_result = result.get('subscribed', False)
+    if args.subscribe:
+        if not sub_result:
+            print('Warning: Could not subscribe to weekly CVE report!\n'
+                  'Please check that you have an active LinuxLink subscription.')
+        else:
+            print('Notice: You subscribed to weekly email notifications for '
+                  'this report.\nMake sure that you are allowing update emails '
+                  ' in your LinuxLink preferences.')
+
+    print_cves(cves, demo=demo)
+    print_url(result, demo=demo)
