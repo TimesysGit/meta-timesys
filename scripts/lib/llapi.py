@@ -1,12 +1,14 @@
-# Copyright (C) 2007-2017 Timesys Corporation
+# Copyright (C) 2018 Timesys Corporation
 
 import base64
 import hashlib
 import hmac
 import json
 import ssl
-import urllib
-import urllib2
+import urllib.request
+import urllib.parse
+import urllib.error
+from collections import OrderedDict
 
 LINUXLINK_SERVER = 'https://linuxlink.timesys.com'
 
@@ -17,6 +19,11 @@ def make_msg(method, resource, data):
 
 
 def create_hmac(key, msg):
+    if key is not None:
+        key = key.encode('utf-8')
+    else:
+        key = 'None'.encode('utf-8')
+    msg = msg.encode('utf-8', 'backslashreplace')
     sig = hmac.new(key, msg=msg, digestmod=hashlib.sha256).digest()
     return base64.b64encode(sig)
 
@@ -45,26 +52,29 @@ def _do_api_call(request_dict, json_response):
         context = None
 
     try:
-        r = urllib2.Request(**request_dict)
-        f = urllib2.urlopen(r, context=context) if context else urllib2.urlopen(r)
-    except urllib2.HTTPError as e:
+        r = urllib.request.Request(**request_dict)
+        f = urllib.request.urlopen(r, context=context) if context else urllib.request.urlopen(r)
+    except urllib.error.HTTPError as e:
         raise Exception('LinuxLink server returned status: %s' % e.code)
     except Exception as e:
         raise Exception('Unable to connect to LinuxLink server: %s' % e)
 
     if not json_response:
         return f
-    return json.loads(f.read())
+
+    response = f.readall().decode('utf-8')
+    return json.loads(response, object_pairs_hook=OrderedDict)
 
 
 def api_get(email, key, resource, data_dict={}, json=True):
     data_dict['email'] = email
     msg = make_msg('GET', resource, data_dict)
+    params = urllib.parse.urlencode(data_dict).encode('utf-8')
     request = {
         'headers': {
-            'X-Auth-Signature': create_hmac(str(key), msg),
+            'X-Auth-Signature': create_hmac(key, msg),
         },
-        'url': LINUXLINK_SERVER + resource + '?%s' % urllib.urlencode(data_dict),
+        'url': LINUXLINK_SERVER + resource + '?%s' % params,
     }
     return _do_api_call(request, json)
 
@@ -74,9 +84,9 @@ def api_post(email, key, resource, data_dict={}, json=True):
     msg = make_msg('POST', resource, data_dict)
     request = {
         'headers': {
-            'X-Auth-Signature': create_hmac(str(key), msg),
+            'X-Auth-Signature': create_hmac(key, msg),
         },
         'url': LINUXLINK_SERVER + resource,
-        'data': urllib.urlencode(data_dict)
+        'data': urllib.parse.urlencode(data_dict).encode('utf-8'),
     }
     return _do_api_call(request, json)
