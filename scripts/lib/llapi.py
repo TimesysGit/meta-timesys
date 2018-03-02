@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2017 Timesys Corporation
+# Copyright (C) 2018 Timesys Corporation
 
 import base64
 import hashlib
@@ -7,6 +7,7 @@ import json
 import ssl
 import urllib
 import urllib2
+from collections import OrderedDict
 
 LINUXLINK_SERVER = 'https://linuxlink.timesys.com'
 
@@ -17,6 +18,11 @@ def make_msg(method, resource, data):
 
 
 def create_hmac(key, msg):
+    if key is not None:
+        key = key.encode('utf-8')
+    else:
+        key = 'None'.encode('utf-8')
+    msg = msg.encode('utf-8', 'backslashreplace')
     sig = hmac.new(key, msg=msg, digestmod=hashlib.sha256).digest()
     return base64.b64encode(sig)
 
@@ -54,17 +60,20 @@ def _do_api_call(request_dict, json_response):
 
     if not json_response:
         return f
-    return json.loads(f.read())
+
+    response = f.read().decode('utf-8')
+    return json.loads(response, object_pairs_hook=OrderedDict)
 
 
 def api_get(email, key, resource, data_dict={}, json=True):
     data_dict['email'] = email
     msg = make_msg('GET', resource, data_dict)
+    params = urllib.urlencode(data_dict).encode('utf-8')
     request = {
         'headers': {
-            'X-Auth-Signature': create_hmac(str(key), msg),
+            'X-Auth-Signature': create_hmac(key, msg),
         },
-        'url': LINUXLINK_SERVER + resource + '?%s' % urllib.urlencode(data_dict),
+        'url': LINUXLINK_SERVER + resource + '?%s' % params,
     }
     return _do_api_call(request, json)
 
@@ -74,9 +83,9 @@ def api_post(email, key, resource, data_dict={}, json=True):
     msg = make_msg('POST', resource, data_dict)
     request = {
         'headers': {
-            'X-Auth-Signature': create_hmac(str(key), msg),
+            'X-Auth-Signature': create_hmac(key, msg),
         },
         'url': LINUXLINK_SERVER + resource,
-        'data': urllib.urlencode(data_dict)
+        'data': urllib.urlencode(data_dict).encode('utf-8'),
     }
     return _do_api_call(request, json)
