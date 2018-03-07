@@ -72,6 +72,9 @@ def handle_cmdline_args():
                         action='store_true',
                         default=False,
                         dest='subscribe')
+    parser.add_argument('-o', '--outfile',
+                        help='Print results to FILE instead of STDOUT',
+                        metavar='FILE')
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('-l', '--list',
                              action='store_true',
@@ -96,7 +99,7 @@ def read_manifest(manifest_file):
     return manifest_data
 
 
-def print_cves(result, demo=False):
+def print_cves(result, demo=False, outfile=None):
     cves = result['cves']
     if demo:
         print('\n-- CVE Summary --\n'
@@ -105,9 +108,14 @@ def print_cves(result, demo=False):
               'CPU: %d'
               % (cves['unfixed_count'],
                  cves['fixed_count'],
-                 cves['arch_count']))
+                 cves['arch_count']),
+              file=outfile)
         print('\n"CPU" CVEs are filed against the hardware, and may be fixed '
-              'or mitigated in other components such as the kernel or compiler.')
+              'or mitigated in other components such as the kernel or compiler.',
+              file=outfile)
+        if outfile is not None:
+            print('\nDone. Results written to "%s"' %
+                  os.path.basename(outfile.name))
         return
 
     arch_cves = result.get('arch_cves', [])
@@ -115,30 +123,34 @@ def print_cves(result, demo=False):
         print('\n\n-- CPU / Architecture CVEs --\n'
               '\nNote: These are CVEs which are filed against the hardware, '
               'and may be fixed or mitigated in other components such as the '
-              'kernel or compiler.')
+              'kernel or compiler.',
+              file=outfile)
         for cve in arch_cves:
-            print('\nCVE ID:  %s' % cve['cve_id'])
-            print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
-            print('CVSSv2:  %s' % cve['cvss'])
-            print('Vector:  %s' % cve['vector'])
+            print('\nCVE ID:  %s' % cve['cve_id'], file=outfile)
+            print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']), file=outfile)
+            print('CVSSv2:  %s' % cve['cvss'], file=outfile)
+            print('Vector:  %s' % cve['vector'], file=outfile)
 
     if cves:
-        print('\n\n-- Recipe CVEs --')
+        print('\n\n-- Recipe CVEs --', file=outfile)
         for pkg, info in cves.items():
             for cve in info:
-                print('\nRecipe:  %s' % pkg)
-                print('Version: %s' % cve['version'])
-                print('CVE ID:  %s' % cve['cve_id'])
-                print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']))
-                print('CVSSv2:  %s' % cve['cvss'])
-                print('Vector:  %s' % cve['vector'])
-                print('Status:  %s' % cve['status'])
+                print('\nRecipe:  %s' % pkg, file=outfile)
+                print('Version: %s' % cve['version'], file=outfile)
+                print('CVE ID:  %s' % cve['cve_id'], file=outfile)
+                print('URL:     %s%s' % (NVD_BASE_URL, cve['cve_id']), file=outfile)
+                print('CVSSv2:  %s' % cve['cvss'], file=outfile)
+                print('Vector:  %s' % cve['vector'], file=outfile)
+                print('Status:  %s' % cve['status'], file=outfile)
                 if cve['status'] == 'Fixed':
                     patches = cve.get('fixedby')
                     if patches:
-                        print('Patched by:')
+                        print('Patched by:', file=outfile)
                         for patch in patches:
-                            print('\t%s' % patch)
+                            print('\t%s' % patch, file=outfile)
+    if outfile is not None:
+        print('\nDone. Results written to "%s"' %
+              os.path.basename(outfile.name))
 
 
 def print_url(result, demo=False):
@@ -176,6 +188,11 @@ if __name__ == '__main__':
         print('\n'.join(im.images))
         im.shutdown()
         sys.exit(1)
+
+    if args.outfile:
+        outfile = open(args.outfile, 'w')
+    else:
+        outfile = None
 
     # read or create image manifest
     if args.manifest:
@@ -245,11 +262,13 @@ if __name__ == '__main__':
                   'this report.\nMake sure that you are allowing update emails '
                   'in your LinuxLink preferences.\n')
 
-    print('-- Date Generated (UTC) --\n')
-    print('%s' % result['date'])
     if not cves and not arch_cves:
         print('No results.')
         sys.exit(0)
 
-    print_cves(result, demo=demo)
+    print('-- Date Generated (UTC) --\n', file=outfile)
+    print('%s' % result['date'], file=outfile)
+
+
+    print_cves(result, demo=demo, outfile=outfile)
     print_url(result, demo=demo)
