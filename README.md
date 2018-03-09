@@ -30,20 +30,24 @@ git clone https://github.com/TimesysGit/meta-timesys.git -b krogoth
 source poky/oe-init-build-env
 ```
 
-### Add meta-timesys to _conf/bblayers.conf_.
+### Add meta-timesys to _conf/bblayers.conf_
 
 Follow format of the file, just add meta-timesys after the default poky/meta, etc.
 
-### Create an image manifest
+### Check an Image for CVEs
+
+When you run the following script without any arguments, you will be prompted to select an image to check (one can also be provided as an argument to skip the GUI).
+
+```sh
+../meta-timesys/scripts/checkcves.py
+```
+
+### Create an image manifest (optional)
+
+The _checkcves.py_ script will create a manifest automatically, but you may want to save certain configurations to pass to the script, upload to LinuxLink, or share with teammates or Timesys support.
 
 ```sh
 ../meta-timesys/scripts/manifest.sh core-image-minimal manifest.json
-```
-
-### Use the manifest to check for CVEs:
-
-```sh
-../meta-timesys/scripts/checkcves.py manifest.json
 ```
 
 Maintainers
