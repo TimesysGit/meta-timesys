@@ -62,7 +62,7 @@ def _do_api_call(request_dict, json_response):
     if not json_response:
         return f
 
-    response = f.readall().decode('utf-8')
+    response = f.read().decode('utf-8')
     return json.loads(response, object_pairs_hook=OrderedDict)
 
 
