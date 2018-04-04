@@ -106,14 +106,20 @@ def print_cves(result, demo=False, outfile=None):
     if demo:
         print('\n-- CVE Summary --\n'
               '\nUnfixed: %d\n'
+              'Unfixed, Patch Available: %d\n'
               'Fixed: %d\n'
               'CPU: %d'
               % (cves['unfixed_count'],
+                 cves['unapplied_count'],
                  cves['fixed_count'],
                  cves['arch_count']),
               file=outfile)
         print('\n"CPU" CVEs are filed against the hardware, and may be fixed '
-              'or mitigated in other components such as the kernel or compiler.',
+              'or mitigated in other components such as the kernel or '
+              'compiler.\n'
+              '"Patch Available" CVEs have a fix available in the '
+              'meta-timesys-security layer. If the layer is already included, '
+              'then you may need to update your copy.',
               file=outfile)
         if outfile is not None:
             print('\nDone. Results written to "%s"' %
@@ -144,12 +150,15 @@ def print_cves(result, demo=False, outfile=None):
                 print('CVSSv2:  %s' % cve['cvss'], file=outfile)
                 print('Vector:  %s' % cve['vector'], file=outfile)
                 print('Status:  %s' % cve['status'], file=outfile)
-                if cve['status'] == 'Fixed':
-                    patches = cve.get('fixedby')
-                    if patches:
+                patches = cve.get('fixedby')
+                if patches:
+                    if cve['status'] == 'Unfixed, Patch Available':
+                        print('Patched in meta-timesys-security commit(s):',
+                              file=outfile)
+                    else:
                         print('Patched by:', file=outfile)
-                        for patch in patches:
-                            print('\t%s' % patch, file=outfile)
+                    for patch in patches:
+                        print('\t%s' % patch, file=outfile)
     if outfile is not None:
         print('\nDone. Results written to "%s"' %
               os.path.basename(outfile.name))
