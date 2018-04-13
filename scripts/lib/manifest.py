@@ -27,7 +27,7 @@ class ImageManifest(object):
         self.target = target
         self.outfile = outfile
         self.tf = self.setup_tinfoil(tracking=True)
-        self.images = self.utils.get_images_from_cache(self.tf.cooker)
+        self.images = sorted(self.utils.get_images_from_cache(self.tf.cooker))
 
     def validate_target(self):
         if not self.utils.is_valid_image(self.tf.cooker, self.target):
