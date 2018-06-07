@@ -7,12 +7,11 @@ from datetime import datetime
 import logging
 import json
 import os
-import re
 import sys
 
 
 class ImageManifest(object):
-    manifest_version = "1.3"
+    manifest_version = "1.4"
 
     def __init__(self, broot, target=None, outfile=None):
         sys.path.insert(0, os.path.join(broot, 'lib'))
@@ -109,12 +108,9 @@ class ImageManifest(object):
             p_version = str("%s" % (pref[0][1]))
             info = layer_info.get(lyr)
             branch = info.get('branch', 'UNKNOWN')
-            cves = self.find_patched_cves(self.tf.cooker_data, realfn)
-
             manifest['packages'][p] = dict(version=p_version,
                                            layer=lyr,
-                                           branch=branch,
-                                           patched_cves=cves)
+                                           branch=branch)
 
             recipe_info = self.tf.parse_recipe_file(preffile)
             cve_product = recipe_info.get('CVE_PRODUCT')
@@ -123,6 +119,10 @@ class ImageManifest(object):
                 manifest['packages'][p]['cve_product'] = cve_product
                 manifest['packages'][p]['cve_version'] = cve_version
 
+            patches = self.utils.get_patch_list(recipe_info)
+            if patches:
+                manifest['packages'][p]['patches'] = patches
+
         s = json.dumps(manifest, indent=2, sort_keys=True)
         if self.outfile:
             with open(self.outfile, "w") as f:
@@ -130,45 +130,10 @@ class ImageManifest(object):
             print('Done. Wrote manifest to "%s"' % self.outfile)
         return s
 
-    def find_patched_cves(self, cooker_data, realfn):
-        # iterate over the recipes which would be built (pn-buildlist)
-        cve_match = re.compile("CVE:( CVE\-\d{4}\-\d+)+")
-        cve_patch_name_match = re.compile("(CVE\-\d{4}\-\d+)+")
-        patched_cves = dict()
-        for key, value in cooker_data.file_checksums[realfn[0]].items():
-            patches = value.split()
-            for patch in patches:
-                patch_file, _, patch_data = patch.partition(':')
-                if patch_file.endswith('.patch') and patch_data == 'True':
-                    with open(patch_file, "rb") as f:
-                        try:
-                            patch_text = f.read().decode('utf-8', 'replace')
-                        except UnicodeDecodeError:
-                            self.logger.info("Failed to read patch %s" % patch_file)
-                            f.close()
-                    match = cve_match.search(patch_text)
-                    if match:
-                        cves = patch_text[match.start()+5:match.end()]
-                        for cve in cves.split():
-                            try:
-                                if patch_file not in patched_cves[cve]:
-                                    patched_cves[cve].append(patch_file)
-                            except KeyError:
-                                patched_cves[cve] = [patch_file]
-                    else:
-                        match = cve_patch_name_match.search(patch_file)
-                        if match:
-                            cve = match.group(1)
-                            try:
-                                if patch_file not in patched_cves[cve]:
-                                    patched_cves[cve].append(patch_file)
-                            except KeyError:
-                                patched_cves[cve] = [patch_file]
-        return patched_cves
-
     def layer_dict(self, lyr):
         # Keep a subset of all the layer info
-        return dict(remote=lyr['remote'], rev=lyr['revision'], branch=lyr['branch'])
+        return dict(remote=lyr['remote'], rev=lyr['revision'],
+                    branch=lyr['branch'], path=lyr['path'])
 
 
 class MenuSelect(object):
