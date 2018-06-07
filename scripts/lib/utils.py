@@ -5,6 +5,7 @@ import subprocess
 import bisect
 import bb  # needs bitbake/lib in python path
 
+
 def git_subprocess(args):
     try:
         output = subprocess.check_output(['git'] + args, stderr=subprocess.DEVNULL)[:-1]
@@ -32,6 +33,7 @@ def get_layer_info(config_data):
         revision = git_subprocess(['rev-parse', 'HEAD'])
         branch = git_subprocess(['rev-parse', '--abbrev-ref', 'HEAD'])
         info = {'name': name,
+                'path': lyr,
                 'remote': remote,
                 'revision': revision,
                 'branch': branch}
@@ -111,12 +113,14 @@ def is_valid_image(tinfoil, image, images=None):
 
 
 def get_patch_list(recipedata):
-    src_files = bb.fetch2.get_checksum_file_list(recipedata).split()
-    patches = []
+    files = recipedata.getVar('SRC_URI').split()
+    if not files:
+        return []
 
-    for f in src_files:
-        fn, real = f.rsplit(':')
-        base, ext = os.path.splitext(os.path.basename(fn))
-        if (real == 'True') and (ext in ('.diff', '.patch')):
-            patches.append(fn)
+    patches = []
+    for f in files:
+        fields = f.split('://')[-1].split(';')
+        patch = fields[0]
+        if ((patch.split('.')[-1] in ('diff', 'patch')) or 'apply=yes' in fields):
+            patches.append(patch)
     return patches
