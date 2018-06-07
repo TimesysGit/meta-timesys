@@ -7,12 +7,11 @@ from datetime import datetime
 import logging
 import json
 import os
-import re
 import sys
 
 
 class ImageManifest(object):
-    manifest_version = "1.3"
+    manifest_version = "1.4"
 
     def __init__(self, broot, target=None, outfile=None):
         sys.path.insert(0, os.path.join(broot, 'lib'))
@@ -119,17 +118,20 @@ class ImageManifest(object):
             lyr = self.utils.get_file_layer(self.tf, realfn)
             info = layer_info.get(lyr)
             branch = info.get('branch', 'UNKNOWN')
-            cves = self.find_patched_cves(self.tf, realfn, recipeinfo)
+
             manifest['packages'][p] = dict(version=pv,
                                            layer=lyr,
-                                           branch=branch,
-                                           patched_cves=cves)
+                                           branch=branch)
 
             cve_product = recipeinfo.getVar('CVE_PRODUCT')
             if cve_product:
                 cve_version = pv.split("+git")[0]
                 manifest['packages'][p]['cve_product'] = cve_product
                 manifest['packages'][p]['cve_version'] = cve_version
+
+            patches = self.utils.get_patch_list(recipeinfo)
+            if patches:
+                manifest['packages'][p]['patches'] = patches
 
         s = json.dumps(manifest, indent=2, sort_keys=True)
         if self.outfile:
@@ -138,34 +140,10 @@ class ImageManifest(object):
             print('Done. Wrote manifest to "%s"' % self.outfile)
         return s
 
-    def find_patched_cves(self, tf, realfn, recipedata):
-        cve_pattern = re.compile("(CVE\-\d{4}\-\d+)+")
-        patched_cves = dict()
-
-        for patch in self.utils.get_patch_list(recipedata):
-            # do quick check for CVE ID in file name first, else check patch body
-            cves = cve_pattern.findall(patch)
-            if not cves:
-                try:
-                    with open(patch, 'rb') as f:
-                        content = f.read().decode('utf-8', 'replace')
-                except (OSError, IOError, UnicodeDecodeError) as e:
-                    self.tf.logger.warning("Failed to read patch: %s: %s" %
-                                           (patch, e))
-                    continue
-                cves = cve_pattern.findall(content)
-
-            for cve in cves:
-                try:
-                    if patch not in patched_cves[cve]:
-                        patched_cves[cve].append(patch)
-                except KeyError:
-                    patched_cves[cve] = [patch]
-        return patched_cves
-
     def layer_dict(self, lyr):
         # Keep a subset of all the layer info
-        return dict(remote=lyr['remote'], rev=lyr['revision'], branch=lyr['branch'])
+        return dict(remote=lyr['remote'], rev=lyr['revision'],
+                    branch=lyr['branch'], path=lyr['path'])
 
 
 class MenuSelect(object):
