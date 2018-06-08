@@ -11,7 +11,7 @@ import sys
 
 
 class ImageManifest(object):
-    manifest_version = "1.4"
+    manifest_version = "1.5"
 
     def __init__(self, broot, target=None, outfile=None):
         sys.path.insert(0, os.path.join(broot, 'lib'))
@@ -132,6 +132,12 @@ class ImageManifest(object):
             patches = self.utils.get_patch_list(recipeinfo)
             if patches:
                 manifest['packages'][p]['patches'] = patches
+
+            # Recipes like glibc have a version number but really build at
+            # some revision past it from git
+            srcrev = recipeinfo.getVar('SRCREV')
+            if srcrev != 'INVALID':
+                manifest['packages'][p]['srcrev'] = srcrev
 
         s = json.dumps(manifest, indent=2, sort_keys=True)
         if self.outfile:
