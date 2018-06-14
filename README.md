@@ -20,8 +20,8 @@ http://www.yoctoproject.org/docs/2.4/ref-manual/ref-manual.html#intro-requiremen
 ### Clone poky and meta-timesys
 
 ```sh
-git clone git://git.yoctoproject.org/poky.git -b krogoth
-git clone https://github.com/TimesysGit/meta-timesys.git -b krogoth
+git clone git://git.yoctoproject.org/poky.git -b fido 
+git clone https://github.com/TimesysGit/meta-timesys.git -b fido
 ```
 
 ### Activate yocto build environment (needed for manifest creation)
