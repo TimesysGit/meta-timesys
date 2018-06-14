@@ -39,8 +39,11 @@ class ImageManifest(object):
         self.validate_target()
 
     def shutdown(self):
-        if self.tf:
-            self.tf.shutdown()
+        try:
+            if self.tf:
+                self.tf.shutdown()
+        except Exception:
+            pass
 
     def _generate_depgraph(self):
         return self.tf.cooker.generatePkgDepTreeData([self.target], 'build')
@@ -55,11 +58,8 @@ class ImageManifest(object):
 
         # this part is from bitbake/lib/bblayers:
         tinfoil.bblayers = (tinfoil.config_data.getVar('BBLAYERS', True) or "").split()
-        layerconfs = tinfoil.config_data.varhistory.get_variable_items_files(
-            'BBFILE_COLLECTIONS', tinfoil.config_data)
-        tinfoil.cooker.bbfile_collections = {
-            layer: os.path.dirname(os.path.dirname(path))
-            for layer, path in layerconfs.iteritems()}
+        tinfoil.cooker.bbfile_collections = {os.path.basename(path): path
+                                             for path in tinfoil.bblayers}
 
         # on this instance, use backported generatePkgDepTreeData()
         tinfoil.cooker.generatePkgDepTreeData = \

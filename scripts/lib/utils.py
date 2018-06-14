@@ -105,16 +105,18 @@ def get_layer_name(layerdir):
 
 
 def get_file_layerdir(cooker, filename):
-    layer = bb.utils.get_file_layer(filename, cooker.data)
-    return cooker.bbfile_collections.get(layer, None)
+    for path in reversed(sorted(cooker.bbfile_collections.values(), key=len)):
+        if filename.find(path) != -1:
+            break
+        path = None
+    return path
 
 
 def get_file_layer(cooker, filename):
     layerdir = get_file_layerdir(cooker, filename)
     if layerdir:
         return get_layer_name(layerdir)
-    else:
-        return None
+    return None
 
 
 def is_native(pkg):
