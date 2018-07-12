@@ -171,6 +171,58 @@ def print_url(result, demo=False):
         print('Note: The above URL will expire after one day.')
 
 
+def parse_cve_counts(counts, category):
+    total = counts.get(category, 0)
+    kernel = counts.get('kernel', {}).get(category, 0)
+    toolchain = counts.get('toolchain', {}).get(category, 0)
+    rfs = total - kernel - toolchain
+    return {'total': total,
+            'rfs': rfs,
+            'kernel': kernel,
+            'toolchain': toolchain}
+
+
+def parse_cvss_counts(counts, severity):
+    c = counts.get(severity)
+    if c is None:
+        return 0
+    return c.get('unfixed', 0) + c.get('fixed', 0)
+
+
+def print_summary(result, outfile=None):
+    # print summary to both stdout and output file
+    if outfile is not None:
+        print_summary(result, None)
+
+    counts = result.get('counts', {})
+    unfixed = parse_cve_counts(counts, 'unfixed')
+    unapplied = parse_cve_counts(counts, 'unapplied')
+    fixed = parse_cve_counts(counts, 'fixed')
+
+    cvss_counts = counts.get('cvss_counts', {})
+    cvss_total = parse_cvss_counts(cvss_counts, 'high')
+    cvss_kernel = parse_cvss_counts(cvss_counts.get('kernel', {}), 'high')
+    cvss_toolchain = parse_cvss_counts(cvss_counts.get('toolchain', {}), 'high')
+    cvss_rfs = cvss_total - cvss_kernel - cvss_toolchain
+
+    print('\n\n-- Summary --', file=outfile)
+    print('\nUnfixed: {} ({} RFS, {} Kernel, {} Toolchain)'.format(
+            unfixed['total'], unfixed['rfs'],
+            unfixed['kernel'], unfixed['toolchain']),
+          file=outfile)
+    print('Unfixed, Patch Available: '
+          '{} ({} RFS, {} Kernel, {} Toolchain)'.format(
+            unapplied['total'], unapplied['rfs'],
+            unapplied['kernel'], unapplied['toolchain']),
+          file=outfile)
+    print('Fixed: {} ({} RFS, {} Kernel, {} Toolchain)'.format(
+            fixed['total'], fixed['rfs'], fixed['kernel'], fixed['toolchain']),
+          file=outfile)
+    print('High CVSS: {} ({} RFS, {} Kernel, {} Toolchain)'.format(
+            cvss_total, cvss_rfs, cvss_kernel, cvss_toolchain),
+          file=outfile)
+
+
 if __name__ == '__main__':
     resource = '/api/cves/reports/yocto/'
     home_dir = os.path.expanduser('~')
@@ -282,4 +334,6 @@ if __name__ == '__main__':
 
 
     print_cves(result, demo=demo, outfile=outfile)
+    if not demo:
+        print_summary(result, outfile=outfile)
     print_url(result, demo=demo)
