@@ -124,3 +124,8 @@ def get_patch_list(recipedata):
         if ((patch.split('.')[-1] in ('diff', 'patch')) or 'apply=yes' in fields):
             patches.append(patch)
     return patches
+
+
+def get_cve_whitelist(tinfoil):
+    whitelist = tinfoil.config_data.get('CHECKCVES_WHITELIST') or ''
+    return [w.strip() for w in whitelist.split()]
