@@ -11,7 +11,7 @@ import sys
 
 
 class ImageManifest(object):
-    manifest_version = "1.5"
+    manifest_version = "1.6"
 
     def __init__(self, broot, target=None, outfile=None):
         sys.path.insert(0, os.path.join(broot, 'lib'))
@@ -92,6 +92,8 @@ class ImageManifest(object):
         layer_info = {lyr['name']: self.layer_dict(lyr)
                       for lyr in self.utils.get_layer_info(self.tf.config_data)}
 
+        whitelist = self.utils.get_cve_whitelist(self.tf)
+
         manifest = dict(date=datetime.utcnow().isoformat(),
                         distro=distro,
                         distro_version=self.tf.config_data.get('DISTRO_VERSION'),
@@ -99,7 +101,8 @@ class ImageManifest(object):
                         layers=layer_info,
                         machine=self.tf.config_data.get('MACHINE'),
                         packages=dict(),
-                        manifest_version=self.manifest_version)
+                        manifest_version=self.manifest_version,
+                        whitelist=whitelist)
 
         depgraph = self._generate_depgraph()
         if not depgraph:
