@@ -164,11 +164,15 @@ def print_cves(result, demo=False, outfile=None):
               os.path.basename(outfile.name))
 
 
-def print_url(result, demo=False):
+def print_url(result, demo=False, outfile=None):
     report_url = '%s%s' % (llapi.LINUXLINK_SERVER, result['report_path'])
-    print('\nView the complete report online at:\n%s\n' % report_url)
+    # print summary to both stdout and output file
+    if outfile is not None:
+        print_url(result, demo=demo, outfile=None)
+    print('\nView the complete report online at:\n%s\n' % report_url,
+          file=outfile)
     if demo:
-        print('Note: The above URL will expire after one day.')
+        print('Note: The above URL will expire after one day.', file=outfile)
 
 
 def parse_cve_counts(counts, category):
@@ -221,6 +225,23 @@ def print_summary(result, outfile=None):
     print('High CVSS: {} ({} RFS, {} Kernel, {} Toolchain)'.format(
             cvss_total, cvss_rfs, cvss_kernel, cvss_toolchain),
           file=outfile)
+
+
+def print_whitelist(manifest, outfile=None):
+    wl = manifest.get('whitelist')
+    print('\n\n-- Whitelist --', file=outfile)
+    print('\nThese recipes or CVE IDs are listed in the "CHECKCVES_WHITELIST" '
+          'variable and\nare NOT included in the report:\n',
+          file=outfile)
+    if wl:
+        for item in sorted(wl):
+            # the default list contains a harmless but bogus example CVE ID,
+            # don't print it here in case that is confusing.
+            if item == 'CVE-1234-1234':
+                continue
+            print('* %s' % item, file=outfile)
+    else:
+            print('(Nothing is Whitelisted)', file=outfile)
 
 
 if __name__ == '__main__':
@@ -332,8 +353,8 @@ if __name__ == '__main__':
     print('-- Date Generated (UTC) --\n', file=outfile)
     print('%s' % result['date'], file=outfile)
 
-
     print_cves(result, demo=demo, outfile=outfile)
+    print_whitelist(manifest=json.loads(manifest_data), outfile=outfile)
     if not demo:
         print_summary(result, outfile=outfile)
-    print_url(result, demo=demo)
+    print_url(result, demo=demo, outfile=outfile)
