@@ -4,7 +4,6 @@
 import curses
 from _curses import error as CursesError
 from datetime import datetime
-import logging
 import json
 import os
 import sys
@@ -115,7 +114,10 @@ class ImageManifest(object):
             appendfiles = self.tf.cooker.collection.get_file_appends(preffile)
             recipe_info = self.bb.cache.Cache.loadDataFull(pref[1], appendfiles,
                                                            self.tf.config_data)
+
             cve_product = recipe_info.get('CVE_PRODUCT')
+            if not cve_product and self.utils.is_kernel(self.tf.cooker, p):
+                cve_product = 'linux_kernel'
             if cve_product:
                 cve_version = p_version.split("+git")[0]
                 manifest['packages'][p]['cve_product'] = cve_product
