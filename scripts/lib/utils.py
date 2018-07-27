@@ -177,3 +177,8 @@ def get_patch_list(recipedata):
         if ((patch.split('.')[-1] in ('diff', 'patch')) or 'apply=yes' in fields):
             patches.append(patch)
     return patches
+
+
+def get_cve_whitelist(cooker):
+    whitelist = cooker.data.getVar('CHECKCVES_WHITELIST', True) or ''
+    return [w.strip() for w in whitelist.split()]
