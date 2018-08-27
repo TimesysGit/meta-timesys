@@ -122,8 +122,9 @@ class ImageManifest(object):
             if not cve_product and self.utils.is_kernel(self.tf.cooker, p):
                 cve_product = 'linux_kernel'
             if cve_product:
-                cve_version = p_version.split("+git")[0]
                 manifest['packages'][p]['cve_product'] = cve_product
+            cve_version = p_version.split("+git")[0]
+            if cve_version != p_version:
                 manifest['packages'][p]['cve_version'] = cve_version
 
             patches = self.utils.get_patch_list(recipe_info)
