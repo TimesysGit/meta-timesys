@@ -128,8 +128,9 @@ class ImageManifest(object):
 
             cve_product = recipeinfo.getVar('CVE_PRODUCT')
             if cve_product:
-                cve_version = pv.split("+git")[0]
                 manifest['packages'][p]['cve_product'] = cve_product
+            cve_version = pv.split("+git")[0]
+            if cve_version != pv:
                 manifest['packages'][p]['cve_version'] = cve_version
 
             patches = self.utils.get_patch_list(recipeinfo)
