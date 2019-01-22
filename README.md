@@ -15,13 +15,13 @@ The fastest way to try meta-timesys and its security features is to try dropping
 
 Although a build is not required to create an image manifest or use the CVE script, BitBake does need to run (to make the manifest), so it is easiest if you adhere to the Yocto system requirements as found here:
 
-http://www.yoctoproject.org/docs/2.4/ref-manual/ref-manual.html#intro-requirements
+https://www.yoctoproject.org/docs/2.6/ref-manual/ref-manual.html#ref-manual-system-requirements
 
 ### Clone poky and meta-timesys
 
 ```sh
-git clone git://git.yoctoproject.org/poky.git -b rocko
-git clone https://github.com/TimesysGit/meta-timesys.git -b rocko
+git clone git://git.yoctoproject.org/poky.git -b thud
+git clone https://github.com/TimesysGit/meta-timesys.git -b thud
 ```
 
 ### Activate yocto build environment (needed for manifest creation)
