@@ -44,15 +44,24 @@ When you run the following script without any arguments, you will be prompted to
 
 ### Create an image manifest (optional)
 
-The _checkcves.py_ script will create a manifest automatically, but you may want to save certain configurations to pass to the script, upload to LinuxLink, or share with teammates or Timesys support.
+The _checkcves.py_ script will create a manifest automatically, but you may want to save certain configurations to pass to the script, upload to LinuxLink, or share with teammates or Timesys support. Using a pregenerated image manifest speeds up the script significantly, so doing that is recommended if your configuration is not changing often.
 
 ```sh
 ../meta-timesys/scripts/manifest.sh core-image-minimal manifest.json
 ```
 
+### Kernel Config filter (optional)
+
+You may pass a kernel _.config_ file to the _checkcves.py_ script, which will be uploaded to LinuxLink along with the image manifest. This filter will reduce the number of kernel CVEs reported by removing those related to features which are not being built for your kernel.
+
+**NOTE: This must be a _full_ kernel config, not a defconfig!**
+
+```sh
+../meta-timesys/scripts/checkcves.py -k /path/to/kernel/.config
+```
+
+
 Maintainers
 ===========
 
 Steve Bedford \<steve.bedford@timesys.com\>
-
-Ian Campbell \<ian.campbell@timesys.com\>
