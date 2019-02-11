@@ -77,6 +77,10 @@ def handle_cmdline_args():
     parser.add_argument('-o', '--outfile',
                         help='Print results to FILE instead of STDOUT',
                         metavar='FILE')
+    parser.add_argument('-k', '--kconfig',
+                        help='Kernel .config (not defconfig) to submit for CVE filtering',
+                        metavar='FILE',
+                        dest='kconfig')
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('-l', '--list',
                              action='store_true',
@@ -319,12 +323,26 @@ if __name__ == '__main__':
         manifest_data = generate_manifest(im)
         im.shutdown()
 
+    # If -k is specified, the given config file is submitted along with the
+    # manifest to filter out irrelevant kernel CVEs
+    if not args.kconfig:
+        kernel_config = ''
+    else:
+        try:
+            with open(args.kconfig, 'r') as kconfig:
+                kernel_config = kconfig.read().strip()
+        except (OSError, IOError, UnicodeDecodeError) as e:
+            print('Error: Could not open kernel config: %s' % e)
+            sys.exit(1)
+
     print('\nRequesting image analysis from LinuxLink ...\n')
     result = llapi.api_post(email, key, resource,
                             {'manifest': manifest_data,
+                             'kconfig': kernel_config,
                              'subscribe': args.subscribe})
     cves = result.get('cves', [])
     arch_cves = result.get('arch_cves', [])
+
 
     # If no LinuxLink subscription or bogus user/key, it will have fallen back
     # to demo mode
@@ -357,4 +375,6 @@ if __name__ == '__main__':
     print_whitelist(manifest=json.loads(manifest_data), outfile=outfile)
     if not demo:
         print_summary(result, outfile=outfile)
+        if kernel_config:
+            print('Note: Kernel Config based filtering has been applied')
     print_url(result, demo=demo, outfile=outfile)
