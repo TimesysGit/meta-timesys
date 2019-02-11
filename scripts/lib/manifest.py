@@ -96,7 +96,7 @@ class ImageManifest(object):
 
         manifest = dict(date=datetime.utcnow().isoformat(),
                         distro=distro,
-                        distro_version=self.tf.config_data.get('DISTRO_VERSION'),
+                        distro_version=self.tf.config_data.getVar('DISTRO_VERSION', True),
                         image=self.target,
                         layers=layer_info,
                         machine=self.tf.config_data.get('MACHINE'),
