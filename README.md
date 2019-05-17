@@ -5,8 +5,6 @@ What is meta-timesys
 
 This Yocto layer provides scripts for image manifest generation used for security monitoring and notification as part of the **[Timesys Vigiles](https://www.timesys.com/security/vigiles/)** product offering.
 
-This Yocto layer provides scripts for image manifest generation used for security monitoring and notification, customer support, recipe source mirroring, recipe modifications, demos, etc.
-
 Some of the features are aimed at Timesys customers with active subscriptions.  Using these features requires an API Keyfile, which you can learn about setting up from the LinuxLink document here:
 
 https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
