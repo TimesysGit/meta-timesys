@@ -1,3 +1,13 @@
+###########################################################
+#
+# classes/vigiles.bbclass - Yocto CVE Scanner
+#
+# Copyright (C) 2019 Timesys Corporation
+#
+#
+# This source is released under the MIT License.
+#
+###########################################################
 
 inherit tsmeta
 
