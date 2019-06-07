@@ -1,5 +1,15 @@
-#!/usr/bin/env python
-# Copyright (C) 2018 Timesys Corporation
+#!/usr/bin/env python3
+
+###########################################################
+#
+# scripts/checkcves.py - Online CVE Database Interface.
+#
+# Copyright (C) 2019 Timesys Corporation
+#
+#
+# This source is released under the MIT License.
+#
+###########################################################
 
 from __future__ import print_function
 
