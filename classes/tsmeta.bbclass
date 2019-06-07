@@ -1,3 +1,14 @@
+###########################################################
+#
+# classes/tsmeta.bbclass - Metadata Collection
+#
+# Copyright (C) 2019 Timesys Corporation
+#
+#
+# This source is released under the MIT License.
+#
+###########################################################
+
 tsmeta_dirname = "tsmeta"
 tsmeta_dir = "${TMPDIR}/${tsmeta_dirname}"
 
