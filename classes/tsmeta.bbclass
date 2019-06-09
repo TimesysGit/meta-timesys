@@ -89,7 +89,7 @@ tsmeta_vars_src = "\
 
 def tsmeta_get_type_dir(d, tsm_type):
     key = "tsmeta_" + tsm_type.lower() + "_dir"
-    return d.getVar(key)
+    return d.getVar(key, True )
 
 def tsmeta_get_type_path(d, tsm_type, var_name):
     return os.path.join(
@@ -136,7 +136,7 @@ def tsmeta_write_dictname(d, tsm_type, twd_name, twd_dict):
     tsmeta_write_json(d, twd_dict, outfile)
 
 def tsmeta_write_dict(d, tsm_type, twd_dict):
-    twd_name = d.getVar('PN')
+    twd_name = d.getVar('PN', True )
     tsmeta_write_dictname(d, tsm_type, twd_name, twd_dict)
 
 def tsmeta_write_dictdir(d, tsm_type, twd_dict):
@@ -149,7 +149,7 @@ def tsmeta_read_dictname(d, tsm_type, trd_name):
     return tsmeta_read_json(d, infile)
 
 def tsmeta_read_dict(d, trd_type):
-    trd_name = d.getVar('PN')
+    trd_name = d.getVar('PN', True )
     return tsmeta_read_dictname(d, trd_type, trd_name)
 
 def tsmeta_read_dictdir(d, tsm_type):
@@ -176,7 +176,7 @@ def tsmeta_read_dictname_vars(d, trdv_type, trdv_name, trdv_list):
 
 
 def tsmeta_read_dict_vars(d, trdv_type, trdv_list):
-    pn = d.getVar('PN')
+    pn = d.getVar('PN', True )
     return tsmeta_read_dictname_vars(d, trdv_type, pn, trdv_list)
 
 
@@ -184,7 +184,7 @@ def tsmeta_get_dict(d, tsm_type, dict_in):
     dict_out = dict()
 
     key =  tsm_type.upper()
-    name = dict_in.get("name", d.getVar(key))
+    name = dict_in.get("name", d.getVar(key, True ))
     varlist = dict_in.get("vars", [])
 
     if name:
@@ -197,8 +197,8 @@ def tsmeta_get_dict(d, tsm_type, dict_in):
 
 def tsmeta_get_yocto_vars(d, varlist):
     dict_out = dict()
-    for key in (d.getVar(varlist) or "").split():
-        value = (d.getVar(key) or "")
+    for key in (d.getVar(varlist, True ) or "").split():
+        value = (d.getVar(key, True ) or "")
         if value:
             dict_out[key.lower()] = value
     return dict_out
@@ -212,8 +212,8 @@ def read_lvar_list(d, tsm_type, dest_dict):
 
     dest_dict.update( 
             { 
-                key.lower(): list((d.getVar(key) or "").split()) 
-                    for key in (d.getVar(varlist) or "").split() 
+                key.lower(): list((d.getVar(key, True ) or "").split()) 
+                    for key in (d.getVar(varlist, True ) or "").split() 
             }
         )
 
@@ -254,8 +254,8 @@ def tsmeta_get_src(d):
     read_var_list(d, tsm_type, src_dict)
     read_lvar_list(d, tsm_type, src_dict)
 
-    cve_p = src_dict.get("cve_product", d.getVar('BPN'))
-    cve_v = src_dict.get("cve_version", d.getVar('PV'))
+    cve_p = src_dict.get("cve_product", d.getVar('BPN', True ))
+    cve_v = src_dict.get("cve_version", d.getVar('PV', True ))
 
     chop_tags = [ '+git', '+AUTOINC' ]
     for tag in chop_tags:
@@ -311,7 +311,7 @@ def tsmeta_get_pkg(d):
 
     def get_var_list(varlist, pkg, d_sub):
         vdict = dict()
-        for base_key in d.getVar(varlist).split():
+        for base_key in d.getVar(varlist, True ).split():
             pkg_key = base_key + "_" + pkg
             dest_key = base_key.lower()
 
@@ -344,10 +344,10 @@ def tsmeta_get_pkg(d):
         varlist = "tsmeta_vars_" + tsm_type
         dest_dict.update(get_var_list(varlist, pkg, d_sub))
 
-    pd_dir = d.getVar('PKGDATA_DIR')
+    pd_dir = d.getVar('PKGDATA_DIR', True )
 
     pn_dict = dict()
-    pn_name = d.getVar('PN')
+    pn_name = d.getVar('PN', True )
     f_pn = os.path.join(pd_dir, pn_name)
 
     if not os.path.exists(f_pn):
@@ -384,7 +384,7 @@ def tsmeta_get_packageconfig(d):
         rrecommends = list(),
     )
 
-    pkgconfig = (d.getVar('PACKAGECONFIG') or "").split()
+    pkgconfig = (d.getVar('PACKAGECONFIG', True ) or "").split()
     if not pkgconfig:
         return
 
@@ -396,7 +396,7 @@ def tsmeta_get_packageconfig(d):
             num = len(items)
             if num > 5:
                 bb.warning("%s: PACKAGECONFIG[%s] Only enable,disable,depend,rdepend,rrecommend can be specified!"
-                    % (d.getVar('PN'), flag))
+                    % (d.getVar('PN', True ), flag))
 
             if flag in pkgconfig:
                 if num >= 3 and items[2]:
@@ -429,7 +429,7 @@ def tsmeta_collect_preferred(d):
     d_keys = sorted(d.keys())
     p_dict = {
         p_name: { 
-                key.replace(p_type, "") : d.getVar(key)
+                key.replace(p_type, "") : d.getVar(key, True )
                     for key in d_keys if key.startswith(p_type) 
                 }
                 for p_name, p_type in pref_filter.items() 
@@ -446,7 +446,7 @@ python tsmeta_get_preferred() {
 
 python tsmeta_get_machine() {
     tempdict = { key.replace("MACHINE_", "").lower(): \
-        oe.utils.squashspaces(str(d.getVar(key))) \
+        oe.utils.squashspaces(str(d.getVar(key, True ))) \
         for key in d.keys() if key.startswith("MACHINE_") and \
             not key.startswith("MACHINE_FEATURES") }
 
@@ -462,13 +462,13 @@ python tsmeta_get_machine() {
         else:
             mdict[key] = tempdict[key]
 
-    mdict['title'] = d.getVar('MACHINE')
+    mdict['title'] = d.getVar('MACHINE', True )
     tsmeta_write_dictname(d, "machine", mdict["title"], mdict)
 }
 
 python tsmeta_get_distro() {
     tempdict = { key.replace("DISTRO_", "").lower(): \
-        oe.utils.squashspaces(str(d.getVar(key))) \
+        oe.utils.squashspaces(str(d.getVar(key, True ))) \
         for key in d.keys() if key.startswith("DISTRO_") and \
             not key.startswith("DISTRO_FEATURES") }
 
@@ -484,13 +484,13 @@ python tsmeta_get_distro() {
         else:
             ddict[key] = tempdict[key]
 
-    ddict['title'] = d.getVar('DISTRO')
+    ddict['title'] = d.getVar('DISTRO', True )
     tsmeta_write_dictname(d, "distro", ddict["title"], ddict)
 }
 
 python tsmeta_get_image() {
 
-    tempdict = { key.replace("IMAGE_", "").lower(): d.getVar(key) \
+    tempdict = { key.replace("IMAGE_", "").lower(): d.getVar(key, True ) \
         for key in d.keys() if key.startswith("IMAGE_") and \
         not (key.startswith("IMAGE_CMD_") or key.startswith("IMAGE_FEATURES")) }
 
@@ -515,22 +515,22 @@ python tsmeta_get_image() {
 python tsmeta_get_features() {
     fdict = dict(
         distro = { key.replace("DISTRO_FEATURES_", "").lower(): \
-                    oe.utils.squashspaces(str(d.getVar(key))).split()  \
+                    oe.utils.squashspaces(str(d.getVar(key, True ))).split()  \
                     for key in d.keys() if key.startswith("DISTRO_FEATURES_")  },
         machine = { key.replace("MACHINE_FEATURES_", "").lower(): \
-                    oe.utils.squashspaces(str(d.getVar(key))).split()  \
+                    oe.utils.squashspaces(str(d.getVar(key, True ))).split()  \
                     for key in d.keys() if key.startswith("MACHINE_FEATURES_")  },
         image = { key.replace("IMAGE_FEATURES_", "").lower(): \
-                    oe.utils.squashspaces(str(d.getVar(key))).split()  \
+                    oe.utils.squashspaces(str(d.getVar(key, True ))).split()  \
                     for key in d.keys() if key.startswith("IMAGE_FEATURES_")  },
         packages = { key.replace("FEATURE_PACKAGES_", "").lower(): \
-                    oe.utils.squashspaces(str(d.getVar(key))).split()  \
+                    oe.utils.squashspaces(str(d.getVar(key, True ))).split()  \
                     for key in d.keys() if key.startswith("FEATURE_PACKAGES_")  },
     )
 
-    fdict['distro']['base']     = d.getVar('DISTRO_FEATURES').split()
-    fdict['machine']['base']    = d.getVar('MACHINE_FEATURES').split()
-    fdict['image']['base']      = d.getVar('IMAGE_FEATURES').split()
+    fdict['distro']['base']     = d.getVar('DISTRO_FEATURES', True ).split()
+    fdict['machine']['base']    = d.getVar('MACHINE_FEATURES', True ).split()
+    fdict['image']['base']      = d.getVar('IMAGE_FEATURES', True ).split()
 
     tsmeta_write_dictdir(d, "features", fdict)
 }
@@ -593,13 +593,13 @@ def tsmeta_collect_layers(d):
 
     layer_dict = dict()
 
-    bspdir = d.getVar('BSPDIR')
-    bblayers = d.getVar('BBLAYERS').split()
+    bspdir = d.getVar('BSPDIR', True )
+    bblayers = d.getVar('BBLAYERS', True ).split()
 
-    lpats = { key.replace("BBFILE_PATTERN_", ""): d.getVar(key)
+    lpats = { key.replace("BBFILE_PATTERN_", ""): d.getVar(key, True )
         for key in d.keys() if key.startswith("BBFILE_PATTERN_") }
 
-    lcompats = { key.replace("LAYERSERIES_COMPAT_", ""): [ d.getVar(key) ]
+    lcompats = { key.replace("LAYERSERIES_COMPAT_", ""): [ d.getVar(key, True ) ]
         for key in d.keys() if key.startswith("LAYERSERIES_COMPAT_") }
 
 
@@ -642,9 +642,9 @@ do_tsmeta_build[nostamp] = "1"
 def tsmeta_pn_list(d):
     import json
 
-    pn = d.getVar('PN')
-    machine = d.getVar('MACHINE')
-    distro = d.getVar('DISTRO')
+    pn = d.getVar('PN', True )
+    machine = d.getVar('MACHINE', True )
+    distro = d.getVar('DISTRO', True )
 
 
     dict_names = [ 'layers', 'image', 'distro', 'features', 'machine' ]
@@ -685,7 +685,7 @@ def tsmeta_pn_list(d):
                 if not feature in virtual.keys():
                     rproviders[feature] = pkg
 
-    #    pkgdir = d.getVar('VIGILES_DIR_PACKAGES')
+    #    pkgdir = d.getVar('VIGILES_DIR_PACKAGES', True )
     #    build_out = os.path.join(pkgdir, "%s-build.json" % pn)
     #    global_out = os.path.join(pkgdir, "%s-global.json" % pn)
     #    lookup_out = os.path.join(pkgdir, "%s-lookup.json" % pn)
@@ -705,9 +705,9 @@ def tsmeta_pn_list(d):
     pn_base_list = build_dict["image"].get("install") + \
         build_dict["machine"].get("essential_extra_rdepends") + \
         build_dict["machine"].get("essential_extra_rrecommends") + \
-        (d.getVar('PACKAGE_INSTALL') or "").split() + \
-        (d.getVar('RDEPENDS') or "").split() + \
-        (d.getVar('RRECOMMENDS') or "").split()
+        (d.getVar('PACKAGE_INSTALL', True ) or "").split() + \
+        (d.getVar('RDEPENDS', True ) or "").split() + \
+        (d.getVar('RRECOMMENDS', True ) or "").split()
     left_to_check = list( pn_base_list )
     pn_checked = []
     pn_out = []
@@ -758,8 +758,8 @@ def tsmeta_pn_list(d):
 
 
 python() {
-    pn = d.getVar('PN')
-    context = (d.getVar('BB_WORKERCONTEXT') or "")
+    pn = d.getVar('PN', True )
+    context = (d.getVar('BB_WORKERCONTEXT', True ) or "")
     if context and bb.data.inherits_class('image', d):
         bb.build.exec_func("do_tsmeta_build", d)
 }
