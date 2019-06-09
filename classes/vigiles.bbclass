@@ -19,8 +19,8 @@ do_vigiles_pkg[nostamp] = "1"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
 
 python do_vigiles_pkg() {
-    pn = d.getVar('PN')
-    bpn = d.getVar('BPN')
+    pn = d.getVar('PN', True )
+    bpn = d.getVar('BPN', True )
 
     if pn != bpn:
         bb.debug(1, "Skipping extended PN %s [ %s ]" % (pn, bpn))
@@ -68,15 +68,15 @@ python do_vigiles_pkg() {
 def vigiles_get_build_dict(d):
     dict_in = dict (
             distro = dict (
-                name = d.getVar('DISTRO'),
+                name = d.getVar('DISTRO', True ),
                 vars = [ 'title', 'name', 'version', 'codename' ]
             ),
             image = dict (
-                name = d.getVar('IMAGE_BASENAME'),
+                name = d.getVar('IMAGE_BASENAME', True ),
                 vars = [ 'basename', 'link_name', 'name', 'pkgtype' ],
             ),
             machine = dict (
-                name = d.getVar('MACHINE'),
+                name = d.getVar('MACHINE', True ),
                 vars = [ 'title', 'arch' ],
             ),
             layers = dict (
@@ -93,16 +93,16 @@ def vigiles_get_build_dict(d):
 def vigiles_write_manifest(d, tdw_tag, dict_out):
     import json
 
-    v_dir = "%s" % (d.getVar('VIGILES_DIR_IMAGE'))
+    v_dir = "%s" % (d.getVar('VIGILES_DIR_IMAGE', True ))
     bb.note("Creating Vigiles Image Directory at %s" % v_dir)
     bb.utils.mkdirhier(v_dir)
 
-    f_path = d.getVar('VIGILES_MANIFEST')
+    f_path = d.getVar('VIGILES_MANIFEST', True )
     with open(f_path, "w") as f_out:
         s = json.dumps(dict_out, indent=2, sort_keys=True)
         f_out.write(s)
 
-    l_path = d.getVar('VIGILES_MANIFEST_LINK')
+    l_path = d.getVar('VIGILES_MANIFEST_LINK', True )
     if os.path.exists(l_path):
         os.remove(l_path)
 
@@ -126,9 +126,9 @@ def vigiles_image_collect(d):
                     for conf_name in sys_dict["layers"].keys()
                 },
             machine          = sys_dict["machine"]["title"],
-            manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
+            manifest_version = d.getVar('VIGILES_MANIFEST_VERSION', True ),
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
-            whitelist        = (d.getVar('VIGILES_WHITELIST') or "").split(),
+            whitelist        = (d.getVar('VIGILES_WHITELIST', True ) or "").split(),
         )
     return dict_out
 
@@ -148,23 +148,23 @@ do_vigiles_image[recideptask] += "do_vigiles_pkg"
 
 
 python do_vigiles_check() {
-    imgdir = d.getVar('VIGILES_DIR_IMAGE')
+    imgdir = d.getVar('VIGILES_DIR_IMAGE', True )
 
-    vigiles_in = d.getVar('VIGILES_MANIFEST_LINK')
-    vigiles_out = d.getVar('VIGILES_REPORT')
-    vigiles_link = d.getVar('VIGILES_REPORT_LINK')
+    vigiles_in = d.getVar('VIGILES_MANIFEST_LINK', True )
+    vigiles_out = d.getVar('VIGILES_REPORT', True )
+    vigiles_link = d.getVar('VIGILES_REPORT_LINK', True )
 
     def run_checkcves(d, cmd, args=[]):
         bb.debug(1, "Checking CVEs against Vigiles Database")
 
-        vigiles_kconfig = (d.getVar('VIGILES_KERNEL_CONFIG') or "")
+        vigiles_kconfig = (d.getVar('VIGILES_KERNEL_CONFIG', True ) or "")
         if vigiles_kconfig:
             args = args + ['-k', vigiles_kconfig]
 
         vigiles_env = os.environ.copy()
-        vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE')
+        vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE', True )
 
-        layerdir = d.getVar('VIGILES_LAYERDIR')
+        layerdir = d.getVar('VIGILES_LAYERDIR', True )
         path = os.path.join(layerdir, "scripts", cmd)
 
         args = [path] + args
@@ -199,7 +199,7 @@ do_vigiles_check[nostamp] = "1"
 
 
 python() {
-    pn = d.getVar('PN')
+    pn = d.getVar('PN', True )
 
     if bb.data.inherits_class('image', d):
         d.appendVarFlag('do_vigiles_check', 'depends', " %s:do_vigiles_image" % pn)
