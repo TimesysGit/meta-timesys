@@ -5,15 +5,15 @@ What is meta-timesys?
 
 This Yocto layer provides scripts for image manifest generation used for security monitoring and notification as part of the **[Timesys Vigiles](https://www.timesys.com/security/vigiles/)** product offering.
 
-Some of the features are aimed at Timesys customers with active subscriptions.  Using these features requires an API Keyfile, which you can learn about setting up from the LinuxLink document here:
-
-https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
-
 
 What is Vigiles?
 ================
 
-Vigiles is an interface that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database. A high-level overview of the detected vulnerabilities is returned, and with a subscription to the Timesys LinuxLink service, a full detailed analysis is provided.
+Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database. A high-level overview of the detected vulnerabilities is returned, and with a subscription to the Timesys LinuxLink service, a full detailed analysis is provided.
+
+
+Register (free) and download the API key to access the full feature set based on Vigiles Basic, Plus or Prime:
+https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
 
 
 Pre-Requisites
@@ -22,6 +22,7 @@ Pre-Requisites
 A BitBake build environment is required for the Vigiles CVE Scanner to evaluate the potential risk of a target system. 
 
 The fastest way to use the Vigiles CVE Scanner is to integrate it into your existing BSP (clone alongside other layers, add to bblayers.conf). 
+
 
 If you do not already have an environment configured, please use the following to boot-strap a minimal setup.
 
@@ -53,7 +54,7 @@ Using Vigiles
 Follow format of the file, just add meta-timesys after the default poky/meta, etc. 
 
 ```
-BBLAYERS += "${BSPDIR}/sources/meta-timesys"
+BBLAYERS += "${TOPDIR}/../meta-timesys"
 ```
 
 
@@ -74,7 +75,7 @@ bitbake core-image-minimal
 ### Review the Output
 
 An overview will be printed to the console after the check is complete and a persistent local summary will be created in the 
-_vigiles/<image name>/_ directory for that build. A symlink is created to the latest report at _vigiles_/<image name>-report.txt_:
+_vigiles/\<image name\>/_ directory for that build. A symlink is created to the latest report at _vigiles/\<image name\>-report.txt_:
 
 ```sh
 $ readlink vigiles/core-image-minimal-report.txt
@@ -163,7 +164,7 @@ Additionally, in Subscription Mode, the distribution of the vulnerabilities acro
 
 ### Online Report
 
-The Vigiles CVE online report specified in the output provides a dashboard interface for examining all known details about each CVE detected, including -- but not limited to -- the global public status, the affected version ranges, priority and existing mitigations.
+The Vigiles CVE online report specified in the output provides a dashboard interface for examining all known details about each CVE detected, including the affected version ranges, priority and existing mitigations.
 
 
 ### Local Summary
@@ -243,8 +244,6 @@ This will not build a rootfs, but will build and check all packages that would b
 
 Full CVE reporting requires a LinuxLink License Key, though the Vigiles CVE Scanner will still execute in 
 Demo Mode and produce an abbreviated report if one is not configured.
-
-If you already have the KEY_FILE environment variable set for LinuxLink, don't worry -- it will be used by default.
 
 To use an alternate key, or a key in a non-default location, you can specify the location in _conf/local.conf_ with a statement like the following:
 
