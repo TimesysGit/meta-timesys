@@ -177,7 +177,7 @@ In both operating modes, the local summary will include the console output as we
         Version: 2.28
         CVE ID:  CVE-2019-9192
         URL:     https://nvd.nist.gov/vuln/detail/CVE-2019-9192
-        CVSSv2:  7.5
+        CVSSv3:  7.5
         Vector:  NETWORK
         Status:  Unfixed
 
@@ -185,7 +185,7 @@ In both operating modes, the local summary will include the console output as we
         Version: 2.28
         CVE ID:  CVE-2016-10739
         URL:     https://nvd.nist.gov/vuln/detail/CVE-2016-10739
-        CVSSv2:  5.3
+        CVSSv3:  5.3
         Vector:  LOCAL
         Status:  Unfixed, Patch Available
         Patched in meta-timesys-security commit(s):
@@ -195,7 +195,7 @@ In both operating modes, the local summary will include the console output as we
         Version: 4.18.27
         CVE ID:  CVE-2019-9162
         URL:     https://nvd.nist.gov/vuln/detail/CVE-2019-9162
-        CVSSv2:  7.8
+        CVSSv3:  7.8
         Vector:  LOCAL
         Status:  Unfixed
 ```
