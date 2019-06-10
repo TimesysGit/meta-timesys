@@ -9,7 +9,7 @@ This Yocto layer provides scripts for image manifest generation used for securit
 What is Vigiles?
 ================
 
-Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database. A high-level overview of the detected vulnerabilities is returned, and with a subscription to the Timesys LinuxLink service, a full detailed analysis is provided.
+Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database.A high-level overview of the detected vulnerabilities is returned and a full detailed analysis can be viewed online.
 
 
 Register (free) and download the API key to access the full feature set based on Vigiles Basic, Plus or Prime:
