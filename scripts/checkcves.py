@@ -135,7 +135,7 @@ def print_cves(result, demo=False, outfile=None):
                 print('\tVersion: %s' % cve['version'], file=outfile)
                 print('\tCVE ID:  %s' % cve['cve_id'], file=outfile)
                 print('\tURL:     %s%s' % (NVD_BASE_URL, cve['cve_id']), file=outfile)
-                print('\tCVSSv2:  %s' % cve['cvss'], file=outfile)
+                print('\tCVSSv3:  %s' % cve['cvss'], file=outfile)
                 print('\tVector:  %s' % cve['vector'], file=outfile)
                 print('\tStatus:  %s' % cve['status'], file=outfile)
                 patches = cve.get('fixedby')
