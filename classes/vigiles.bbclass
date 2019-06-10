@@ -204,4 +204,7 @@ python() {
     if bb.data.inherits_class('image', d):
         d.appendVarFlag('do_vigiles_check', 'depends', " %s:do_vigiles_image" % pn)
         d.appendVarFlag('do_build', 'depends', " %s:do_vigiles_check" % pn)
+    elif bb.data.inherits_class('kernel', d):
+        # Forward-compatibility with later renditions of kernel.bbclass
+        d.setVar('CVE_PRODUCT', 'linux_kernel')
 }
