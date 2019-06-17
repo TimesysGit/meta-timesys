@@ -357,7 +357,11 @@ def tsmeta_get_pkg(d):
         for line in infile:
             pn_dict = { sp: dict() for sp in line.split()[1:] }
     for sp in pn_dict.keys():
+
         sp_file = os.path.join(pd_dir, "runtime", sp)
+        if not os.path.exists(sp_file):
+            continue
+
         with open (sp_file, 'r') as infile:
             for line in infile:
                 key, value = line.split(":", 1)
@@ -629,7 +633,7 @@ python tsmeta_get_layers() {
 
 
 python do_tsmeta_build() {
-    dict_names = [ 'distro', 'features', 'image', 'layers', 'machine', 'preferred' ]
+    dict_names = [ 'features', 'image', 'preferred' ]
 
     for d_name in dict_names:
         bb.build.exec_func("tsmeta_get_" + d_name, d)
@@ -748,8 +752,9 @@ def tsmeta_pn_list(d):
 
             pn_checked.append(ppp)
 
-            if not p_dict["pn"] in pn_out:
-                pn_out.append(p_dict["pn"])
+            pkg_pn = p_dict.get("pn", "None")
+            if not pkg_pn in pn_out:
+                pn_out.append(pkg_pn)
 
             left_to_check += [ pkg for pkg in new_deps 
                 if not (pkg in pn_checked or pkg in left_to_check) ]
@@ -762,4 +767,15 @@ python() {
     context = (d.getVar('BB_WORKERCONTEXT') or "")
     if context and bb.data.inherits_class('image', d):
         bb.build.exec_func("do_tsmeta_build", d)
+}
+
+addhandler tsmeta_eventhandler
+tsmeta_eventhandler[eventmask] = "bb.event.BuildStarted"
+python tsmeta_eventhandler() {
+    import bb.runqueue
+
+    dict_names = [ 'distro', 'layers', 'machine' ]
+
+    for d_name in dict_names:
+        bb.build.exec_func("tsmeta_get_" + d_name, d)
 }
