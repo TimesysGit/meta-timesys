@@ -110,11 +110,37 @@ def vigiles_write_manifest(d, tdw_tag, dict_out):
         os.symlink(os.path.relpath(f_path, os.path.dirname(l_path)), l_path)
 
 
+##
+# We always want to include the kernel, bootlaoder and libc, which aren't
+# always picked up through the recursive RDEPENDS for the image (e.g. if there's
+# no package installed on the rootfs for the kernel or bootlaoder).
+#
+# Also see below for the manual dependencies added for do_vigiles_image() of
+# their respective do_vigiles_pkg() tasks.
+##
+VIGILES_PREFERRED_BACKFILL = "\
+    virtual/kernel \
+    virtual/bootloader \
+    virtual/libc \
+"
+
+VIGILES_BACKFILL := "${@' '.join( \
+    [ d.getVar('PREFERRED_PROVIDER_%s' % virt, True) or '' \
+        for virt in d.getVar('VIGILES_PREFERRED_BACKFILL', True).split() ] \
+)}"
+
+
 def vigiles_image_collect(d):
     from datetime import datetime
 
     sys_dict = vigiles_get_build_dict(d)
-    pn_list = tsmeta_pn_list(d)
+
+    backfill_list = d.getVar('VIGILES_BACKFILL', True).split()
+    rdep_list = tsmeta_pn_list(d)
+
+    # This list() cast will remove duplicates if the backfill packages are
+    # already present
+    pn_list = list(sorted(backfill_list + rdep_list))
 
     dict_out = dict(
             date             = datetime.utcnow().isoformat(),
@@ -144,6 +170,11 @@ addtask do_vigiles_image
 do_vigiles_image[nostamp] = "1"
 do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
 do_vigiles_image[recideptask] += "do_vigiles_pkg"
+
+do_vigiles_image[depends] += " ${@' '.join( \
+    [ '%s:do_vigiles_pkg' % pn for pn in \
+        d.getVar('VIGILES_BACKFILL', True).split() ] \
+)} "
 
 
 
