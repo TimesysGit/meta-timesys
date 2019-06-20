@@ -289,7 +289,7 @@ def tsmeta_get_src(d):
     for uri_desc in src_dict["src_uri"]:
         uri_uri = uri_desc.split(";")[0]
 
-        (uri_type, uri_spec) = uri_desc.split("://")
+        (uri_type, uri_spec) = uri_desc.split("://", 1)
         uri_path = uri_spec.split(";")[0]
 
         if is_patch(uri_spec):
