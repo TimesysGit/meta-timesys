@@ -277,7 +277,7 @@ def tsmeta_get_src(d):
         u_path = u_spec.split(";")[0]
         u_attrs = u_spec.split(";")[1:]
 
-        if u_path.endswith(".patch"):
+        if u_path.endswith(".patch") or u_path.endswith(".diff"):
             return True
 
         for u_a in u_attrs:
