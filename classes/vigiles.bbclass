@@ -227,17 +227,17 @@ python do_vigiles_check() {
         os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
 }
 
-addtask do_vigiles_check
+
+def vigiles_image_depends(d):
+    pn = d.getVar('PN', True )
+    return "%s:do_vigiles_image" % pn if bb.data.inherits_class('image', d) else ""
+do_vigiles_check[depends] += " ${@vigiles_image_depends(d)} "
+
+addtask do_vigiles_check before do_rootfs
 do_vigiles_check[nostamp] = "1"
 
-
 python() {
-    pn = d.getVar('PN', True )
-
-    if bb.data.inherits_class('image', d):
-        d.appendVarFlag('do_vigiles_check', 'depends', " %s:do_vigiles_image" % pn)
-        d.appendVarFlag('do_build', 'depends', " %s:do_vigiles_check" % pn)
-    elif bb.data.inherits_class('kernel', d):
+    if bb.data.inherits_class('kernel', d):
         # Forward-compatibility with later renditions of kernel.bbclass
         d.setVar('CVE_PRODUCT', 'linux_kernel')
 }
