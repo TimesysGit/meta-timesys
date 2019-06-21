@@ -144,6 +144,15 @@ def tsmeta_write_dictdir(d, tsm_type, twd_dict):
         tsmeta_write_dictname(d, tsm_type, twd_name, twd_dict[twd_name])
 
 
+TSMETA_DEBUG ?= "0"
+tsmeta_debug_dir = "${tsmeta_dir}/debug"
+
+def tsmeta_debug(d, dict_tag, dict_out):
+    if bb.utils.to_boolean(d.getVar('TSMETA_DEBUG'), True):
+        dict_name = ("%s-%s" % (d.getVar('PN'), dict_tag))
+        tsmeta_write_dictname(d, 'debug', dict_name, dict_out)
+
+
 def tsmeta_read_dictname(d, tsm_type, trd_name):
     infile = tsmeta_get_type_path(d, tsm_type, trd_name)
     return tsmeta_read_json(d, infile)
