@@ -227,14 +227,11 @@ python do_vigiles_check() {
         os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
 }
 
-addtask do_vigiles_check
-do_vigiles_check[nostamp] = "1"
-
-
-python() {
+def vigiles_image_depends(d):
     pn = d.getVar('PN')
+    return "%s:do_vigiles_image" % pn if bb.data.inherits_class('image', d) else ""
 
-    if bb.data.inherits_class('image', d):
-        d.appendVarFlag('do_vigiles_check', 'depends', " %s:do_vigiles_image" % pn)
-        d.appendVarFlag('do_build', 'depends', " %s:do_vigiles_check" % pn)
-}
+do_vigiles_check[depends] += " ${@vigiles_image_depends(d)} "
+
+addtask do_vigiles_check before do_rootfs
+do_vigiles_check[nostamp] = "1"
