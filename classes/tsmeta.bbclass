@@ -664,122 +664,148 @@ do_tsmeta_build[nostamp] = "1"
 
 
 def tsmeta_pn_list(d):
-    import json
 
-    pn = d.getVar('PN')
-    machine = d.getVar('MACHINE')
-    distro = d.getVar('DISTRO')
+    def get_build_dict():
+        bdict_keys = {
+            "machine" : {
+                "name" : d.getVar('MACHINE'),
+                "keys" : [ 
+                    'extra_rdepends',
+                    'essential_extra_rdepends',
+                    'extra_rrecommends',
+                    'essential_extra_rrecommends'
+                ]
+            },
+            "distro" : {
+                "name" : d.getVar('DISTRO'),
+                "keys" : [
+                    'extra_rdepends',
+                    'extra_rrecommends'
+                ]
+            },
+            "image" : {
+                "name" : d.getVar('IMAGE_BASENAME'),
+                "keys" : [
+                    'extra_image_install',
+                    'install',
+                    'install_debugfs',
+                    'install_complementary',
+                    'package_install',
+                    'rdepends',
+                    'rrecommends'
+                ]
+            }
+        }
 
+        build_dict = { 
+            bkey: tsmeta_read_dictname_vars(d, bkey, bsub["name"], bsub["keys"])
+                for bkey, bsub in bdict_keys.items()
+        }
 
-    dict_names = [ 'layers', 'image', 'distro', 'features', 'machine' ]
-    build_dict = dict(
-            image = tsmeta_read_dictname_vars(d, "image", pn,
-                [ 'install', 'install_debugfs', 'install_complementary' ] ),
-            distro = tsmeta_read_dictname_vars(d, "distro", distro,
-                [ 'extra_rdepends', 'extra_rrecommends' ] ),
-            machine = tsmeta_read_dictname_vars(d, "machine", machine,
-                [ 'extra_rdepends', 'essential_extra_rdepends', 'extra_rrecommends', 'essential_extra_rrecommends' ] ),
-            features = tsmeta_read_dictdir(d, "features"),
+        tsmeta_debug(d, 'bdict_keys', bdict_keys)
+        tsmeta_debug(d, 'bdict', build_dict)
+        return build_dict
+
+    def get_pkg_lookup():
+        pkg_dict_base = tsmeta_read_dictdir(d, "pkg")
+        pkg_lookup = dict(
+            virtual = tsmeta_read_dictdir(d, "preferred"),
+            rproviders = dict(),
+            aliases = dict(),
         )
 
-    pkg_dict_base = tsmeta_read_dictdir(d, "pkg")
+        for (pn, pn_dict) in pkg_dict_base.items():
+            for (pkg, pkg_dict) in pn_dict.items():
+                pkg_name = pkg_dict.get("pkg")
 
-    pkg_lookup = dict()
-    rproviders = dict()
-    aliases = dict()
-    virtual = tsmeta_read_dictdir(d, "preferred")
+                pkg_lookup[pkg] = dict(
+                        pn = pn,
+                        rdepends = [ val.split(" ")[0] for val in pkg_dict.get("rdepends", []) ],
+                        rrecommends = [ val.split(" ")[0] for val in pkg_dict.get("rrecommends", []) ],
+                        rprovides = [ val.split(" ")[0] for val in pkg_dict.get("rprovides", []) ],
+                    )
 
-    for (pn, pn_dict) in pkg_dict_base.items():
-        for (pkg, pkg_dict) in pn_dict.items():
-            pkg_name = pkg_dict.get("pkg")
+                if pkg_name != pkg and not pkg_name in pkg_lookup.keys():
+                    # pkg_lookup[pkg_name] = dict( pkg_lookup[pkg] )
+                    # pkg_lookup[pkg_name]["alias"] = pkg
+                    pkg_lookup['aliases'][pkg_name] = pkg
 
-            pkg_lookup[pkg] = dict(
-                    pn = pn,
-                    rdepends = [ val.split(" ")[0] for val in pkg_dict.get("rdepends", []) ],
-                    rrecommends = [ val.split(" ")[0] for val in pkg_dict.get("rrecommends", []) ],
-                    rprovides = [ val.split(" ")[0] for val in pkg_dict.get("rprovides", []) ],
-                )
+                for feature in pkg_lookup[pkg]["rprovides"]:
+                    if not feature in pkg_lookup['virtual'].keys():
+                        pkg_lookup['rproviders'][feature] = pkg
 
-            if pkg_name != pkg and not pkg_name in pkg_lookup.keys():
-                # pkg_lookup[pkg_name] = dict( pkg_lookup[pkg] )
-                # pkg_lookup[pkg_name]["alias"] = pkg
-                aliases[pkg_name] = pkg
+        tsmeta_debug(d, 'pkgs', pkg_dict_base)
+        tsmeta_debug(d, 'pkg_map', pkg_lookup)
 
-            for feature in pkg_lookup[pkg]["rprovides"]:
-                if not feature in virtual.keys():
-                    rproviders[feature] = pkg
+        return pkg_lookup
 
-    #    pkgdir = d.getVar('VIGILES_DIR_PACKAGES')
-    #    build_out = os.path.join(pkgdir, "%s-build.json" % pn)
-    #    global_out = os.path.join(pkgdir, "%s-global.json" % pn)
-    #    lookup_out = os.path.join(pkgdir, "%s-lookup.json" % pn)
-    #    base_out = os.path.join(pkgdir, "%s-base.json" % pn)
-    #
-    #    bb.utils.mkdirhier(pkgdir)
-    #    with open(build_out, 'w') as f_out:
-    #        f_out.write(json.dumps(build_dict, indent = 4, sort_keys = True ))
-    #
-    #    with open(global_out, 'w') as f_out:
-    #        f_out.write(json.dumps(pkg_dict_base, indent = 4, sort_keys = True ))
-    #
-    #    with open(lookup_out, 'w') as f_out:
-    #        f_out.write(json.dumps(pkg_lookup, indent = 4, sort_keys = True ))
-    #
+    def gather_image_deps(build_dict):
+        deps_in = []
+        for title, chapter in build_dict.items():
+            for key, sublist in chapter.items():
+                if len(sublist):
+                    deps_in += sublist
 
-    pn_base_list = build_dict["image"].get("install") + \
-        build_dict["machine"].get("essential_extra_rdepends") + \
-        build_dict["machine"].get("essential_extra_rrecommends") + \
-        (d.getVar('PACKAGE_INSTALL') or "").split() + \
-        (d.getVar('RDEPENDS') or "").split() + \
-        (d.getVar('RRECOMMENDS') or "").split()
-    left_to_check = list( pn_base_list )
-    pn_checked = []
-    pn_out = []
+        deps_out = sorted(list(set(deps_in)))
+        tsmeta_debug(d, 'base', deps_out)
+        return deps_out
 
-    while len(left_to_check):
-        for ppp in sorted(left_to_check):
+    def distill_image_pns(pn_base_list, pkg_lookup):
+        left_to_check = list( pn_base_list )
+        pn_checked = []
+        pn_out = []
 
-            new_deps = []
-            left_to_check.remove(ppp)
+        while len(left_to_check):
+            for ppp in sorted(left_to_check):
 
-            if ppp in pn_checked:
-                bb.debug(2,"Skipping %s" % ppp)
-                continue
+                new_deps = []
+                left_to_check.remove(ppp)
 
-            pn_name = str()
-            if ppp in pkg_lookup.keys():
-                pn_name = ppp
-                bb.debug(2,"Checking %s (pn found)" % ppp)
-            elif ppp in aliases.keys():
-                pn_name = aliases.get(ppp)
-                bb.debug(2,"Checking %s (alias %s found)" % (ppp, pn_name))
-            elif ppp in virtual["provider"].keys():
-                pn_name = virtual["provider"].get(ppp)
-                bb.debug(2,"Checking %s (provider %s found)" % (ppp, pn_name))
-            elif ppp in virtual["runtime"].keys():
-                pn_name = virtual["runtime"].get(ppp)
-                bb.debug(2,"Checking %s (runtime %s found)" % (ppp, pn_name))
-            elif ppp in rproviders.keys():
-                pn_name = rproviders.get(ppp)
-                bb.debug(2,"Checking %s (rprovider %s found)" % (ppp, pn_name))
-            else:
-                bb.debug(1, "%s: No pkg entry found" % ppp)
-                continue
+                if ppp in pn_checked:
+                    bb.debug(2,"Skipping %s" % ppp)
+                    continue
 
-            p_dict = pkg_lookup.get(pn_name, {})
-            # bb.plain("%s rdepends: %s" % (ppp, json.dumps(p_dict, indent = 4, sort_keys = True )))
-            new_deps = p_dict.get("rdepends", []) + p_dict.get("rrecommends", [])
+                pn_name = str()
+                if ppp in pkg_lookup.keys():
+                    pn_name = ppp
+                    bb.debug(2,"Checking %s (pn found)" % ppp)
+                elif ppp in pkg_lookup['aliases'].keys():
+                    pn_name = pkg_lookup['aliases'].get(ppp)
+                    bb.debug(2,"Checking %s (alias %s found)" % (ppp, pn_name))
+                elif ppp in pkg_lookup['virtual']["provider"].keys():
+                    pn_name = pkg_lookup['virtual']["provider"].get(ppp)
+                    bb.debug(2,"Checking %s (provider %s found)" % (ppp, pn_name))
+                elif ppp in pkg_lookup['virtual']["runtime"].keys():
+                    pn_name = pkg_lookup['virtual']["runtime"].get(ppp)
+                    bb.debug(2,"Checking %s (runtime %s found)" % (ppp, pn_name))
+                elif ppp in pkg_lookup['rproviders'].keys():
+                    pn_name = pkg_lookup['rproviders'].get(ppp)
+                    bb.debug(2,"Checking %s (rprovider %s found)" % (ppp, pn_name))
+                else:
+                    bb.debug(1, "%s: No pkg entry found" % ppp)
+                    continue
 
-            pn_checked.append(ppp)
+                p_dict = pkg_lookup.get(pn_name, {})
+                # bb.plain("%s rdepends: %s" % (ppp, json.dumps(p_dict, indent = 4, sort_keys = True )))
+                new_deps = p_dict.get("rdepends", []) + p_dict.get("rrecommends", [])
 
-            pkg_pn = p_dict.get("pn", "None")
-            if not pkg_pn in pn_out:
-                pn_out.append(pkg_pn)
+                pn_checked.append(ppp)
 
-            left_to_check += [ pkg for pkg in new_deps 
-                if not (pkg in pn_checked or pkg in left_to_check) ]
+                pkg_pn = p_dict.get("pn", "None")
+                if not pkg_pn in pn_out:
+                    pn_out.append(pkg_pn)
 
-    return sorted(pn_out)
+                left_to_check += [ pkg for pkg in new_deps 
+                    if not (pkg in pn_checked or pkg in left_to_check) ]
+
+        tsmeta_debug(d, 'image_pns', pn_out)
+        return sorted(pn_out)
+
+    image_dict = get_build_dict()
+    pkg_pn_map = get_pkg_lookup()
+    image_deps = gather_image_deps(image_dict)
+    image_pn_list = distill_image_pns(image_deps, pkg_pn_map)
+    return image_pn_list
 
 
 python() {
