@@ -507,6 +507,17 @@ python tsmeta_get_image() {
         for key in d.keys() if key.startswith("IMAGE_") and \
         not (key.startswith("IMAGE_CMD_") or key.startswith("IMAGE_FEATURES")) }
 
+    extra_keys = [
+        'EXTRA_IMAGE_INSTALL',
+        'PACKAGE_INSTALL',
+        'RDEPENDS',
+        'RRECOMMENDS'
+    ]
+    extra_dict = { key.lower(): (d.getVar(key) or "") for key in extra_keys }
+
+    tempdict.update( { key: oe.utils.squashspaces(value).split() for key, value in extra_dict.items()
+            if len(value) and isinstance(value, str) } )
+
     imgdict = dict()
 
     for key in tempdict.keys():
