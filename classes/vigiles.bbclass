@@ -185,6 +185,8 @@ python do_vigiles_check() {
     vigiles_out = d.getVar('VIGILES_REPORT')
     vigiles_link = d.getVar('VIGILES_REPORT_LINK')
 
+    bb.utils.export_proxies(d)
+
     def run_checkcves(d, cmd, args=[]):
         bb.debug(1, "Checking CVEs against Vigiles Database")
 
