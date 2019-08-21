@@ -266,6 +266,10 @@ def tsmeta_get_src(d):
 
     bpn = d.getVar('BPN')
     cve_p = src_dict.get("cve_product", bpn)
+
+    if bb.data.inherits_class('uboot-config', d):
+        cve_p = "u-boot"
+
     src_dict["cve_product"] = cve_p
 
     pv = d.getVar('PV')
