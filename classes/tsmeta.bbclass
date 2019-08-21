@@ -283,14 +283,16 @@ def tsmeta_get_src(d):
     src_patches_raw = oe.get_recipe_patches(d)
     src_patches = { os.path.basename(p) : p for p in src_patches_raw }
 
+    uri_dict["patches"] = src_patches
+
     for uri_desc in src_dict["src_uri"]:
         proto, remote, path, three, four, perms = bb.fetch.decodeurl(uri_desc)
 
         base = os.path.basename(path)
         if base in src_patches.keys():
-            uri_type = "patches"
-            uri_path = base
-        elif remote:
+            continue
+
+        if remote:
             uri_type = proto
             uri_path = uri_desc
         else:
