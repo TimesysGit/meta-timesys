@@ -235,6 +235,77 @@ do_vigiles_image[depends] += " ${@' '.join( \
 )} "
 
 
+def _get_kernel_pf(d):
+    from oe import recipeutils as oe
+
+    cve_v = "unset"
+    if bb.data.inherits_class('kernel', d):
+        bpn = d.getVar('BPN')
+        pv = d.getVar('PV')
+        (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
+        cve_v_env = d.getVar('CVE_VERSION')
+        cve_v = cve_v_env if cve_v_env else bpv
+    else:
+        bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
+
+    kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version'])
+    cve_v = kdict.get('cve_version') or cve_v
+
+    vgls_pf = '-'.join([bpn, cve_v])
+    return vgls_pf
+
+
+python do_vigiles_kconfig() {
+    import shutil
+    from oe import recipeutils as oe
+
+    build_dir = os.path.relpath(d.getVar('B'))
+    kconfig_in = os.path.join(build_dir, '.config')
+
+    vgls_pf = _get_kernel_pf(d)
+    vgls_timestamp = d.getVar('VIGILES_TIMESTAMP')
+
+    vgls_kconfig_full = '_'.join([vgls_pf, vgls_timestamp])
+    kconfig_fname = '.'.join([vgls_kconfig_full, 'config'])
+    kconfig_lname = '.'.join([vgls_pf, 'config'])
+
+    bb.debug(1, "Translation: %s -> %s" % (kconfig_fname, kconfig_lname))
+
+    vigiles_kconfig = d.getVar('VIGILES_DIR_KCONFIG')
+    vigiles_dir = d.getVar('VIGILES_DIR')
+    kconfig_out = os.path.join(vigiles_kconfig, kconfig_fname)
+    kconfig_link = os.path.join(vigiles_dir, kconfig_lname)
+
+    if not os.path.exists(vigiles_kconfig):
+        bb.utils.mkdirhier(vigiles_kconfig)
+
+    bb.debug(1, "Copy: %s -> %s" % (os.path.relpath(kconfig_in), os.path.relpath(kconfig_out)))
+    shutil.copy(kconfig_in, kconfig_out)
+
+    if os.path.exists(kconfig_link):
+        os.remove(kconfig_link)
+    bb.debug(1, "Link: %s -> %s" % (os.path.relpath(kconfig_link), os.path.relpath(kconfig_out)))
+    os.symlink(os.path.relpath(kconfig_out, vigiles_dir), kconfig_link)
+}
+
+
+def vigiles_kconfig_depends(d)->str:
+    deps = str()
+
+    if bb.data.inherits_class('kernel', d):
+        vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
+        if vigiles_kconfig == "auto":
+            pn = d.getVar('PN')
+            kpref = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
+            if pn == kpref:
+                deps = ("%s:do_configure" % pn)
+    return deps
+
+do_vigiles_kconfig[depends] += " ${@vigiles_kconfig_depends(d)} "
+
+addtask do_vigiles_kconfig after do_configure before do_savedefconfig
+do_vigiles_kconfig[nostamp] = "1"
+
 
 python do_vigiles_check() {
     imgdir = d.getVar('VIGILES_DIR_IMAGE', True )
@@ -243,12 +314,21 @@ python do_vigiles_check() {
     vigiles_out = d.getVar('VIGILES_REPORT', True )
     vigiles_link = d.getVar('VIGILES_REPORT_LINK', True )
 
+    bb.debug(1, "Using Manifest: %s" % os.path.relpath(vigiles_in))
+    bb.debug(1, "Writing Report: %s" % os.path.relpath(vigiles_link))
+
+    vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
+    if vigiles_kconfig == "auto":
+        kconfig_lname = '.'.join([_get_kernel_pf(d), 'config'])
+        kconfig_path = os.path.join(d.getVar('VIGILES_DIR'), kconfig_lname)
+        vigiles_kconfig = kconfig_path if os.path.exists(kconfig_path) else ""
+        bb.plain("Using Kernel Config: %s" % os.path.relpath(vigiles_kconfig))
+
     bb.utils.export_proxies(d)
 
     def run_checkcves(d, cmd, args=[]):
         bb.debug(1, "Checking CVEs against Vigiles Database")
 
-        vigiles_kconfig = (d.getVar('VIGILES_KERNEL_CONFIG', True ) or "")
         if vigiles_kconfig:
             args = args + ['-k', vigiles_kconfig]
 
@@ -287,8 +367,13 @@ python do_vigiles_check() {
 
 
 def vigiles_image_depends(d):
-    pn = d.getVar('PN', True )
-    return "%s:do_vigiles_image" % pn if bb.data.inherits_class('image', d) else ""
+    pn = d.getVar('PN', True)
+    deps = list()
+    if bb.data.inherits_class('image', d):
+        deps.append("%s:do_vigiles_image" % pn)
+        deps.append("virtual/kernel:do_vigiles_kconfig")
+    return ' '.join(deps)
+
 do_vigiles_check[depends] += " ${@vigiles_image_depends(d)} "
 
 addtask do_vigiles_check before do_rootfs
