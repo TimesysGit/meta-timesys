@@ -256,6 +256,7 @@ def tsmeta_get_recipe(d):
     tsmeta_write_dict(d, tgv_type, dest_dict)
 
 def tsmeta_get_src(d):
+    import oe.recipeutils as oe
 
     tsm_type = "src"
     src_dict = dict()
@@ -263,16 +264,13 @@ def tsmeta_get_src(d):
     read_var_list(d, tsm_type, src_dict)
     read_lvar_list(d, tsm_type, src_dict)
 
-    cve_p = src_dict.get("cve_product", d.getVar('BPN'))
-    cve_v = src_dict.get("cve_version", d.getVar('PV'))
-
-    chop_tags = [ '+git', '+AUTOINC' ]
-    for tag in chop_tags:
-        if tag in cve_v:
-            cve_v = cve_v.split(tag)[0]
-            break
-
+    bpn = d.getVar('BPN')
+    cve_p = src_dict.get("cve_product", bpn)
     src_dict["cve_product"] = cve_p
+
+    pv = d.getVar('PV')
+    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
+    cve_v = src_dict.get("cve_version", bpv)
     src_dict["cve_version"] = cve_v
 
     uri_dict = dict()
@@ -282,31 +280,24 @@ def tsmeta_get_src(d):
             uri_dict[u_type] = list()
         uri_dict[u_type].append(u_path)
 
-    def is_patch(u_spec):
-        u_path = u_spec.split(";")[0]
-        u_attrs = u_spec.split(";")[1:]
-
-        if u_path.endswith(".patch") or u_path.endswith(".diff"):
-            return True
-
-        for u_a in u_attrs:
-            if (u_a == "apply=yes") or (u_a.startswith("striplevel=")):
-                return True
-
-        return False
+    src_patches_raw = oe.get_recipe_patches(d)
+    src_patches = { os.path.basename(p) : p for p in src_patches_raw }
 
     for uri_desc in src_dict["src_uri"]:
-        uri_uri = uri_desc.split(";")[0]
+        proto, remote, path, three, four, perms = bb.fetch.decodeurl(uri_desc)
 
-        (uri_type, uri_spec) = uri_desc.split("://", 1)
-        uri_path = uri_spec.split(";")[0]
-
-        if is_patch(uri_spec):
-            uri_add("patches", uri_path)
-        elif uri_type == "file":
-            uri_add("other", uri_path)
+        base = os.path.basename(path)
+        if base in src_patches.keys():
+            uri_type = "patches"
+            uri_path = base
+        elif remote:
+            uri_type = proto
+            uri_path = uri_desc
         else:
-            uri_add("base", uri_desc)
+            uri_type = "file"
+            uri_path = path
+
+        uri_add(uri_type, uri_path)
 
     src_dict["sources"] = uri_dict
 
