@@ -18,6 +18,57 @@ addtask do_vigiles_pkg after do_packagedata
 do_vigiles_pkg[nostamp] = "1"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
 
+
+def _get_patched(src_patches):
+    #
+    # This is originally from cve-check.bbclass; input/output adapted for our needs.
+
+    import re
+
+    patched_dict = dict()
+
+    cve_match = re.compile("CVE:( CVE\-\d{4}\-\d+)+")
+
+    # Matches last CVE-1234-211432 in the file name, also if written
+    # with small letters. Not supporting multiple CVE id's in a single
+    # file name.
+    cve_file_name_match = re.compile(".*([Cc][Vv][Ee]\-\d{4}\-\d+)")
+
+    for patch_base, patch_file in src_patches.items():
+        found_cves = list()
+
+        # Check patch file name for CVE ID
+        fname_match = cve_file_name_match.search(patch_file)
+        if fname_match:
+            cve = fname_match.group(1).upper()
+            found_cves.append(cve)
+
+        with open(patch_file, "r", encoding="utf-8") as f:
+            try:
+                patch_text = f.read()
+            except UnicodeDecodeError:
+                bb.plain("Failed to read patch %s using UTF-8 encoding"
+                        " trying with iso8859-1" %  patch_file)
+                f.close()
+                with open(patch_file, "r", encoding="iso8859-1") as f:
+                    patch_text = f.read()
+
+        # Search for one or more "CVE: " lines
+        for match in cve_match.finditer(patch_text):
+            # Get only the CVEs without the "CVE: " tag
+            cves = patch_text[match.start()+5:match.end()]
+            for cve in cves.split():
+                found_cves.append(cve)
+
+        for cve in found_cves:
+            entry = patched_dict.get(cve, list())
+            if patch_base not in entry:
+                entry.append(patch_base)
+            patched_dict.update({cve: entry})
+
+    return patched_dict
+
+
 python do_vigiles_pkg() {
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -39,7 +90,7 @@ python do_vigiles_pkg() {
         ),
         src = dict(
             name = pn,
-            vars = [ 'cve_product', 'cve_version', 'sources', 'srcrev' ],
+            vars = [ 'cve_product', 'cve_version', 'sources', 'srcrev', 'patched_cves' ],
         ),
     )
 
@@ -51,7 +102,6 @@ python do_vigiles_pkg() {
             cve_version  = dict_out["src"].get("cve_version"),
             layer        = dict_out["recipe"].get("layer"),
             name         = dict_out["pn"].get("pn"),
-            patches      = dict_out["src"]["sources"].get("patches", []),
             recipe       = dict_out["recipe"].get("recipe"),
             srcrev       = dict_out["src"].get("srcrev"),
             version      = dict_out["pn"].get("pv"),
@@ -59,8 +109,16 @@ python do_vigiles_pkg() {
 
     if not len(manifest["srcrev"]):
         manifest.pop("srcrev")
-    if not len(manifest["patches"]):
-        manifest.pop("patches")
+
+    src_patches = dict_out["src"]["sources"].get("patches", {})
+    if len(src_patches.keys()):
+        patches = list(src_patches.keys())
+        manifest["patches"] = patches
+
+        patched_dict = _get_patched(src_patches)
+
+        if len(patched_dict):
+            manifest["patched_cves"] = patched_dict
 
     tsmeta_write_dict(d, "cve", manifest)
 }
