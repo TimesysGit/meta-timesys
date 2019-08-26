@@ -229,10 +229,15 @@ do_vigiles_image[nostamp] = "1"
 do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
 do_vigiles_image[recideptask] += "do_vigiles_pkg"
 
-do_vigiles_image[depends] += " ${@' '.join( \
-    [ '%s:do_vigiles_pkg' % pn for pn in \
-        d.getVar('VIGILES_BACKFILL', True).split() ] \
-)} "
+def vigiles_image_depends(d):
+    pn = d.getVar('PN')
+    backfill_pns = d.getVar('VIGILES_BACKFILL').split()
+    deps = [ ':'.join([pn, 'do_vigiles_pkg']) for pn in backfill_pns ]
+    deps.append("virtual/kernel:do_vigiles_kconfig")
+    return ' '.join(deps)
+
+
+do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 
 def _get_kernel_pf(d):
@@ -314,22 +319,22 @@ python do_vigiles_check() {
     vigiles_out = d.getVar('VIGILES_REPORT', True )
     vigiles_link = d.getVar('VIGILES_REPORT_LINK', True )
 
-    bb.debug(1, "Using Manifest: %s" % os.path.relpath(vigiles_in))
-    bb.debug(1, "Writing Report: %s" % os.path.relpath(vigiles_link))
 
     vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
     if vigiles_kconfig == "auto":
         kconfig_lname = '.'.join([_get_kernel_pf(d), 'config'])
         kconfig_path = os.path.join(d.getVar('VIGILES_DIR'), kconfig_lname)
         vigiles_kconfig = kconfig_path if os.path.exists(kconfig_path) else ""
-        bb.plain("Using Kernel Config: %s" % os.path.relpath(vigiles_kconfig))
 
     bb.utils.export_proxies(d)
 
     def run_checkcves(d, cmd, args=[]):
         bb.debug(1, "Checking CVEs against Vigiles Database")
+        bb.debug(1, "Using Manifest at: %s" % os.path.relpath(vigiles_in))
+        bb.debug(1, "Writing Report to: %s" % os.path.relpath(vigiles_link))
 
         if vigiles_kconfig:
+            bb.debug(1, "Using Kernel Config: %s" % os.path.relpath(vigiles_kconfig))
             args = args + ['-k', vigiles_kconfig]
 
         vigiles_env = os.environ.copy()
@@ -342,6 +347,8 @@ python do_vigiles_check() {
 
         bb.debug(1, "Vigiles Command Line: %s" % (" ").join(args))
         return bb.process.run(args, env=vigiles_env)
+
+    bb.utils.mkdirhier(os.path.dirname(vigiles_out))
 
     try:
         check_out, _ = run_checkcves(d, "checkcves.py", 
@@ -357,7 +364,6 @@ python do_vigiles_check() {
         return
 
     bb.plain(check_out)
-    bb.utils.mkdirhier(os.path.dirname(vigiles_out))
 
     if os.path.exists(vigiles_link):
         os.remove(vigiles_link)
@@ -366,15 +372,14 @@ python do_vigiles_check() {
 }
 
 
-def vigiles_image_depends(d):
+def vigiles_check_depends(d):
     pn = d.getVar('PN', True)
     deps = list()
     if bb.data.inherits_class('image', d):
         deps.append("%s:do_vigiles_image" % pn)
-        deps.append("virtual/kernel:do_vigiles_kconfig")
     return ' '.join(deps)
 
-do_vigiles_check[depends] += " ${@vigiles_image_depends(d)} "
+do_vigiles_check[depends] += " ${@vigiles_check_depends(d)} "
 
 addtask do_vigiles_check before do_rootfs
 do_vigiles_check[nostamp] = "1"
