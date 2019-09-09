@@ -72,6 +72,7 @@ When you build any image, the Vigiles CVE Scanner will execute automatically:
 bitbake core-image-minimal
 ```
 
+
 ### Review the Output
 
 An overview will be printed to the console after the check is complete and a persistent local summary will be created in the 
@@ -201,6 +202,19 @@ In both operating modes, the local summary will include the console output as we
 ```
 
 
+### CVE Manifest
+
+The Vigiles CVE Scanner creates and sends a manifest describing your build to the LinuxLink Server. This manifest is located at
+
+```sh
+$ readlink vigiles/core-image-minimal-cve.json 
+core-image-minimal/core-image-minimal-2019-09-09_23.08.28-cve.json
+```
+
+In the event that something goes wrong, or if the results seem incorrect, this file may offer insight as to why.
+It's important to include this file with any support request.
+
+
 Advanced Usage
 ==============
 
@@ -220,13 +234,26 @@ VIGILES_WHITELIST += "\
 
 ### Kernel Config Filter
 
-You may specify a kernel _.config_ file to the Vigiles CVE Scanner, which will be uploaded to LinuxLink along with the image manifest. This filter will reduce the number of kernel CVEs reported by removing those related to features which are not being built for your kernel.
+The Vigiles CVE Scanner can be configured to upload a Linux Kernel _.config_ file to LinuxLink along with the image manifest. This filter will reduce the number of kernel CVEs reported by removing those related to features which are not being built for your kernel. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
+
+* Automatic Detection
+
+This will use the _.config_ for the kernel specified in ```PREFERRED_PROVIDER_virtual/kernel``` once the yocto task ```do_configure``` is executed. 
+
+
+```
+VIGILES_KERNEL_CONFIG = "auto"
+```
+
+
+* Manual Specification
 
 **NOTE: This must be a _full_ kernel config, not a defconfig!**
 
 ```
 VIGILES_KERNEL_CONFIG = "/projects/kernel/linux-4.14-ts+imx-1.0/.config"
 ```
+
 
 
 ### Manual Execution
