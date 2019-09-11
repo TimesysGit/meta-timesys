@@ -66,7 +66,7 @@ def _get_patched(src_patches):
                 entry.append(patch_base)
             patched_dict.update({cve: entry})
 
-    return patched_dict
+    return { key: sorted(patched_dict[key]) for key in sorted(patched_dict.keys()) }
 
 
 python do_vigiles_pkg() {
@@ -113,7 +113,7 @@ python do_vigiles_pkg() {
     src_patches = dict_out["src"]["sources"].get("patches", {})
     if len(src_patches.keys()):
         patches = list(src_patches.keys())
-        manifest["patches"] = patches
+        manifest["patches"] = sorted(patches)
 
         patched_dict = _get_patched(src_patches)
 
