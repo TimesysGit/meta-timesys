@@ -230,8 +230,8 @@ do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
 do_vigiles_image[recideptask] += "do_vigiles_pkg"
 
 def vigiles_image_depends(d):
-    pn = d.getVar('PN')
-    backfill_pns = d.getVar('VIGILES_BACKFILL').split()
+    pn = d.getVar('PN', True )
+    backfill_pns = d.getVar('VIGILES_BACKFILL', True ).split()
     deps = [ ':'.join([pn, 'do_vigiles_pkg']) for pn in backfill_pns ]
     deps.append("virtual/kernel:do_vigiles_kconfig")
     return ' '.join(deps)
@@ -245,13 +245,13 @@ def _get_kernel_pf(d):
 
     cve_v = "unset"
     if bb.data.inherits_class('kernel', d):
-        bpn = d.getVar('BPN')
-        pv = d.getVar('PV')
+        bpn = d.getVar('BPN', True )
+        pv = d.getVar('PV', True )
         (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
-        cve_v_env = d.getVar('CVE_VERSION')
+        cve_v_env = d.getVar('CVE_VERSION', True )
         cve_v = cve_v_env if cve_v_env else bpv
     else:
-        bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
+        bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel', True )
 
     kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version'])
     cve_v = kdict.get('cve_version') or cve_v
@@ -264,11 +264,11 @@ python do_vigiles_kconfig() {
     import shutil
     from oe import recipeutils as oe
 
-    build_dir = os.path.relpath(d.getVar('B'))
+    build_dir = os.path.relpath(d.getVar('B', True ))
     kconfig_in = os.path.join(build_dir, '.config')
 
     vgls_pf = _get_kernel_pf(d)
-    vgls_timestamp = d.getVar('VIGILES_TIMESTAMP')
+    vgls_timestamp = d.getVar('VIGILES_TIMESTAMP', True )
 
     vgls_kconfig_full = '_'.join([vgls_pf, vgls_timestamp])
     kconfig_fname = '.'.join([vgls_kconfig_full, 'config'])
@@ -276,8 +276,8 @@ python do_vigiles_kconfig() {
 
     bb.debug(1, "Translation: %s -> %s" % (kconfig_fname, kconfig_lname))
 
-    vigiles_kconfig = d.getVar('VIGILES_DIR_KCONFIG')
-    vigiles_dir = d.getVar('VIGILES_DIR')
+    vigiles_kconfig = d.getVar('VIGILES_DIR_KCONFIG', True )
+    vigiles_dir = d.getVar('VIGILES_DIR', True )
     kconfig_out = os.path.join(vigiles_kconfig, kconfig_fname)
     kconfig_link = os.path.join(vigiles_dir, kconfig_lname)
 
@@ -298,10 +298,10 @@ def vigiles_kconfig_depends(d)->str:
     deps = str()
 
     if bb.data.inherits_class('kernel', d):
-        vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
+        vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG", True ) or ""
         if vigiles_kconfig == "auto":
-            pn = d.getVar('PN')
-            kpref = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
+            pn = d.getVar('PN', True )
+            kpref = d.getVar('PREFERRED_PROVIDER_virtual/kernel', True )
             if pn == kpref:
                 deps = ("%s:do_configure" % pn)
     return deps
@@ -320,10 +320,10 @@ python do_vigiles_check() {
     vigiles_link = d.getVar('VIGILES_REPORT_LINK', True )
 
 
-    vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
+    vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG", True ) or ""
     if vigiles_kconfig == "auto":
         kconfig_lname = '.'.join([_get_kernel_pf(d), 'config'])
-        kconfig_path = os.path.join(d.getVar('VIGILES_DIR'), kconfig_lname)
+        kconfig_path = os.path.join(d.getVar('VIGILES_DIR', True ), kconfig_lname)
         vigiles_kconfig = kconfig_path if os.path.exists(kconfig_path) else ""
 
     bb.utils.export_proxies(d)
