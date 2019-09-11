@@ -148,8 +148,8 @@ TSMETA_DEBUG ?= "0"
 tsmeta_debug_dir = "${tsmeta_dir}/debug"
 
 def tsmeta_debug(d, dict_tag, dict_out):
-    if bb.utils.to_boolean(d.getVar('TSMETA_DEBUG', True), True):
-        dict_name = ("%s-%s" % (d.getVar('PN', True), dict_tag))
+    if bb.utils.to_boolean(d.getVar('TSMETA_DEBUG', True ), True):
+        dict_name = ("%s-%s" % (d.getVar('PN', True ), dict_tag))
         tsmeta_write_dictname(d, 'debug', dict_name, dict_out)
 
 
@@ -264,7 +264,7 @@ def tsmeta_get_src(d):
     read_var_list(d, tsm_type, src_dict)
     read_lvar_list(d, tsm_type, src_dict)
 
-    bpn = d.getVar('BPN')
+    bpn = d.getVar('BPN', True )
     cve_p = src_dict.get("cve_product", bpn)
 
     if bb.data.inherits_class('uboot-config', d):
@@ -272,7 +272,7 @@ def tsmeta_get_src(d):
 
     src_dict["cve_product"] = cve_p
 
-    pv = d.getVar('PV')
+    pv = d.getVar('PV', True )
     (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
     cve_v = src_dict.get("cve_version", bpv)
     src_dict["cve_version"] = cve_v
