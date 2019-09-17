@@ -816,6 +816,9 @@ addhandler tsmeta_eventhandler
 tsmeta_eventhandler[eventmask] = "bb.event.BuildStarted"
 python tsmeta_eventhandler() {
     import bb.runqueue
+    import oe.path
+
+    oe.path.remove(d.getVar('tsmeta_dir'), recurse = True)
 
     dict_names = [ 'distro', 'layers', 'machine' ]
 
