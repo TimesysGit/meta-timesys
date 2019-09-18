@@ -14,8 +14,9 @@ inherit tsmeta
 require conf/vigiles.conf
 
 
-addtask do_vigiles_pkg after do_packagedata
+addtask do_vigiles_pkg after do_packagedata before do_rm_work
 do_vigiles_pkg[nostamp] = "1"
+do_vigiles_pkg[rdeptask] += "do_unpack"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
 
 
