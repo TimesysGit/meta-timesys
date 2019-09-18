@@ -818,7 +818,7 @@ python tsmeta_eventhandler() {
     import bb.runqueue
     import oe.path
 
-    oe.path.remove(d.getVar('tsmeta_dir'), recurse = True)
+    oe.path.remove(d.getVar('tsmeta_dir', True ), recurse = True)
 
     dict_names = [ 'distro', 'layers', 'machine' ]
 
