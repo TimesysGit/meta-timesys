@@ -273,7 +273,8 @@ def tsmeta_get_src(d):
     src_dict["cve_product"] = cve_p
 
     pv = d.getVar('PV', True )
-    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
+    uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
+    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
     cve_v = src_dict.get("cve_version", bpv)
     src_dict["cve_version"] = cve_v
 
