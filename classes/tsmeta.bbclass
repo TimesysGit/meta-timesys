@@ -255,6 +255,69 @@ def tsmeta_get_recipe(d):
 
     tsmeta_write_dict(d, tgv_type, dest_dict)
 
+
+def _get_cve_product(d):
+    cve_p = d.getVar('CVE_PRODUCT')
+    if bb.data.inherits_class('uboot-config', d):
+        cve_p = 'u-boot'
+    if not cve_p:
+        cve_p = d.getVar('BPN')
+    return cve_p
+
+
+def _detect_kernel_version(d):
+    import os
+    import sys
+
+    _version = None
+    _major = _minor = _revision = _extra = None
+    source_dir = os.path.relpath(d.getVar('S'))
+    makefile_path = os.path.join(source_dir, 'Makefile')
+    if not os.path.exists(makefile_path):
+        return None
+
+    try:
+        with open(makefile_path) as f_in:
+            for line in f_in:
+                _split = line.split('=')
+                if len(_split) != 2:
+                    continue
+                key, val = [x.strip() for x in _split]
+                if key == 'VERSION':
+                    _major = val
+                elif key == 'PATCHLEVEL':
+                    _minor = val
+                elif key == 'SUBLEVEL':
+                    _revision = val
+                elif key == 'EXTRAVERSION':
+                    _extra = val
+            f_in.close()
+    except Exception as e:
+        bb.warning("Could not read/parse kernel Makefile (%s): %s." %
+                   (makefile_path, e))
+    finally:
+        if _major and _minor and _revision:
+            _version = '.'.join([_major, _minor, _revision])
+            if _extra:
+                _version = _version + _extra
+    return _version
+
+
+def _get_cve_version(d):
+    import oe.recipeutils as oe
+
+    cve_v = d.getVar('CVE_VERSION')
+    if bb.data.inherits_class('kernel', d):
+        cve_v = _detect_kernel_version(d)
+
+    if not cve_v:
+        pv = d.getVar('PV')
+        uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
+        (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
+        cve_v = bpv
+    return cve_v
+
+
 def tsmeta_get_src(d):
     import oe.recipeutils as oe
 
@@ -264,19 +327,8 @@ def tsmeta_get_src(d):
     read_var_list(d, tsm_type, src_dict)
     read_lvar_list(d, tsm_type, src_dict)
 
-    bpn = d.getVar('BPN')
-    cve_p = src_dict.get("cve_product", bpn)
-
-    if bb.data.inherits_class('uboot-config', d):
-        cve_p = "u-boot"
-
-    src_dict["cve_product"] = cve_p
-
-    pv = d.getVar('PV')
-    uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
-    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
-    cve_v = src_dict.get("cve_version", bpv)
-    src_dict["cve_version"] = cve_v
+    src_dict["cve_product"] = _get_cve_product(d)
+    src_dict["cve_version"] = _get_cve_version(d)
 
     uri_dict = dict()
 
