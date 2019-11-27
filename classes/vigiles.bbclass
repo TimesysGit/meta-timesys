@@ -265,9 +265,6 @@ python do_vigiles_kconfig() {
     import shutil
     from oe import recipeutils as oe
 
-    build_dir = os.path.relpath(d.getVar('B', True ))
-    kconfig_in = os.path.join(build_dir, '.config')
-
     vgls_pf = _get_kernel_pf(d)
     vgls_timestamp = d.getVar('VIGILES_TIMESTAMP', True )
 
@@ -277,20 +274,37 @@ python do_vigiles_kconfig() {
 
     bb.debug(1, "Translation: %s -> %s" % (kconfig_fname, kconfig_lname))
 
-    vigiles_kconfig = d.getVar('VIGILES_DIR_KCONFIG', True )
+    vigiles_kconfig_dir = d.getVar('VIGILES_DIR_KCONFIG', True )
     vigiles_dir = d.getVar('VIGILES_DIR', True )
-    kconfig_out = os.path.join(vigiles_kconfig, kconfig_fname)
+    kconfig_out = os.path.join(vigiles_kconfig_dir, kconfig_fname)
     kconfig_link = os.path.join(vigiles_dir, kconfig_lname)
-
-    if not os.path.exists(vigiles_kconfig):
-        bb.utils.mkdirhier(vigiles_kconfig)
-
-    bb.debug(1, "Copy: %s -> %s" % (os.path.relpath(kconfig_in), os.path.relpath(kconfig_out)))
-    shutil.copy(kconfig_in, kconfig_out)
 
     if os.path.exists(kconfig_link):
         os.remove(kconfig_link)
-    bb.debug(1, "Link: %s -> %s" % (os.path.relpath(kconfig_link), os.path.relpath(kconfig_out)))
+
+    kconfig_in = d.getVar('VIGILES_KERNEL_CONFIG', True ) or ''
+
+    if not kconfig_in:
+        return
+
+    if kconfig_in == 'auto':
+        build_dir = os.path.relpath(d.getVar('B', True ))
+        kconfig_in = os.path.join(build_dir, '.config')
+
+    if not os.path.exists(kconfig_in):
+        bb.warn("kernel config does not exist, skipping.")
+        bb.warn("kconfig path: %s" % kconfig_in)
+        return
+
+    if not os.path.exists(vigiles_kconfig_dir):
+        bb.utils.mkdirhier(vigiles_kconfig_dir)
+
+    bb.debug(1, "Copy: %s -> %s" %
+             (os.path.relpath(kconfig_in), os.path.relpath(kconfig_out)))
+    shutil.copy(kconfig_in, kconfig_out)
+
+    bb.debug(1, "Link: %s -> %s" %
+             (os.path.relpath(kconfig_link), os.path.relpath(kconfig_out)))
     os.symlink(os.path.relpath(kconfig_out, vigiles_dir), kconfig_link)
 }
 
@@ -305,6 +319,7 @@ def vigiles_kconfig_depends(d)->str:
             kpref = d.getVar('PREFERRED_PROVIDER_virtual/kernel', True )
             if pn == kpref:
                 deps = ("%s:do_configure" % pn)
+
     return deps
 
 do_vigiles_kconfig[depends] += " ${@vigiles_kconfig_depends(d)} "
@@ -320,12 +335,8 @@ python do_vigiles_check() {
     vigiles_out = d.getVar('VIGILES_REPORT', True )
     vigiles_link = d.getVar('VIGILES_REPORT_LINK', True )
 
-
-    vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG", True ) or ""
-    if vigiles_kconfig == "auto":
-        kconfig_lname = '.'.join([_get_kernel_pf(d), 'config'])
-        kconfig_path = os.path.join(d.getVar('VIGILES_DIR', True ), kconfig_lname)
-        vigiles_kconfig = kconfig_path if os.path.exists(kconfig_path) else ""
+    vigiles_kconfig = os.path.join(d.getVar('VIGILES_DIR', True ),
+                                   '.'.join([_get_kernel_pf(d), 'config']))
 
     bb.utils.export_proxies(d)
 
@@ -334,7 +345,7 @@ python do_vigiles_check() {
         bb.debug(1, "Using Manifest at: %s" % os.path.relpath(vigiles_in))
         bb.debug(1, "Writing Report to: %s" % os.path.relpath(vigiles_link))
 
-        if vigiles_kconfig:
+        if os.path.exists(vigiles_kconfig):
             bb.debug(1, "Using Kernel Config: %s" % os.path.relpath(vigiles_kconfig))
             args = args + ['-k', vigiles_kconfig]
 
