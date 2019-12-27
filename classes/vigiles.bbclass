@@ -244,18 +244,13 @@ do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 def _get_kernel_pf(d):
     from oe import recipeutils as oe
 
+    bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
     cve_v = "unset"
     if bb.data.inherits_class('kernel', d):
-        bpn = d.getVar('BPN')
-        pv = d.getVar('PV')
-        (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
-        cve_v_env = d.getVar('CVE_VERSION')
-        cve_v = cve_v_env if cve_v_env else bpv
+        cve_v = _detect_kernel_version(d)
     else:
-        bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
-
-    kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version'])
-    cve_v = kdict.get('cve_version') or cve_v
+        kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version'])
+        cve_v = kdict.get('cve_version') or cve_v
 
     vgls_pf = '-'.join([bpn, cve_v])
     return vgls_pf
