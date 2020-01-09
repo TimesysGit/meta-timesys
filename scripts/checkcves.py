@@ -92,6 +92,10 @@ def handle_cmdline_args():
                         help='Kernel .config (not defconfig) to submit for CVE filtering',
                         metavar='FILE',
                         dest='kconfig')
+    parser.add_argument('-u', '--uboot-config',
+                        help='U-Boot .config (not defconfig) to submit for CVE filtering',
+                        metavar='FILE',
+                        dest='uboot_config')
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('-l', '--list',
                              action='store_true',
@@ -352,12 +356,34 @@ if __name__ == '__main__':
             sys.exit(1)
         print('Vigiles: Kernel Config based filtering has been applied', file=sys.stderr)
 
+    # U-Boot and SPL filtering works the same way as kernel config filtering
+    if not args.uboot_config:
+        uboot_config = ''
+    else:
+        try:
+            with open(args.uboot_config, 'r') as uconfig:
+                uboot_config = uconfig.read().strip()
+        except (OSError, IOError, UnicodeDecodeError) as e:
+            print('Error: Could not open U-Boot config: %s' % e)
+            sys.exit(1)
+        print('Vigiles: U-Boot Config based filtering has been applied', file=sys.stderr)
+
+    request = {
+      'manifest': manifest_data,
+      'subscribe': args.subscribe,
+      'product_token': product_token
+    }
+
+    if kernel_config:
+      request['kconfig'] = kernel_config
+
+    if uboot_config:
+      request['uboot_config'] = uboot_config
+
     print('Vigiles: Requesting image analysis from LinuxLink ...\n', file=sys.stderr)
-    result = llapi.api_post(email, key, resource,
-                            {'manifest': manifest_data,
-                             'kconfig': kernel_config,
-                             'subscribe': args.subscribe,
-                             'product_token': product_token})
+
+    result = llapi.api_post(email, key, resource, request)
+
     # the default list contains a harmless but bogus example CVE ID,
     # don't print it here in case that is confusing.
     whitelist = [ item for item in manifest.get('whitelist', []) 
