@@ -268,51 +268,54 @@ def _get_kernel_pf(d):
     return vgls_pf
 
 
-python do_vigiles_kconfig() {
+def _find_config(d, vgls_pf, config_in):
     import shutil
     from oe import recipeutils as oe
 
-    vgls_pf = _get_kernel_pf(d)
     vgls_timestamp = d.getVar('VIGILES_TIMESTAMP')
 
-    vgls_kconfig_full = '_'.join([vgls_pf, vgls_timestamp])
-    kconfig_fname = '.'.join([vgls_kconfig_full, 'config'])
-    kconfig_lname = '.'.join([vgls_pf, 'config'])
+    vgls_config_full = '_'.join([vgls_pf, vgls_timestamp])
+    config_fname = '.'.join([vgls_config_full, 'config'])
+    config_lname = '.'.join([vgls_pf, 'config'])
 
-    bb.debug(1, "Translation: %s -> %s" % (kconfig_fname, kconfig_lname))
+    bb.debug(1, "Translation: %s -> %s" % (config_fname, config_lname))
 
-    vigiles_kconfig_dir = d.getVar('VIGILES_DIR_KCONFIG')
+    vigiles_config_dir = d.getVar('VIGILES_DIR_KCONFIG')
     vigiles_dir = d.getVar('VIGILES_DIR')
-    kconfig_out = os.path.join(vigiles_kconfig_dir, kconfig_fname)
-    kconfig_link = os.path.join(vigiles_dir, kconfig_lname)
+    config_out = os.path.join(vigiles_config_dir, config_fname)
+    config_link = os.path.join(vigiles_dir, config_lname)
 
-    if os.path.exists(kconfig_link):
-        os.remove(kconfig_link)
+    if os.path.exists(config_link):
+        os.remove(config_link)
 
-    kconfig_in = d.getVar('VIGILES_KERNEL_CONFIG') or ''
-
-    if not kconfig_in:
+    if not config_in:
         return
 
-    if kconfig_in == 'auto':
+    if config_in == 'auto':
         build_dir = os.path.relpath(d.getVar('B'))
-        kconfig_in = os.path.join(build_dir, '.config')
+        config_in = os.path.join(build_dir, '.config')
 
-    if not os.path.exists(kconfig_in):
-        bb.warn("kernel config does not exist, skipping.")
-        bb.warn("kconfig path: %s" % kconfig_in)
+    if not os.path.exists(config_in):
+        bb.warn("config does not exist, skipping.")
+        bb.warn("config path: %s" % config_in)
         return
 
-    if not os.path.exists(vigiles_kconfig_dir):
-        bb.utils.mkdirhier(vigiles_kconfig_dir)
+    if not os.path.exists(vigiles_config_dir):
+        bb.utils.mkdirhier(vigiles_config_dir)
 
     bb.debug(1, "Copy: %s -> %s" %
-             (os.path.relpath(kconfig_in), os.path.relpath(kconfig_out)))
-    shutil.copy(kconfig_in, kconfig_out)
+             (os.path.relpath(config_in), os.path.relpath(config_out)))
+    shutil.copy(config_in, config_out)
 
     bb.debug(1, "Link: %s -> %s" %
-             (os.path.relpath(kconfig_link), os.path.relpath(kconfig_out)))
-    os.symlink(os.path.relpath(kconfig_out, vigiles_dir), kconfig_link)
+             (os.path.relpath(config_link), os.path.relpath(config_out)))
+    os.symlink(os.path.relpath(config_out, vigiles_dir), config_link)
+
+
+python do_vigiles_kconfig() {
+    vgls_pf = _get_kernel_pf(d)
+    config_in = d.getVar('VIGILES_KERNEL_CONFIG') or ''
+    _find_config(d, vgls_pf, config_in)
 }
 
 
