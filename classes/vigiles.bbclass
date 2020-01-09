@@ -240,16 +240,18 @@ do_rootfs[nostamp] = "1"
 do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
 do_vigiles_image[recideptask] += "do_vigiles_pkg"
 
+
 def vigiles_image_depends(d):
     pn = d.getVar('PN')
     deps = list()
     if bb.data.inherits_class('image', d):
         backfill_pns = d.getVar('VIGILES_BACKFILL').split()
         deps = [ ':'.join([_pn, 'do_vigiles_pkg']) for _pn in backfill_pns ]
-        deps.append("virtual/kernel:do_vigiles_kconfig")
     return ' '.join(deps)
 
 
+do_vigiles_image[depends] += "virtual/kernel:do_vigiles_kconfig"
+do_vigiles_image[depends] += "virtual/bootloader:do_vigiles_uboot_config"
 do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 
@@ -319,23 +321,130 @@ python do_vigiles_kconfig() {
 }
 
 
-def vigiles_kconfig_depends(d)->str:
-    deps = str()
-
-    if bb.data.inherits_class('kernel', d):
-        vigiles_kconfig = d.getVar("VIGILES_KERNEL_CONFIG") or ""
-        if vigiles_kconfig == "auto":
-            pn = d.getVar('PN')
-            kpref = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
-            if pn == kpref:
-                deps = ("%s:do_configure" % pn)
-
-    return deps
-
-do_vigiles_kconfig[depends] += " ${@vigiles_kconfig_depends(d)} "
+do_vigiles_kconfig[depends] += "virtual/kernel:do_configure"
 
 addtask do_vigiles_kconfig after do_configure before do_savedefconfig
 do_vigiles_kconfig[nostamp] = "1"
+
+
+def _get_uboot_pf(d):
+    from oe import recipeutils as oe
+
+    pn = d.getVar('PN')
+    bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader')
+
+    if bb.data.inherits_class('uboot-config', d) and pn == bpn:
+        tsmeta_get_pn(d)
+
+    kdict = tsmeta_read_dictname_vars(d, 'pn', bpn, ['pv'])
+    pv = kdict.get('pv', 'unset')
+    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
+
+    vgls_pf = '-'.join([bpn, bpv])
+    return vgls_pf
+
+
+python do_vigiles_uboot_config() {
+    import shutil
+    from oe import recipeutils as oe
+
+    vgls_pf = _get_uboot_pf(d)
+    config_in = d.getVar('VIGILES_UBOOT_CONFIG') or ''
+
+    vgls_timestamp = d.getVar('VIGILES_TIMESTAMP')
+
+    vgls_config_full = '_'.join([vgls_pf, vgls_timestamp])
+    config_fname = '.'.join([vgls_config_full, 'config'])
+    config_lname = '.'.join([vgls_pf, 'config'])
+
+    bb.debug(1, "Translation: %s -> %s" % (config_fname, config_lname))
+
+    vigiles_config_dir = d.getVar('VIGILES_DIR_KCONFIG')
+    vigiles_dir = d.getVar('VIGILES_DIR')
+    config_out = os.path.join(vigiles_config_dir, config_fname)
+    config_link = os.path.join(vigiles_dir, config_lname)
+
+    if os.path.exists(config_link):
+        os.remove(config_link)
+
+    if not config_in:
+        return
+
+    if not os.path.exists(vigiles_config_dir):
+        bb.utils.mkdirhier(vigiles_config_dir)
+
+    if os.path.exists(config_in):
+        bb.debug(1, "Copy: %s -> %s" %
+                 (os.path.relpath(config_in), os.path.relpath(config_out)))
+        shutil.copy(config_in, config_out)
+    elif config_in == 'auto':
+        build_dir = os.path.relpath(d.getVar('B'))
+        uboot_machine = d.getVar('UBOOT_MACHINE') or None
+        config_dirs = set([build_dir])
+        for cfg in uboot_machine.split():
+            config_dirs.add(os.path.join(build_dir, cfg))
+
+        config_files = []
+        autoconf_files = []
+
+        for ddd in config_dirs:
+            dot_config = os.path.join(ddd, '.config')
+            if os.path.exists(dot_config):
+                config_files.append(dot_config)
+            header = os.path.join(ddd, 'include', 'autoconf.mk')
+            if os.path.exists(header):
+                autoconf_files.append(header)
+
+        config_set = set()
+        config_preamble = list()
+        for dot_config in config_files:
+            try:
+                with open(dot_config, 'r') as cfg_in:
+                    f_data = [ f_line.rstrip() for f_line in cfg_in ]
+                    config_preamble = f_data[0:3]
+                    config_set.update([
+                        f_line
+                        for f_line in f_data[3:]
+                        if f_line.startswith('CONFIG')
+                        and f_line.endswith('=y')
+                    ])
+            except Exception as e:
+                bb.warn("Could not read/parse U-Boot .config: %s" % e)
+
+        for header in autoconf_files:
+            try:
+                with open(header, 'r') as cfg_in:
+                    f_data = [ f_line.rstrip() for f_line in cfg_in ]
+                    config_set.update([
+                        f_line
+                        for f_line in f_data
+                        if f_line.startswith('CONFIG')
+                        and f_line.endswith('=y')
+                    ])
+            except Exception as e:
+                bb.warn("Could not read/parse U-Boot autoconf.mk: %s" % e)
+        bb.debug(1, "Writing %d values to : %s" % (len(config_set), config_out))
+        with open(config_out, 'w') as f_out:
+            print('\n'.join(config_preamble), file=f_out, flush=True)
+            print('\n'.join(sorted(list(config_set))), file=f_out, flush=True)
+    else:
+        bb.warn("config does not exist, skipping.")
+        bb.warn("config path: %s" % config_in)
+        return
+
+    bb.debug(1, "Link: %s -> %s" %
+             (os.path.relpath(config_link), os.path.relpath(config_out)))
+    os.symlink(os.path.relpath(config_out, vigiles_dir), config_link)
+}
+
+
+python() {
+    if bb.data.inherits_class('uboot-config', d):
+        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
+}
+
+do_vigiles_uboot_config[depends] += "virtual/bootloader:do_compile"
+do_vigiles_uboot_config[nostamp] = "1"
 
 
 python do_vigiles_check() {
@@ -346,6 +455,8 @@ python do_vigiles_check() {
     vigiles_link = d.getVar('VIGILES_REPORT_LINK')
     vigiles_kconfig = os.path.join(d.getVar('VIGILES_DIR'),
                                    '.'.join([_get_kernel_pf(d), 'config']))
+    vigiles_uconfig = os.path.join(d.getVar('VIGILES_DIR'),
+                                   '.'.join([_get_uboot_pf(d), 'config']))
 
     bb.utils.export_proxies(d)
 
@@ -357,6 +468,10 @@ python do_vigiles_check() {
         if os.path.exists(vigiles_kconfig):
             bb.debug(1, "Using Kernel Config: %s" % os.path.relpath(vigiles_kconfig))
             args = args + ['-k', vigiles_kconfig]
+
+        if os.path.exists(vigiles_uconfig):
+            bb.debug(1, "Using U-Boot Config: %s" % os.path.relpath(vigiles_uconfig))
+            args = args + ['-u', vigiles_uconfig]
 
         vigiles_env = os.environ.copy()
         vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE')
