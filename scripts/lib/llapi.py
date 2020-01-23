@@ -44,6 +44,21 @@ def read_keyfile(key_file):
 
     return (email, key)
 
+# This raises an error if it can't read or decode a file that's present, but
+# leaves it to the caller to decide what to do with empty values.
+def read_dashboard_config(config_file):
+    try:
+        with open(config_file, 'r') as f:
+            cfg_info = json.load(f, encoding='utf-8')
+    except (OSError, IOError, UnicodeDecodeError):
+            product = None
+    except Exception:
+        raise Exception("Unable to parse config file: %s" % config_file)
+    else:
+        product = cfg_info.get('product', '').strip()
+
+    return product
+
 
 def _do_api_call(request_dict, json_response):
     try:
