@@ -278,6 +278,19 @@ To use an alternate key, or a key in a non-default location, you can specify the
 VIGILES_KEY_FILE = "/tools/timesys/linuxlink_key"
 ```
 
+### Specifying a Product or Manifest
+
+By default your manifest will be uploaded under the "Private Workspace" product on the Vigiles Dashboard.
+To upload your manifest to a particular product or existing manifest on the Vigiles Dashboard, download the associated Dashboard Config to `~/timesys/dashboard_config`.
+Dashboard Configs downloaded from the [Products page](https://linuxlink.timesys.com/vigiles/) will upload new manifests to the associated product with a default name.
+The link can be found under the Actions column for each product. Note: Click on "New Product" if you have not yet created one.
+
+To use an alternate config, or a config in a non-default location, you can specify the location in _conf/local.conf_ with a statement like the following:
+
+```
+VIGILES_DASHBOARD_CONFIG = "/tools/timesys/dashboard_config"
+```
+
 Maintenance
 ===========
 
