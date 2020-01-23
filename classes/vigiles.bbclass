@@ -346,6 +346,7 @@ python do_vigiles_check() {
 
         vigiles_env = os.environ.copy()
         vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE', True )
+        vigiles_env['VIGILES_DASHBOARD_CONFIG'] = d.getVar('VIGILES_DASHBOARD_CONFIG', True)
 
         layerdir = d.getVar('VIGILES_LAYERDIR', True )
         path = os.path.join(layerdir, "scripts", cmd)
