@@ -386,11 +386,12 @@ def vigiles_check_depends(d):
     deps = list()
     if bb.data.inherits_class('image', d):
         deps.append("%s:do_vigiles_image" % pn)
+        d.appendVarFlag('do_build', 'depends', ' %s:do_vigiles_check' % pn)
     return ' '.join(deps)
 
 do_vigiles_check[depends] += " ${@vigiles_check_depends(d)} "
 
-addtask do_vigiles_check before do_rootfs
+addtask do_vigiles_check after do_image
 do_vigiles_check[nostamp] = "1"
 
 python() {
