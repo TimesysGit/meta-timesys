@@ -91,7 +91,7 @@ python do_vigiles_pkg() {
         ),
         src = dict(
             name = pn,
-            vars = [ 'cve_product', 'cve_version', 'sources', 'srcrev', 'patched_cves' ],
+            vars = [ 'cve_product', 'cve_version', 'license', 'sources', 'srcrev', 'patched_cves' ],
         ),
     )
 
@@ -102,6 +102,7 @@ python do_vigiles_pkg() {
             cve_product  = dict_out["src"].get("cve_product"),
             cve_version  = dict_out["src"].get("cve_version"),
             layer        = dict_out["recipe"].get("layer"),
+            license      = dict_out["src"].get("license"),
             name         = dict_out["pn"].get("pn"),
             recipe       = dict_out["recipe"].get("recipe"),
             srcrev       = dict_out["src"].get("srcrev"),
