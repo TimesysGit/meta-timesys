@@ -82,6 +82,7 @@ tsmeta_vars_src = "\
     BRANCH                  \
     CVE_PRODUCT             \
     CVE_VERSION             \
+    LICENSE                 \
     SRCBRANCH               \
     SRCREV                  \
 "
@@ -209,7 +210,7 @@ def tsmeta_get_yocto_vars(d, varlist):
     for key in (d.getVar(varlist) or "").split():
         value = (d.getVar(key) or "")
         if value:
-            dict_out[key.lower()] = value
+            dict_out[key.lower()] = oe.utils.squashspaces(value)
     return dict_out
 
 def read_var_list(d, tsm_type, dest_dict):
