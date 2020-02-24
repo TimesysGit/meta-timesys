@@ -715,47 +715,18 @@ do_tsmeta_build[nostamp] = "1"
 
 
 def tsmeta_pn_list(d):
-
-    def get_build_dict():
-        bdict_keys = {
-            "machine" : {
-                "name" : d.getVar('MACHINE', True),
-                "keys" : [ 
-                    'extra_rdepends',
-                    'essential_extra_rdepends',
-                    'extra_rrecommends',
-                    'essential_extra_rrecommends'
-                ]
-            },
-            "distro" : {
-                "name" : d.getVar('DISTRO', True ),
-                "keys" : [
-                    'extra_rdepends',
-                    'extra_rrecommends'
-                ]
-            },
-            "image" : {
-                "name" : d.getVar('IMAGE_BASENAME', True ),
-                "keys" : [
-                    'extra_image_install',
-                    'install',
-                    'install_debugfs',
-                    'install_complementary',
-                    'package_install',
-                    'rdepends',
-                    'rrecommends'
-                ]
-            }
+    image_dict = {
+        "machine" : {
+            "name" : d.getVar('MACHINE', True ),
+        },
+        "distro" : {
+            "name" : d.getVar('DISTRO', True ),
+        },
+        "image" : {
+            "name" : d.getVar('IMAGE_BASENAME', True ),
         }
-
-        build_dict = { 
-            bkey: tsmeta_read_dictname_vars(d, bkey, bsub["name"], bsub["keys"])
-                for bkey, bsub in bdict_keys.items()
-        }
-
-        tsmeta_debug(d, 'bdict_keys', bdict_keys)
-        tsmeta_debug(d, 'bdict', build_dict)
-        return build_dict
+    }
+    tsmeta_debug(d, 'image_dict', image_dict)
 
     def get_pkg_lookup():
         pkg_dict_base = tsmeta_read_dictdir(d, "pkg")
@@ -785,77 +756,58 @@ def tsmeta_pn_list(d):
                     if not feature in pkg_lookup['virtual'].keys():
                         pkg_lookup['rproviders'][feature] = pkg
 
-        tsmeta_debug(d, 'pkgs', pkg_dict_base)
         tsmeta_debug(d, 'pkg_map', pkg_lookup)
-
         return pkg_lookup
 
-    def gather_image_deps(build_dict):
-        deps_in = []
-        for title, chapter in build_dict.items():
-            for key, sublist in chapter.items():
-                if len(sublist):
-                    deps_in += sublist
+    def distill_image_pns(pkg_list, pkg_lookup):
+        image_pns = set()
+        for ppp in sorted(pkg_list):
+            pn_name = str()
+            if ppp in pkg_lookup.keys():
+                pn_name = ppp
+                bb.debug(2, "Checking %s (pn found)" % ppp)
+            elif ppp in pkg_lookup['aliases'].keys():
+                pn_name = pkg_lookup['aliases'].get(ppp)
+                bb.debug(2, "Checking %s (alias %s found)" % (ppp, pn_name))
+            elif ppp in pkg_lookup['virtual']["provider"].keys():
+                pn_name = pkg_lookup['virtual']["provider"].get(ppp)
+                bb.debug(2, "Checking %s (provider %s found)" % (ppp, pn_name))
+            elif ppp in pkg_lookup['virtual']["runtime"].keys():
+                pn_name = pkg_lookup['virtual']["runtime"].get(ppp)
+                bb.debug(2, "Checking %s (runtime %s found)" % (ppp, pn_name))
+            elif ppp in pkg_lookup['rproviders'].keys():
+                pn_name = pkg_lookup['rproviders'].get(ppp)
+                bb.debug(2, "Checking %s (rprovider %s found)" % (ppp, pn_name))
+            else:
+                bb.plain("%s: No pkg entry found" % ppp)
+                continue
 
-        deps_out = sorted(list(set(deps_in)))
-        tsmeta_debug(d, 'base', deps_out)
-        return deps_out
+            p_dict = pkg_lookup.get(pn_name, {})
+            pkg_pn = p_dict.get("pn", "None")
+            image_pns.add(pkg_pn)
 
-    def distill_image_pns(pn_base_list, pkg_lookup):
-        left_to_check = list( pn_base_list )
-        pn_checked = []
-        pn_out = []
-
-        while len(left_to_check):
-            for ppp in sorted(left_to_check):
-
-                new_deps = []
-                left_to_check.remove(ppp)
-
-                if ppp in pn_checked:
-                    bb.debug(2,"Skipping %s" % ppp)
-                    continue
-
-                pn_name = str()
-                if ppp in pkg_lookup.keys():
-                    pn_name = ppp
-                    bb.debug(2,"Checking %s (pn found)" % ppp)
-                elif ppp in pkg_lookup['aliases'].keys():
-                    pn_name = pkg_lookup['aliases'].get(ppp)
-                    bb.debug(2,"Checking %s (alias %s found)" % (ppp, pn_name))
-                elif ppp in pkg_lookup['virtual']["provider"].keys():
-                    pn_name = pkg_lookup['virtual']["provider"].get(ppp)
-                    bb.debug(2,"Checking %s (provider %s found)" % (ppp, pn_name))
-                elif ppp in pkg_lookup['virtual']["runtime"].keys():
-                    pn_name = pkg_lookup['virtual']["runtime"].get(ppp)
-                    bb.debug(2,"Checking %s (runtime %s found)" % (ppp, pn_name))
-                elif ppp in pkg_lookup['rproviders'].keys():
-                    pn_name = pkg_lookup['rproviders'].get(ppp)
-                    bb.debug(2,"Checking %s (rprovider %s found)" % (ppp, pn_name))
-                else:
-                    bb.debug(1, "%s: No pkg entry found" % ppp)
-                    continue
-
-                p_dict = pkg_lookup.get(pn_name, {})
-                # bb.plain("%s rdepends: %s" % (ppp, json.dumps(p_dict, indent = 4, sort_keys = True )))
-                new_deps = p_dict.get("rdepends", []) + p_dict.get("rrecommends", [])
-
-                pn_checked.append(ppp)
-
-                pkg_pn = p_dict.get("pn", "None")
-                if not pkg_pn in pn_out:
-                    pn_out.append(pkg_pn)
-
-                left_to_check += [ pkg for pkg in new_deps 
-                    if not (pkg in pn_checked or pkg in left_to_check) ]
-
+        pn_out = sorted(list(image_pns))
         tsmeta_debug(d, 'image_pns', pn_out)
-        return sorted(pn_out)
+        return pn_out
 
-    image_dict = get_build_dict()
+    def get_manifest_pkgs(sys_dict):
+        image_dir = d.getVar("DEPLOY_DIR_IMAGE", True )
+        image_spec = d.getVar("IMAGE_LINK_NAME", True )
+        manifest_link = '.'.join([image_spec, 'manifest'])
+        manifest_path = os.path.join(image_dir, manifest_link)
+
+        rootfs_pkgs = list()
+        if os.path.exists(manifest_path):
+            bb.plain("Using RootFS Manifest %s" % manifest_path)
+            with open(manifest_path) as f_desc:
+                rootfs_pkgs = [ line.split()[0] for line in f_desc ]
+        else:
+            bb.error("RootFS Manifest Not Found: %s" % manifest_path)
+        return rootfs_pkgs
+
     pkg_pn_map = get_pkg_lookup()
-    image_deps = gather_image_deps(image_dict)
-    image_pn_list = distill_image_pns(image_deps, pkg_pn_map)
+    rootfs_pkgs = get_manifest_pkgs(image_dict)
+    image_pn_list = distill_image_pns(rootfs_pkgs, pkg_pn_map)
     return image_pn_list
 
 
