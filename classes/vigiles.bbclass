@@ -226,16 +226,19 @@ python do_vigiles_image() {
     vigiles_write_manifest(d, "cve", cve_manifest)
 }
 
-addtask do_vigiles_image
+addtask do_vigiles_image after do_image_complete
 do_vigiles_image[nostamp] = "1"
+do_rootfs[nostamp] = "1"
 do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
 do_vigiles_image[recideptask] += "do_vigiles_pkg"
 
 def vigiles_image_depends(d):
     pn = d.getVar('PN', True )
-    backfill_pns = d.getVar('VIGILES_BACKFILL', True ).split()
-    deps = [ ':'.join([pn, 'do_vigiles_pkg']) for pn in backfill_pns ]
-    deps.append("virtual/kernel:do_vigiles_kconfig")
+    deps = list()
+    if bb.data.inherits_class('image', d):
+        backfill_pns = d.getVar('VIGILES_BACKFILL', True ).split()
+        deps = [ ':'.join([_pn, 'do_vigiles_pkg']) for _pn in backfill_pns ]
+        deps.append("virtual/kernel:do_vigiles_kconfig")
     return ' '.join(deps)
 
 
@@ -391,7 +394,7 @@ def vigiles_check_depends(d):
 
 do_vigiles_check[depends] += " ${@vigiles_check_depends(d)} "
 
-addtask do_vigiles_check after do_image
+addtask do_vigiles_check after do_vigiles_image
 do_vigiles_check[nostamp] = "1"
 
 python() {
