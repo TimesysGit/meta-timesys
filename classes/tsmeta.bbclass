@@ -262,7 +262,7 @@ def _get_cve_product(d):
     if bb.data.inherits_class('uboot-config', d):
         cve_p = 'u-boot'
     if not cve_p:
-        cve_p = d.getVar('BPN')
+        cve_p = d.getVar('PN')
     return cve_p
 
 
