@@ -254,18 +254,6 @@ VIGILES_KERNEL_CONFIG = "/projects/kernel/linux-4.14-ts+imx-1.0/.config"
 ```
 
 
-
-### Manual Execution
-
-You can manually execute the Vigiles CVE Scanner with the following:
-
-```sh
-bitbake -c vigiles_check core-image-minimal
-```
-
-This will not build a rootfs, but will build and check all packages that would be installed.
-
-
 ### Specifying a LinuxLink Key File
 
 Full CVE reporting requires a LinuxLink License Key, though the Vigiles CVE Scanner will still execute in 
