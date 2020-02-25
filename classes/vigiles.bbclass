@@ -74,9 +74,17 @@ python do_vigiles_pkg() {
     pn = d.getVar('PN', True )
     bpn = d.getVar('BPN', True )
 
-    if pn != bpn:
+    suffixes = d.getVar('SPECIAL_PKGSUFFIX', True ).split()
+    prefixes = ['nativesdk-']
+    substrings = ['-cross-', '-source-']
+
+    if (pn.endswith(tuple(suffixes)) or
+        pn.startswith(tuple(prefixes)) or
+        any(substr in pn for substr in substrings)):
         bb.debug(1, "Skipping extended PN %s [ %s ]" % (pn, bpn))
         return
+    elif pn != bpn:
+        bb.debug(2, "Keeping extended PN %s [ %s ]" % (pn, bpn))
 
     bb.build.exec_func("do_tsmeta_pkgvars", d)
 
