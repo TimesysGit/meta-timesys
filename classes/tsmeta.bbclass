@@ -779,7 +779,7 @@ def tsmeta_pn_list(d):
                 pn_name = pkg_lookup['rproviders'].get(ppp)
                 bb.debug(2, "Checking %s (rprovider %s found)" % (ppp, pn_name))
             else:
-                bb.plain("%s: No pkg entry found" % ppp)
+                bb.warning("%s: No pkg entry found" % ppp)
                 continue
 
             p_dict = pkg_lookup.get(pn_name, {})
