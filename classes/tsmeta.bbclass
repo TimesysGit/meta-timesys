@@ -179,6 +179,11 @@ def tsmeta_read_dictdir_files(d, trdf_type, trdf_list):
     return dict_out
 
 
+def tsmeta_read_dictname_single(d, trdv_type, trdv_name, trdv_var):
+    indict = tsmeta_read_dictname(d, trdv_type, trdv_name)
+    value = indict.get(trdv_var, "")
+    return value
+
 def tsmeta_read_dictname_vars(d, trdv_type, trdv_name, trdv_list):
     indict = tsmeta_read_dictname(d, trdv_type, trdv_name)
     dict_out = { key: indict.get(key, "") for key in trdv_list }
@@ -239,20 +244,19 @@ def tsmeta_get_pn(d):
     tsmeta_get_vars(d, "pn")
 
 def tsmeta_get_recipe(d):
-    import re
-
     tgv_type = "recipe"
 
     dest_dict = dict()
     read_var_list(d, tgv_type, dest_dict)
     read_lvar_list(d, tgv_type, dest_dict)
 
-    ldict = tsmeta_read_dictdir(d, "layers")
-    for lname, layer in ldict.items():
-        if re.match(layer["pattern"], dest_dict["file"]):
-            dest_dict["layer"] = layer["fs_name"]
-            dest_dict["recipe"] = os.path.relpath(dest_dict["file"], layer["path"])
-            break
+    recipe_path = dest_dict["file"]
+    recipe_layer = bb.utils.get_file_layer(recipe_path, d)
+    layer_path = tsmeta_read_dictname_single(
+        d, "layers", recipe_layer, "path"
+    )
+    dest_dict["layer"] = recipe_layer
+    dest_dict["recipe"] = os.path.relpath(recipe_path, layer_path)
 
     tsmeta_write_dict(d, tgv_type, dest_dict)
 
@@ -664,36 +668,16 @@ def tsmeta_git_branch_info(d, path):
 
 
 def tsmeta_collect_layers(d):
-    import re
-
     layer_dict = dict()
-
     bspdir = d.getVar('BSPDIR')
-    bblayers = d.getVar('BBLAYERS').split()
-
-    lpats = { key.replace("BBFILE_PATTERN_", ""): d.getVar(key)
-        for key in d.keys() if key.startswith("BBFILE_PATTERN_") }
-
-    lcompats = { key.replace("LAYERSERIES_COMPAT_", ""): [ d.getVar(key) ]
-        for key in d.keys() if key.startswith("LAYERSERIES_COMPAT_") }
-
-
-    for lll in bblayers:
-        for lname in lpats.keys():
-            testpath = os.path.join(lll, "conf", "layer.conf")
-            lpattern = lpats[lname]
-            if re.match(lpattern, testpath):
-                layer_dict[lname] = dict(
-                        conf_name   = lname,
-                        fs_name     = os.path.basename(lll),
-                        compat      = lcompats.get(lname),
-                        path        = lll,
-                        pattern     = lpattern,
-                        bsp_path    = os.path.relpath(lll, bspdir),
-                    )
-                layer_dict[lname].update(
-                    tsmeta_git_branch_info(d, lll))
-                break
+    for lname in d.getVar('BBFILE_COLLECTIONS').split():
+        pattern = d.getVar('_'.join(['BBFILE_PATTERN', lname]))
+        full_path = os.path.normpath(pattern.split('^')[-1])
+        rel_path = os.path.relpath(full_path, bspdir)
+        layer_dict[lname] = {
+            'path': rel_path,
+        }
+        layer_dict[lname].update(tsmeta_git_branch_info(d, full_path))
 
     return layer_dict
 

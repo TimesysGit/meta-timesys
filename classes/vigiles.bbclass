@@ -215,10 +215,7 @@ def vigiles_image_collect(d):
             distro           = sys_dict["distro"]["codename"],
             distro_version   = sys_dict["distro"]["version"],
             image            = sys_dict["image"]["basename"],
-            layers           = {
-                sys_dict["layers"][conf_name].get('fs_name') : sys_dict["layers"][conf_name]
-                    for conf_name in sys_dict["layers"].keys()
-                },
+            layers           = sys_dict["layers"],
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
