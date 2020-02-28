@@ -619,50 +619,133 @@ python tsmeta_get_features() {
 def tsmeta_git_branch_info(d, path):
     import bb.process
 
-    branch_dict = dict(
-            branch = "HEAD",
-            revision = "HEAD",
-            upstream = "detached",
-            remote = "none",
-        )
-
-    try:
-        git_out, _ = bb.process.run("git for-each-ref --python \
-                --points-at=HEAD  \
-                --format='%(refname:short) %(objectname) %(upstream:remotename) %(upstream:short) %(symref:short) '",
-                cwd=path)
-    except bb.process.ExecutionError:
-        git_out = ""
-
-
-    for reflog in git_out.split('\n'):
-        if not reflog:
-            continue
-        # bb.plain("One Reflog: %s" % reflog)
-        (b_name, b_rev, b_remote, b_upstream, b_symref) = [ x.replace("'", "") for x in reflog.split() ]
-        b_info = dict(
-            branch = b_name,
-            revision = b_rev,
-            remote = b_remote,
-            upstream = b_upstream,
-            )
-        # bb.plain("One Branch Info: %s" % b_info )
-        if b_symref:
-            b_info["upstream"] = b_symref
-
-        if b_upstream:
-            branch_dict = b_info
-            break
-        elif branch_dict["branch"] != "HEAD":
-            branch_dict = b_info
-
-    r_name = branch_dict["remote"]
-    if r_name and r_name != "none":
+    def _run_git(_git_cmd, _arg_list = []):
+        _args = ' '.join(_arg_list)
+        _cmd = ' '.join([_git_cmd, _args])
+        bb.debug(2, 'Command: %s' % _cmd)
         try:
-            sub_out, _ = bb.process.run(("git remote get-url %s" % r_name), cwd=path)
-        except bb.process.ExecutionError:
-            sub_out = ''
-        branch_dict["url"] = oe.utils.squashspaces(sub_out)
+            git_out, _ = bb.process.run(_cmd, cwd=path)
+            bb.debug(2, 'git output: %s' % git_out)
+            if isinstance(git_out, bytes):
+                git_out = git_out.decode('ascii')
+        except bb.process.ExecutionError as ex:
+            bb.debug(1, 'git Failed: %s -- %s' % (_cmd, ex))
+            git_out = ""
+        return oe.utils.squashspaces(git_out)
+
+    def _head_revision():
+        _git_log_cmd = ' '.join([
+            'git',
+            'log',
+        ])
+
+        _log_args = [
+            '--max-count=1',
+            '--format=\'%H\''
+        ]
+        _rev = _run_git(_git_log_cmd, _log_args)
+        bb.debug(2, 'Path: %s, Revision: %s' %(path, _rev))
+        return _rev
+
+    def _branch_name(_rev):
+        _git_branch_cmd = ' '.join([
+            'git',
+            'branch'
+        ])
+
+        _points_at = '='.join([
+            '--points-at',
+            'HEAD'
+        ])
+        _color = '='.join([
+            '--color',
+            'never',
+        ])
+        _pipeline = ' '.join([
+            '|',
+            'cut',
+            '-s',
+            '-d',
+            '\'*\'',
+            '-f',
+            '2'
+        ])
+        _name = _run_git(_git_branch_cmd, [_points_at, _color, _pipeline])
+        if _name == "(no branch)":
+            _name = "detached"
+        bb.debug(2, "Path: %s, Branch Name: %s" %(path, _name))
+        return _name
+
+    def _get_remote_list():
+        _git_remote_cmd = ' '.join([
+            'git',
+            'remote'
+        ])
+        _remotes = _run_git(_git_remote_cmd)
+        return _remotes.split()
+
+    def _upstream_branch(_rev):
+        _git_for_each_ref_cmd = ' '.join([
+            'git',
+            'for-each-ref',
+            '--sort=-committerdate',
+            '--count=1'
+        ])
+        _points_at = '='.join([ '--points-at', _rev ])
+        _contains = '='.join([ '--contains', _rev ])
+        _refname_format = '='.join([ '--format', '\'%(refname:short)\'' ])
+        _upstream_format = '='.join([ '--format', '\'%(upstream:short)\'' ])
+
+        _remotes = _get_remote_list()
+        _remotes_list = [ '/'.join(['refs/remotes', _r]) for _r in _remotes ]
+        _remotes_arg = ' '.join(_remotes_list)
+
+        def _upstream_simple():
+            return _run_git(_git_for_each_ref_cmd, [_points_at, _upstream_format])
+
+        def _upstream_tracking():
+            return _run_git(_git_for_each_ref_cmd, [_points_at, _refname_format, _remotes_arg])
+
+        def _upstream_fallback():
+            return _run_git(_git_for_each_ref_cmd, [_contains, _refname_format, _remotes_arg])
+
+        _simple = _upstream_simple()
+        _tracking = _upstream_tracking()
+        _fallback = _upstream_fallback()
+
+        _ret = "unknown/unknown"
+        if _simple:
+            _ret = _simple
+        elif _tracking:
+            _ret = _tracking
+        elif _fallback:
+            _ret = _fallback
+        return _ret.split('/', 2)
+
+    def _upstream_url(_remote):
+        _git_cmd_ls_remote = ' '.join([
+            'git',
+            'ls-remote'
+        ])
+        _remote_args = [
+            '--get-url',
+            _remote
+        ]
+        _remote_url = _run_git(_git_cmd_ls_remote, _remote_args)
+        return _remote_url
+
+    b_rev = _head_revision()
+    b_name = _branch_name(b_rev)
+    b_remote, b_upstream = _upstream_branch(b_rev)
+    b_url = _upstream_url(b_remote)
+
+    branch_dict = dict(
+        branch = b_name,
+        head = b_rev,
+        upstream = b_upstream,
+        remote = b_remote,
+        url = b_url
+    )
 
     return branch_dict
 
