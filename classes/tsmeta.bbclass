@@ -298,7 +298,7 @@ def _detect_kernel_version(d):
                     _extra = val
             f_in.close()
     except Exception as e:
-        bb.warning("Could not read/parse kernel Makefile (%s): %s." %
+        bb.warn("Could not read/parse kernel Makefile (%s): %s." %
                    (makefile_path, e))
     finally:
         if _major and _minor and _revision:
@@ -463,7 +463,7 @@ def tsmeta_get_packageconfig(d):
             items = flagval.split(",")
             num = len(items)
             if num > 5:
-                bb.warning("%s: PACKAGECONFIG[%s] Only enable,disable,depend,rdepend,rrecommend can be specified!"
+                bb.warn("%s: PACKAGECONFIG[%s] Only enable,disable,depend,rdepend,rrecommend can be specified!"
                     % (d.getVar('PN'), flag))
 
             if flag in pkgconfig:
@@ -845,7 +845,7 @@ def tsmeta_pn_list(d):
                 pn_name = pkg_lookup['rproviders'].get(ppp)
                 bb.debug(2, "Checking %s (rprovider %s found)" % (ppp, pn_name))
             else:
-                bb.warning("%s: No pkg entry found" % ppp)
+                bb.warn("%s: No pkg entry found" % ppp)
                 continue
 
             p_dict = pkg_lookup.get(pn_name, {})
