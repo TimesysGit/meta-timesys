@@ -164,7 +164,7 @@ def vigiles_write_manifest(d, tdw_tag, dict_out):
         f_out.write(s)
 
     l_path = d.getVar('VIGILES_MANIFEST_LINK')
-    if os.path.exists(l_path):
+    if os.path.lexists(l_path):
         os.remove(l_path)
 
     if os.path.exists(f_path):
@@ -277,7 +277,7 @@ def _find_config(d, vgls_pf, config_in):
     config_out = os.path.join(vigiles_config_dir, config_fname)
     config_link = os.path.join(vigiles_dir, config_lname)
 
-    if os.path.exists(config_link):
+    if os.path.lexists(config_link):
         os.remove(config_link)
 
     if not config_in:
@@ -354,7 +354,7 @@ python do_vigiles_uboot_config() {
     config_out = os.path.join(vigiles_config_dir, config_fname)
     config_link = os.path.join(vigiles_dir, config_lname)
 
-    if os.path.exists(config_link):
+    if os.path.lexists(config_link):
         os.remove(config_link)
 
     if not config_in:
@@ -492,7 +492,7 @@ python do_vigiles_check() {
 
     bb.plain(check_out)
 
-    if os.path.exists(vigiles_link):
+    if os.path.lexists(vigiles_link):
         os.remove(vigiles_link)
     if os.path.exists(vigiles_out):
         os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
