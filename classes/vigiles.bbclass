@@ -88,47 +88,40 @@ python do_vigiles_pkg() {
 
     bb.build.exec_func("do_tsmeta_pkgvars", d)
 
-    dict_in = dict(
-        pn = dict(
-            name = pn,
-            vars = [ 'pn', 'pv' ],
-        ),
-        recipe = dict(
-            name = pn,
-            vars = [ 'layer', 'recipe' ],
-        ),
-        src = dict(
-            name = pn,
-            vars = [ 'cve_product', 'cve_version', 'license', 'sources', 'srcrev', 'patched_cves' ],
-        ),
-    )
+    pn_vars = [
+        'pn',
+        'pv'
+    ]
+    src_vars = [
+        'cve_product',
+        'cve_version',
+        'layer',
+        'license',
+        'recipe',
+        'sources',
+        'srcrev',
+        'patched_cves'
+    ]
+    pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
+    manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
+    manifest['name'] = pn_dict['pn']
+    manifest['version'] = pn_dict['pv']
 
-    dict_out = { dict_name: tsmeta_get_dict(d, dict_name, dict_spec)
-        for dict_name, dict_spec in dict_in.items() }
-
-    manifest = dict(
-            cve_product  = dict_out["src"].get("cve_product"),
-            cve_version  = dict_out["src"].get("cve_version"),
-            layer        = dict_out["recipe"].get("layer"),
-            license      = dict_out["src"].get("license"),
-            name         = dict_out["pn"].get("pn"),
-            recipe       = dict_out["recipe"].get("recipe"),
-            srcrev       = dict_out["src"].get("srcrev"),
-            version      = dict_out["pn"].get("pv"),
-        )
-
-    if not len(manifest["srcrev"]):
-        manifest.pop("srcrev")
-
-    src_patches = dict_out["src"]["sources"].get("patches", {})
+    sources = manifest.pop('sources')
+    src_patches = sources.get('patches', {})
     if len(src_patches.keys()):
         patches = list(src_patches.keys())
-        manifest["patches"] = sorted(patches)
+        manifest['patches'] = sorted(patches)
 
         patched_dict = _get_patched(src_patches)
 
         if len(patched_dict):
-            manifest["patched_cves"] = patched_dict
+            manifest['patched_cves'] = patched_dict
+
+    if not len(manifest['srcrev']):
+        manifest.pop('srcrev')
+    if not len(manifest['patched_cves']):
+        manifest.pop('patched_cves')
 
     tsmeta_write_dict(d, "cve", manifest)
 }
