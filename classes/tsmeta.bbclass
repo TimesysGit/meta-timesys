@@ -64,17 +64,8 @@ tsmeta_lvars_pn = " \
     PROVIDES \
 "
 
-
-tsmeta_vars_recipe = "\
-    FILE                    \
-    FILE_DIRNAME            \
-"
-
-tsmeta_lvars_recipe = "\
-    FILESEXTRAPATHS         \
-"
-
 tsmeta_lvars_src = "\
+    FILESEXTRAPATHS         \
     SRC_URI                 \
 "
 
@@ -82,6 +73,7 @@ tsmeta_vars_src = "\
     BRANCH                  \
     CVE_PRODUCT             \
     CVE_VERSION             \
+    FILE                    \
     LICENSE                 \
     SRCBRANCH               \
     SRCREV                  \
@@ -243,23 +235,6 @@ def tsmeta_get_vars(d, tgv_type):
 def tsmeta_get_pn(d):
     tsmeta_get_vars(d, "pn")
 
-def tsmeta_get_recipe(d):
-    tgv_type = "recipe"
-
-    dest_dict = dict()
-    read_var_list(d, tgv_type, dest_dict)
-    read_lvar_list(d, tgv_type, dest_dict)
-
-    recipe_path = dest_dict["file"]
-    recipe_layer = bb.utils.get_file_layer(recipe_path, d)
-    layer_path = tsmeta_read_dictname_single(
-        d, "layers", recipe_layer, "path"
-    )
-    dest_dict["layer"] = recipe_layer
-    dest_dict["recipe"] = os.path.relpath(recipe_path, layer_path)
-
-    tsmeta_write_dict(d, tgv_type, dest_dict)
-
 
 def _get_cve_product(d):
     cve_p = d.getVar('CVE_PRODUCT')
@@ -367,6 +342,15 @@ def tsmeta_get_src(d):
 
     if src_dict["srcrev"] == "INVALID":
         src_dict.pop("srcrev")
+
+    recipe_path = src_dict.pop('file')
+    recipe_layer = bb.utils.get_file_layer(recipe_path, d)
+    layer_path = os.path.join(
+        d.getVar('BSPDIR') or '.',
+        tsmeta_read_dictname_single(d, 'layers', recipe_layer, 'path')
+    )
+    src_dict['layer'] = recipe_layer
+    src_dict['recipe'] = os.path.relpath(recipe_path, layer_path)
     tsmeta_write_dict(d, tsm_type, src_dict)
 
 def tsmeta_get_pkg(d):
@@ -479,7 +463,6 @@ def tsmeta_get_packageconfig(d):
 
 python do_tsmeta_pkgvars() {
     tsmeta_get_pn(d)
-    tsmeta_get_recipe(d)
     tsmeta_get_src(d)
     tsmeta_get_pkg(d)
     tsmeta_get_packageconfig(d)
