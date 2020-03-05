@@ -605,16 +605,33 @@ def tsmeta_git_branch_info(d, path):
     def _run_git(_git_cmd, _arg_list = []):
         _args = ' '.join(_arg_list)
         _cmd = ' '.join([_git_cmd, _args])
-        bb.debug(2, 'Command: %s' % _cmd)
+        # bb.plain('Command: %s' % _cmd)
         try:
             git_out, _ = bb.process.run(_cmd, cwd=path)
-            bb.debug(2, 'git output: %s' % git_out)
+            # bb.plain('git output: %s' % git_out)
             if isinstance(git_out, bytes):
                 git_out = git_out.decode('ascii')
         except bb.process.ExecutionError as ex:
             bb.debug(1, 'git Failed: %s -- %s' % (_cmd, ex))
             git_out = ""
         return oe.utils.squashspaces(git_out)
+
+    def _repo_config():
+        _git_config_cmd = ' '.join([
+            'git',
+            'config'
+        ])
+        _local_list_args = [
+            '-l',
+            '--local'
+        ]
+        _local_config = _run_git(_git_config_cmd, _local_list_args)
+        # cfg_dict = {}
+        # for _entry in _local_config.split():
+        #     _name, _value = _entry.split('=', 2)
+        #     cfg_dict[_name] = _value
+        # bb.plain("git Config for %s: %s" % (path, cfg_dict))
+        return _local_config
 
     def _head_revision():
         _git_log_cmd = ' '.join([
@@ -627,7 +644,7 @@ def tsmeta_git_branch_info(d, path):
             '--format=\'%H\''
         ]
         _rev = _run_git(_git_log_cmd, _log_args)
-        bb.debug(2, 'Path: %s, Revision: %s' %(path, _rev))
+        # bb.plain('Path: %s, Revision: %s' %(path, _rev))
         return _rev
 
     def _branch_name(_rev):
@@ -654,9 +671,11 @@ def tsmeta_git_branch_info(d, path):
             '2'
         ])
         _name = _run_git(_git_branch_cmd, [_points_at, _color, _pipeline])
-        if _name == "(no branch)":
+        if any([
+            _str in _name for _str in [ '(no branch)', '(HEAD detached' ]
+        ]):
             _name = "detached"
-        bb.debug(2, "Path: %s, Branch Name: %s" %(path, _name))
+        # bb.plain("Path: %s, Branch Name: %s" %(path, _name))
         return _name
 
     def _get_remote_list():
@@ -716,6 +735,10 @@ def tsmeta_git_branch_info(d, path):
         ]
         _remote_url = _run_git(_git_cmd_ls_remote, _remote_args)
         return _remote_url
+
+    r_config = _repo_config()
+    if not r_config:
+        return {}
 
     b_rev = _head_revision()
     b_name = _branch_name(b_rev)
