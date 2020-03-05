@@ -652,7 +652,9 @@ def tsmeta_git_branch_info(d, path):
             '2'
         ])
         _name = _run_git(_git_branch_cmd, [_points_at, _color, _pipeline])
-        if _name == "(no branch)":
+        if any([
+            _str in _name for _str in [ '(no branch)', '(HEAD detached' ]
+        ]):
             _name = "detached"
         bb.debug(2, "Path: %s, Branch Name: %s" %(path, _name))
         return _name
