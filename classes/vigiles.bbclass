@@ -237,11 +237,14 @@ def vigiles_image_depends(d):
     if bb.data.inherits_class('image', d):
         backfill_pns = d.getVar('VIGILES_BACKFILL', True ).split()
         deps = [ ':'.join([_pn, 'do_vigiles_pkg']) for _pn in backfill_pns ]
+        _uboot = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True) or ''
+        if _uboot:
+            deps.append('virtual/bootloader:do_vigiles_uboot_config')
+
     return ' '.join(deps)
 
 
 do_vigiles_image[depends] += "virtual/kernel:do_vigiles_kconfig"
-do_vigiles_image[depends] += "virtual/bootloader:do_vigiles_uboot_config"
 do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 
@@ -321,13 +324,17 @@ def _get_uboot_pf(d):
     from oe import recipeutils as oe
 
     pn = d.getVar('PN', True )
-    bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True )
+    bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True ) or ''
+
+    if not bpn:
+        return bpn
 
     if bb.data.inherits_class('uboot-config', d) and pn == bpn:
         tsmeta_get_pn(d)
 
-    kdict = tsmeta_read_dictname_vars(d, 'pn', bpn, ['pv'])
-    pv = kdict.get('pv', 'unset')
+    pv = tsmeta_read_dictname_single(d, 'pn', bpn, 'pv')
+    if not pv:
+        pv = 'unset'
     (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
 
     vgls_pf = '-'.join([bpn, bpv])
