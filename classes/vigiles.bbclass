@@ -224,7 +224,7 @@ python do_vigiles_image() {
     vigiles_write_manifest(d, "cve", cve_manifest)
 }
 
-addtask do_vigiles_image after do_image_complete
+addtask do_vigiles_image before do_vigiles_check after do_image_complete
 do_vigiles_image[nostamp] = "1"
 do_rootfs[nostamp] = "1"
 do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
@@ -519,6 +519,15 @@ do_vigiles_check[depends] += " ${@vigiles_check_depends(d)} "
 
 addtask do_vigiles_check after do_vigiles_image
 do_vigiles_check[nostamp] = "1"
+
+def vigiles_build_depends(d):
+    pn = d.getVar('PN', True)
+    deps = list()
+    if bb.data.inherits_class('image', d):
+        deps.append("%s:do_vigiles_check" % pn)
+    return ' '.join(deps)
+
+do_build[depends] += " ${@vigiles_build_depends(d)} "
 
 python() {
     if bb.data.inherits_class('kernel', d):
