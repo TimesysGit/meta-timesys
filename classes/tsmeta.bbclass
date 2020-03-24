@@ -344,7 +344,7 @@ def tsmeta_get_src(d):
         src_dict.pop("srcrev")
 
     recipe_path = src_dict.pop('file')
-    recipe_layer = bb.utils.get_file_layer(recipe_path, d)
+    recipe_layer = bb.utils.get_file_layer(recipe_path, d) or '.'
     layer_path = os.path.join(
         d.getVar('BSPDIR', True ) or '.',
         tsmeta_read_dictname_single(d, 'layers', recipe_layer, 'path')
