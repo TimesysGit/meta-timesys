@@ -722,7 +722,9 @@ def tsmeta_git_branch_info(d, path):
             _ret = _tracking
         elif _fallback:
             _ret = _fallback
-        return _ret.split('/', 2)
+        else:
+            _ret = "unknown/unknown"
+        return _ret.split('/', 1)
 
     def _upstream_url(_remote):
         _git_cmd_ls_remote = ' '.join([
