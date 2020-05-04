@@ -191,6 +191,85 @@ VIGILES_BACKFILL := "${@' '.join( \
 )}"
 
 
+##
+#   Additional packages can be included in the manifest by setting
+#    'VIGILES_EXTRA_PACKAGES' in local.conf, which is expected to be a list of
+#    .csv files in the form of:
+#       <product>, <version>, [<license>]
+##
+def _get_extra_packages(d):
+    import csv
+    import json
+    from collections import defaultdict
+
+    vgls_extra = d.getVar('VIGILES_EXTRA_PACKAGES', True ) or ''
+    extra_files = oe.utils.squashspaces(vgls_extra).split(' ')
+    if not extra_files:
+        bb.debug(2, "Vigiles: No Extra Packages.")
+        return {}
+
+    bb.debug(1, "Importing Extra Packages from %s" % extra_files)
+
+    additional = {
+        'additional_licenses': defaultdict(str),
+        'additional_packages': defaultdict(dict)
+    }
+
+    extra_rows = []
+    for extra_csv in extra_files:
+        if not os.path.exists(extra_csv):
+            print("Skipping Non-Existent Extras File: %s" % extra_csv)
+            continue
+        try:
+            with open(extra_csv) as csv_in:
+                reader = csv.reader(csv_in)
+                for row in reader:
+                    if not len(row):
+                        continue
+                    if row[0].startswith('#'):
+                        continue
+
+                    pkg = row[0].strip()
+                    if len(row) > 1:
+                        ver = row[1].strip()
+                    else:
+                        ver = ''
+                    if len(row) > 2:
+                        license = row[2].strip()
+                    else:
+                        license = 'unknown'
+                    extra_rows.append([pkg,ver,license])
+        except Exception as e:
+            bb.warn("Vigiles Extras File: %s" % e)
+            return {}
+
+    if not extra_rows:
+        return {}
+
+    # Check for a CSV header of e.g. "package,version,license" and skip it
+    header = extra_rows[0]
+    if header[0].lower() == "package":
+        extra_rows = extra_rows[1:]
+
+    for row in extra_rows:
+        pkg = row[0]
+        ver = row[1]
+        license = row[2]
+        license_key = pkg + ver
+
+        bb.debug(1, "Extra Package: %s, Version: %s, License: %s = %s" %
+                 (pkg, ver, license_key, license))
+
+        pkg_vers = set(additional['additional_packages'].get(pkg, []))
+        if ver:
+            pkg_vers.add(ver)
+
+        additional['additional_packages'][pkg] = sorted(list(pkg_vers))
+        additional['additional_licenses'][license_key] = license
+
+    return additional
+
+
 def vigiles_image_collect(d):
     from datetime import datetime
 
@@ -214,6 +293,7 @@ def vigiles_image_collect(d):
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
             whitelist        = (d.getVar('VIGILES_WHITELIST', True ) or "").split(),
         )
+    dict_out.update(_get_extra_packages(d))
     return dict_out
 
 python do_vigiles_image() {
