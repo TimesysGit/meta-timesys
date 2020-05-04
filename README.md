@@ -279,6 +279,60 @@ To use an alternate config, or a config in a non-default location, you can speci
 VIGILES_DASHBOARD_CONFIG = "/tools/timesys/dashboard_config"
 ```
 
+
+### Specifying Additional Packages to Check
+
+In some cases, a BSP may want to include packages that are built outside of
+the Bitbake/Yocto process. If this is required, ```VIGILES_EXTRA_PACKAGES```
+may be used to specify one or more CSV (comma-separated-value) files that
+describe the extra packages to include in the CVE check.
+
+For example, one may set this in their local.conf:
+
+```
+VIGILES_EXTRA_PACKAGES = "${HOME}/projects/this-bsp/non-yocto/yocto-extra.csv"
+```
+
+or perhaps:
+
+```
+VIGILES_EXTRA_PACKAGES = " \
+	${HOME}/projects/this-bsp/non-yocto/yocto-extra-boot.csv \
+	${HOME}/projects/this-bsp/non-yocto/yocto-extra-ui.csv   \
+"
+```
+
+##### CSV Format
+
+The CSV files consist of an optional header and the following fields:
+
+* Product - the CPE Name that packages use in CVEs
+* (optional) Version - the version of the package used.
+* (optional) License - the license of the package used
+
+Blank lines and those starting with **#** are ignored.
+
+One example:
+
+```sh
+$ cat yocto-extra.csv
+# Optional Header:
+product,version,license
+
+# Comments start with '#' and are ignored.
+
+avahi, 0.6
+
+# Blank lines are also ignored
+
+bash, 4.0
+bash, 4.1, "GPL 3.0"
+
+busybox
+```
+
+
+
 Maintenance
 ===========
 
