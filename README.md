@@ -309,25 +309,16 @@ The CSV files consist of an optional header and the following fields:
 * (optional) Version - the version of the package used.
 * (optional) License - the license of the package used
 
-Blank lines and those starting with **#** are ignored.
-
-One example:
+The following example shows the accepted syntax for expressing extra packages:
 
 ```sh
 $ cat yocto-extra.csv
-# Optional Header:
 product,version,license
-
-# Comments start with '#' and are ignored.
-
-avahi, 0.6
-
-# Blank lines are also ignored
-
-bash, 4.0
-bash, 4.1, "GPL 3.0"
-
-busybox
+avahi,0.6
+bash,4.0
+bash,4.1,GPL 3.0
+busybox,
+udev,,"GPLv2.0+, LGPL-2.1+"
 ```
 
 
