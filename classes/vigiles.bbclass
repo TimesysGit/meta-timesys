@@ -248,12 +248,12 @@ def _get_extra_packages(d):
 
     # Check for a CSV header of e.g. "package,version,license" and skip it
     header = extra_rows[0]
-    if header[0].lower() == "package":
+    if header[0].lower() == "product":
         extra_rows = extra_rows[1:]
 
     for row in extra_rows:
-        pkg = row[0]
-        ver = row[1]
+        pkg = row[0].replace(' ', '-')
+        ver = row[1].replace(' ', '.')
         license = row[2]
         license_key = pkg + ver
 
@@ -261,8 +261,7 @@ def _get_extra_packages(d):
                  (pkg, ver, license_key, license))
 
         pkg_vers = set(additional['additional_packages'].get(pkg, []))
-        if ver:
-            pkg_vers.add(ver)
+        pkg_vers.add(ver)
 
         additional['additional_packages'][pkg] = sorted(list(pkg_vers))
         additional['additional_licenses'][license_key] = license
