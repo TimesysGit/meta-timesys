@@ -323,6 +323,34 @@ udev,,"GPLv2.0+, LGPL-2.1+"
 ```
 
 
+### Excluding Packages From the CVE Check
+
+In some cases, a BSP may want to _exclude_ packages from the Vigiles Report;
+for instance to condense the output by removing packages that are 'installed'
+but have no files (e.g. packagegroups or those that only install data files).
+
+This can be done by setting ```VIGILES_EXCLUDE``` to a space-separated list
+of one or more CSV files that contain a list of packages to drop from the
+generated manifest before it is submitted for the CVE check.
+
+For example, in ```conf/local.conf```:
+
+```
+VIGILES_EXCLUDE = "${TOPDIR}/vigiles-exclude.csv"
+```
+
+And in ```${TOPDIR}/vigiles-exclude.csv```:
+
+
+```
+linux-libc-headers
+opkg-utils
+packagegroup-core-boot
+```
+
+>Note: filtering of packages is performed as the final step in constructing
+>the manifest, after any additional packages are included.
+
 
 Maintenance
 ===========
