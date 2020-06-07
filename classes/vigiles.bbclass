@@ -269,6 +269,55 @@ def _get_extra_packages(d):
     return additional
 
 
+##
+#   Packages can be excluded from the manifest by setting
+#    'VIGILES_EXCLUDE' in local.conf, which is expected to be a list of
+#    .csv files in the format of
+#       <product>
+##
+def _filter_excluded_packages(d, vgls_pkgs):
+    import csv
+
+    vgls_excld_files = d.getVar('VIGILES_EXCLUDE', True ) or ''
+    excld_files = oe.utils.squashspaces(vgls_excld_files).split(' ')
+    if not excld_files:
+        return {}
+
+    excld_pkgs = set()
+
+    for excld_csv in excld_files:
+        if not os.path.exists(excld_csv):
+            bb.info("Vigiles: Skipping Non-Existent exclude-package File: %s" % excld_csv)
+            continue
+        bb.debug(1, "Vigiles: Importing Excluded Packages from %s" % excld_files)
+        try:
+            with open(excld_csv) as csv_in:
+                reader = csv.reader(csv_in)
+                for row in reader:
+                    if not len(row):
+                        continue
+                    if row[0].startswith('#'):
+                        continue
+
+                    pkg = row[0].strip().lower()
+                    excld_pkgs.add(pkg.replace(' ', '-'))
+        except Exception as e:
+            bb.warn("Vigiles: exclude-packages: %s" % e)
+            return {}
+
+    bb.debug(2, "Vigiles: Requested packages to exclude: %s" % list(excld_pkgs))
+
+    pkg_matches = list(set([
+        k
+        for k, v in vgls_pkgs.items()
+        if v['name'] in excld_pkgs
+    ]))
+
+    bb.debug(1, "Vigiles: Excluding Packages: %s" % sorted(pkg_matches))
+    for pkg_key in pkg_matches:
+        vgls_pkgs.pop(pkg_key)
+
+
 def vigiles_image_collect(d):
     from datetime import datetime
 
@@ -293,6 +342,7 @@ def vigiles_image_collect(d):
             whitelist        = (d.getVar('VIGILES_WHITELIST', True ) or "").split(),
         )
     dict_out.update(_get_extra_packages(d))
+    _filter_excluded_packages(d, dict_out['packages'])
     return dict_out
 
 python do_vigiles_image() {
