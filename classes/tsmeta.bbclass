@@ -611,9 +611,10 @@ def tsmeta_git_branch_info(d, path):
             # bb.plain('git output: %s' % git_out)
             if isinstance(git_out, bytes):
                 git_out = git_out.decode('ascii')
-        except bb.process.ExecutionError as ex:
+        except Exception as ex:
             bb.debug(1, 'git Failed: %s -- %s' % (_cmd, ex))
             git_out = ""
+            raise
         return oe.utils.squashspaces(git_out)
 
     def _repo_config():
@@ -744,7 +745,9 @@ def tsmeta_git_branch_info(d, path):
 
     b_rev = _head_revision()
     b_name = _branch_name(b_rev)
-    b_remote, b_upstream = _upstream_branch(b_rev)
+    b_info = _upstream_branch(b_rev)
+    b_remote = b_info[0]
+    b_upstream = b_info[-1]
     b_url = _upstream_url(b_remote)
 
     branch_dict = dict(
@@ -770,7 +773,10 @@ def tsmeta_collect_layers(d):
     for lname in d.getVar('BBFILE_COLLECTIONS', True ).split():
         pattern = d.getVar('_'.join(['BBFILE_PATTERN', lname]), True )
         full_path = os.path.normpath(pattern.split('^')[-1])
-        layer_dict[lname] = _layer_info(full_path)
+        try:
+            layer_dict[lname] = _layer_info(full_path)
+        except Exception as e:
+            bb.warn("Vigiles: Could not get repo info for %s: %s" % (lname, e))
 
     if 'timesys' not in layer_dict:
         meta_timesys_dir = d.getVar('VIGILES_LAYERDIR', True )
