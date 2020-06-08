@@ -318,7 +318,7 @@ def vigiles_image_depends(d):
         deps = [ ':'.join([_pn, 'do_vigiles_pkg']) for _pn in backfill_pns ]
         _uboot = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True) or ''
         if _uboot:
-            deps.append('virtual/bootloader:do_vigiles_uboot_config')
+            deps.append('%s:do_vigiles_uboot_config' % _uboot)
 
     return ' '.join(deps)
 
@@ -516,10 +516,14 @@ python do_vigiles_uboot_config() {
 
 python() {
     if bb.data.inherits_class('uboot-config', d):
-        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
+        pn = d.getVar('PN', True )
+        bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True ) or ''
+
+        if pn == bpn:
+            bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
+            d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn)
 }
 
-do_vigiles_uboot_config[depends] += "virtual/bootloader:do_compile"
 do_vigiles_uboot_config[nostamp] = "1"
 
 
