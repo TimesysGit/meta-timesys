@@ -287,7 +287,7 @@ def _filter_excluded_packages(d, vgls_pkgs):
 
     for excld_csv in excld_files:
         if not os.path.exists(excld_csv):
-            bb.info("Vigiles: Skipping Non-Existent exclude-package File: %s" % excld_csv)
+            bb.note("Vigiles: Skipping Non-Existent exclude-package File: %s" % excld_csv)
             continue
         bb.debug(1, "Vigiles: Importing Excluded Packages from %s" % excld_files)
         try:
