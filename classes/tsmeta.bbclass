@@ -14,7 +14,6 @@ tsmeta_dir = "${TMPDIR}/${tsmeta_dirname}"
 
 tsmeta_cve_dir = "${tsmeta_dir}/cve"
 tsmeta_image_dir = "${tsmeta_dir}/image"
-tsmeta_packageconfig_dir = "${tsmeta_dir}/packageconfig"
 tsmeta_pkg_dir = "${tsmeta_dir}/pkg"
 tsmeta_pn_dir = "${tsmeta_dir}/pn"
 tsmeta_recipe_dir = "${tsmeta_dir}/recipe"
@@ -57,8 +56,6 @@ tsmeta_vars_pn = "  \
 tsmeta_lvars_pn = " \
     DEPENDS \
     IMAGE_INSTALL \
-    PACKAGECONFIG \
-    PACKAGECONFIG_CONFARGS  \
     PACKAGES \
     PACKAGES_DYNAMIC\
     PROVIDES \
@@ -424,48 +421,10 @@ def tsmeta_get_pkg(d):
     tsmeta_write_dict(d, "pkg", dict_out)
 
 
-
-def tsmeta_get_packageconfig(d):
-    import oe.packagedata
-
-    tgv_type = "packageconfig"
-
-    dest_dict = dict(
-        depends = list(),
-        rdepends = list(),
-        rrecommends = list(),
-    )
-
-    pkgconfig = (d.getVar('PACKAGECONFIG', True ) or "").split()
-    if not pkgconfig:
-        return
-
-    pkgconfigflags = d.getVarFlags("PACKAGECONFIG") or {}
-    if pkgconfigflags:
-
-        for flag, flagval in sorted(pkgconfigflags.items()):
-            items = flagval.split(",")
-            num = len(items)
-            if num > 5:
-                bb.warn("%s: PACKAGECONFIG[%s] Only enable,disable,depend,rdepend,rrecommend can be specified!"
-                    % (d.getVar('PN', True ), flag))
-
-            if flag in pkgconfig:
-                if num >= 3 and items[2]:
-                    dest_dict['depends'].append(items[2])
-                if num >= 4 and items[3]:
-                    dest_dict['rdepends'].append(items[3])
-                if num >= 5 and items[4]:
-                    dest_dict['rrecommends'].append(items[4])
-
-    tsmeta_write_dict(d, tgv_type, dest_dict)
-
-
 python do_tsmeta_pkgvars() {
     tsmeta_get_pn(d)
     tsmeta_get_src(d)
     tsmeta_get_pkg(d)
-    tsmeta_get_packageconfig(d)
 }
 
 
