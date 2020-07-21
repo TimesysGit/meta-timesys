@@ -422,6 +422,10 @@ def tsmeta_get_pkg(d):
 
 
 python do_tsmeta_pkgvars() {
+    # The following is needed to avoid a configuration conflict
+    # when python3.8 is installed on the host system.
+    if '_PYTHON_SYSCONFIGDATA_NAME' in os.environ:
+        del os.environ['_PYTHON_SYSCONFIGDATA_NAME']
     tsmeta_get_pn(d)
     tsmeta_get_src(d)
     tsmeta_get_pkg(d)
