@@ -472,7 +472,11 @@ def _get_uboot_pf(d):
 
 python do_vigiles_uboot_config() {
     import shutil
-    from oe import recipeutils as oe
+
+    # The following is needed to avoid a configuration conflict
+    # when python3.8 is installed on the host system.
+    if '_PYTHON_SYSCONFIGDATA_NAME' in os.environ:
+        del os.environ['_PYTHON_SYSCONFIGDATA_NAME']
 
     vgls_pf = _get_uboot_pf(d)
     config_in = d.getVar('VIGILES_UBOOT_CONFIG', True ) or ''
