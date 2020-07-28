@@ -378,8 +378,6 @@ do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 
 def _get_kernel_pf(d):
-    from oe import recipeutils as oe
-
     bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
     cve_v = "unset"
     if bb.data.inherits_class('kernel', d):
@@ -394,7 +392,6 @@ def _get_kernel_pf(d):
 
 def _find_config(d, vgls_pf, config_in):
     import shutil
-    from oe import recipeutils as oe
 
     vgls_timestamp = d.getVar('VIGILES_TIMESTAMP')
 
@@ -587,6 +584,12 @@ python do_vigiles_check() {
     vigiles_in = d.getVar('VIGILES_MANIFEST_LINK')
     vigiles_out = d.getVar('VIGILES_REPORT')
     vigiles_link = d.getVar('VIGILES_REPORT_LINK')
+
+    # The following is needed to avoid a configuration conflict
+    # when python3.8 is installed on the host system.
+    if '_PYTHON_SYSCONFIGDATA_NAME' in os.environ:
+        del os.environ['_PYTHON_SYSCONFIGDATA_NAME']
+
     vigiles_kconfig = os.path.join(d.getVar('VIGILES_DIR'),
                                    '.'.join([_get_kernel_pf(d), 'config']))
     vigiles_uconfig = os.path.join(d.getVar('VIGILES_DIR'),
