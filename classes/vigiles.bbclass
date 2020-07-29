@@ -611,6 +611,21 @@ python do_vigiles_check() {
             args = args + ['-u', vigiles_uconfig]
 
         vigiles_env = os.environ.copy()
+
+        #
+        # Vigiles uses python3, and needs to use the Host-installed instance
+        #  to avoid racing against the removal of the Yocto-built native
+        #  instance when 'INHERIT += rm_work' is used.
+        #
+        # Note that python3 is a required HOSTTOOL by the poky tree, as of the
+        #  pyro release, so we don't need to do 'HOSTTOOLs += python3'.
+        #  See poky/meta/conf/bitbake.conf for definition.
+        env_path = vigiles_env.get('PATH').split(os.path.pathsep)
+        hosttools_dir = d.getVar('HOSTTOOLS_DIR')
+
+        env_path.insert(0, hosttools_dir)
+        vigiles_env['PATH'] = os.path.pathsep.join(env_path)
+
         vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE')
         vigiles_env['VIGILES_DASHBOARD_CONFIG'] = d.getVar('VIGILES_DASHBOARD_CONFIG')
 
@@ -620,6 +635,7 @@ python do_vigiles_check() {
         args = [path] + args
 
         bb.debug(1, "Vigiles Command Line: %s" % (" ").join(args))
+        bb.debug(1, "Vigiles: Using Path: %s" % vigiles_env.get('PATH'))
         return bb.process.run(args, env=vigiles_env)
 
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
