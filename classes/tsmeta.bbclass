@@ -75,6 +75,7 @@ tsmeta_vars_src = "\
     LICENSE                 \
     SRCBRANCH               \
     SRCREV                  \
+    SUMMARY                 \
 "
 
 
@@ -307,6 +308,8 @@ def tsmeta_get_src(d):
 
     src_dict["cve_product"] = _get_cve_product(d)
     src_dict["cve_version"] = _get_cve_version(d)
+
+    src_dict["summary"] = d.getVar('SUMMARY', True )
 
     uri_dict = dict()
 
