@@ -76,6 +76,7 @@ tsmeta_vars_src = "\
     SRCBRANCH               \
     SRCREV                  \
     SUMMARY                 \
+    HOMEPAGE                \
 "
 
 
@@ -310,6 +311,7 @@ def tsmeta_get_src(d):
     src_dict["cve_version"] = _get_cve_version(d)
 
     src_dict["summary"] = d.getVar('SUMMARY', True )
+    src_dict["homepage"] = d.getVar('HOMEPAGE', True )
 
     uri_dict = dict()
 
