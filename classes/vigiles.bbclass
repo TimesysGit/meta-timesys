@@ -102,7 +102,8 @@ python do_vigiles_pkg() {
         'sources',
         'srcrev',
         'patched_cves',
-        'summary'
+        'summary',
+        'homepage'
     ]
     pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
     manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
