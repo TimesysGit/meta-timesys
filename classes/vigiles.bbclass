@@ -93,6 +93,7 @@ python do_vigiles_pkg() {
         'pv'
     ]
     src_vars = [
+        'cve_check_whitelist',
         'cve_product',
         'cve_version',
         'layer',
@@ -330,6 +331,16 @@ def vigiles_image_collect(d):
     # already present
     pn_list = list(sorted(backfill_list + rdep_list))
 
+    vgls_pkgs = tsmeta_read_dictdir_files(d, "cve", pn_list)
+    vigiles_ignored = set(
+        oe.utils.squashspaces(d.getVar('VIGILES_WHITELIST') or "").split()
+    )
+    for pkg_name, pkg_dict in vgls_pkgs.items():
+        pkg_ignored = pkg_dict.get('cve_check_whitelist', [])
+        if pkg_ignored:
+            bb.debug(1, "Vigiles: Package: '%s' is ignoring %s" % (pkg_name, pkg_ignored))
+        vigiles_ignored.update(pkg_ignored)
+
     dict_out = dict(
             date             = datetime.utcnow().isoformat(),
             distro           = sys_dict["distro"]["codename"],
@@ -339,7 +350,7 @@ def vigiles_image_collect(d):
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
-            whitelist        = (d.getVar('VIGILES_WHITELIST') or "").split(),
+            whitelist        = sorted(list(vigiles_ignored))
         )
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
