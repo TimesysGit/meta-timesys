@@ -44,15 +44,12 @@ def _get_patched(src_patches):
             cve = fname_match.group(1).upper()
             found_cves.append(cve)
 
-        with open(patch_file, "r", encoding="utf-8") as f:
+        with open(patch_file, "r") as f:
             try:
                 patch_text = f.read()
             except UnicodeDecodeError:
-                bb.plain("Failed to read patch %s using UTF-8 encoding"
-                        " trying with iso8859-1" %  patch_file)
-                f.close()
-                with open(patch_file, "r", encoding="iso8859-1") as f:
-                    patch_text = f.read()
+                bb.plain("Failed to open patch %s (possible encoding error)"
+                        %  patch_file)
 
         # Search for one or more "CVE: " lines
         for match in cve_match.finditer(patch_text):
@@ -552,8 +549,8 @@ python do_vigiles_uboot_config() {
                 bb.warn("Could not read/parse U-Boot autoconf.mk: %s" % e)
         bb.debug(1, "Writing %d values to : %s" % (len(config_set), config_out))
         with open(config_out, 'w') as f_out:
-            print('\n'.join(config_preamble), file=f_out, flush=True)
-            print('\n'.join(sorted(list(config_set))), file=f_out, flush=True)
+            f_out.write('\n'.join(config_preamble))
+            f_out.write('\n'.join(sorted(list(config_set))))
     else:
         bb.warn("config does not exist, skipping.")
         bb.warn("config path: %s" % config_in)
