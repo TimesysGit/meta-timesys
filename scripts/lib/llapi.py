@@ -5,8 +5,9 @@ import hashlib
 import hmac
 import json
 import ssl
-import urllib
-import urllib2
+import urllib.request
+import urllib.parse
+import urllib.error
 from collections import OrderedDict
 
 LINUXLINK_SERVER = 'https://linuxlink.timesys.com'
@@ -66,9 +67,9 @@ def _do_api_call(request_dict, json_response):
         context = None
 
     try:
-        r = urllib2.Request(**request_dict)
-        f = urllib2.urlopen(r, context=context) if context else urllib2.urlopen(r)
-    except urllib2.HTTPError as e:
+        r = urllib.request.Request(**request_dict)
+        f = urllib.request.urlopen(r, context=context) if context else urllib.request.urlopen(r)
+    except urllib.error.HTTPError as e:
         raise Exception('LinuxLink server returned status: %s' % e.code)
     except Exception as e:
         raise Exception('Unable to connect to LinuxLink server: %s' % e)
@@ -83,7 +84,7 @@ def _do_api_call(request_dict, json_response):
 def api_get(email, key, resource, data_dict={}, json=True):
     data_dict['email'] = email
     msg = make_msg('GET', resource, data_dict)
-    params = urllib.urlencode(data_dict).encode('utf-8')
+    params = urllib.parse.urlencode(data_dict).encode('utf-8')
     request = {
         'headers': {
             'X-Auth-Signature': create_hmac(key, msg),
@@ -101,6 +102,6 @@ def api_post(email, key, resource, data_dict={}, json=True):
             'X-Auth-Signature': create_hmac(key, msg),
         },
         'url': LINUXLINK_SERVER + resource,
-        'data': urllib.urlencode(data_dict).encode('utf-8'),
+        'data': urllib.parse.urlencode(data_dict).encode('utf-8'),
     }
     return _do_api_call(request, json)
