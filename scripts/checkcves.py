@@ -135,7 +135,7 @@ def print_cves(result, demo=False, outfile=None):
     cves = result.get('cves', {})
     if cves:
         print('\n\n-- Recipe CVEs --', file=outfile)
-        for pkg, info in cves.iteritems():
+        for pkg, info in cves.items():
             for cve in info:
                 print('\n\tRecipe:  %s' % pkg, file=outfile)
                 print('\tVersion: %s' % cve['version'], file=outfile)
