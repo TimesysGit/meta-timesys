@@ -841,10 +841,7 @@ def tsmeta_pn_list(d):
         return pn_out
 
     def get_manifest_pkgs(sys_dict):
-        image_dir = d.getVar("DEPLOY_DIR_IMAGE", True )
-        image_spec = d.getVar("IMAGE_LINK_NAME", True )
-        manifest_link = '.'.join([image_spec, 'manifest'])
-        manifest_path = os.path.join(image_dir, manifest_link)
+        manifest_path = d.getVar('IMAGE_MANIFEST', True )
 
         rootfs_pkgs = list()
         if os.path.exists(manifest_path):
