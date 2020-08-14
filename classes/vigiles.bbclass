@@ -364,11 +364,11 @@ python do_vigiles_image() {
     vigiles_write_manifest(d, "cve", cve_manifest)
 }
 
-addtask do_vigiles_image after do_image_complete
+addtask do_vigiles_image after do_rootfs before do_image
 do_vigiles_image[nostamp] = "1"
 do_rootfs[nostamp] = "1"
-do_vigiles_image[recrdeptask] += "do_vigiles_pkg"
-do_vigiles_image[recideptask] += "do_vigiles_pkg"
+do_rootfs[recrdeptask] += "do_vigiles_pkg"
+do_rootfs[recideptask] += "do_vigiles_pkg"
 
 
 def vigiles_image_depends(d):
@@ -672,15 +672,6 @@ python do_vigiles_check() {
         os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
 }
 
-def vigiles_check_depends(d):
-    pn = d.getVar('PN')
-    deps = list()
-    if bb.data.inherits_class('image', d):
-        deps.append("%s:do_vigiles_image" % pn)
-        d.appendVarFlag('do_build', 'depends', ' %s:do_vigiles_check' % pn)
-    return ' '.join(deps)
 
-do_vigiles_check[depends] += " ${@vigiles_check_depends(d)} "
-
-addtask do_vigiles_check after do_vigiles_image
+addtask do_vigiles_check after do_image before do_image_complete
 do_vigiles_check[nostamp] = "1"
