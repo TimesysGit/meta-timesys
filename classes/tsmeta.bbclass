@@ -726,22 +726,23 @@ def tsmeta_collect_layers(d):
     layer_dict = dict()
     bspdir = d.getVar('BSPDIR')
 
-    def _layer_info(lpath):
-        ldict = tsmeta_git_branch_info(d, lpath)
-        ldict['path'] = os.path.relpath(lpath, bspdir)
+    def _layer_info(lname, lpath):
+        ldict = dict()
+        try:
+            ldict = tsmeta_git_branch_info(d, lpath)
+            ldict['path'] = os.path.relpath(lpath, bspdir)
+        except Exception as e:
+            bb.debug(1, "Vigiles: Could not get Layer info for %s: %s" % (lname, e))
         return ldict
 
     for lname in d.getVar('BBFILE_COLLECTIONS').split():
         pattern = d.getVar('_'.join(['BBFILE_PATTERN', lname]))
         full_path = os.path.normpath(pattern.split('^')[-1])
-        try:
-            layer_dict[lname] = _layer_info(full_path)
-        except Exception as e:
-            bb.warn("Vigiles: Could not get repo info for %s: %s" % (lname, e))
+        layer_dict[lname] = _layer_info(lname, full_path)
 
     if 'timesys' not in layer_dict:
         meta_timesys_dir = d.getVar('VIGILES_LAYERDIR')
-        layer_dict['timesys'] = _layer_info(meta_timesys_dir)
+        layer_dict['timesys'] = _layer_info('timesys', meta_timesys_dir)
 
     return layer_dict
 
