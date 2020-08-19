@@ -652,6 +652,11 @@ python do_vigiles_check() {
         bb.debug(1, "Vigiles: Using Path: %s" % vigiles_env.get('PATH'))
         return bb.process.run(args, env=vigiles_env)
 
+    _check_disabled = bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_CHECK'), False)
+    if _check_disabled:
+        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('IMAGE_BASENAME'))
+        return
+
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
 
     try:
