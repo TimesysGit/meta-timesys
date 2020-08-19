@@ -326,6 +326,9 @@ def vigiles_image_collect(d):
     sys_dict = vigiles_get_build_dict(d)
 
     backfill_list = d.getVar('VIGILES_BACKFILL', True).split()
+    initramfs_image = d.getVar('INITRAMFS_IMAGE', True)
+    if initramfs_image:
+        backfill_list.append(initramfs_image)
     rdep_list = tsmeta_pn_list(d)
 
     # This list() cast will remove duplicates if the backfill packages are
