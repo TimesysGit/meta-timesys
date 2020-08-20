@@ -274,7 +274,7 @@ if __name__ == '__main__':
     try:
         email, key = llapi.read_keyfile(key_file)
         # It is fine if either of these are none, they will just default
-        product_token= llapi.read_dashboard_config(dashboard_config)
+        dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
     except Exception as e:
         print('Error: %s\n' % e)
         print(get_usage())
@@ -371,7 +371,8 @@ if __name__ == '__main__':
     request = {
       'manifest': manifest_data,
       'subscribe': args.subscribe,
-      'product_token': product_token
+      'product_token': dashboard_tokens.get('product', ''),
+      'folder_token': dashboard_tokens.get('folder', ''),
     }
 
     if kernel_config:
