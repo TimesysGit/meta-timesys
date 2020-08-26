@@ -268,15 +268,19 @@ VIGILES_KEY_FILE = "/tools/timesys/linuxlink_key"
 
 ### Specifying a Product or Manifest
 
-By default your manifest will be uploaded under the "Private Workspace" product on the Vigiles Dashboard.
-To upload your manifest to a particular product or existing manifest on the Vigiles Dashboard, download the associated Dashboard Config to `~/timesys/dashboard_config`.
-Dashboard Configs downloaded from the [Products page](https://linuxlink.timesys.com/vigiles/) will upload new manifests to the associated product with a default name.
-The link can be found under the Actions column for each product. Note: Click on "New Product" if you have not yet created one.
+By default your manifest will be uploaded to the top-level folder of your "Private Workspace" Product on the Vigiles Dashboard. This can be changed by downloading the "Dashboard Config" for an alternative Product and/or Folder and specifying it in your local.conf file.
 
-To use an alternate config, or a config in a non-default location, you can specify the location in _conf/local.conf_ with a statement like the following:
 
-```
-VIGILES_DASHBOARD_CONFIG = "/tools/timesys/dashboard_config"
+>New Products can be defined by clicking on the "New Product" product link and specifying a name. To download the Dashboard Config for the top-level folder of that Product, click on the "Product Settings" link and then the "Download Dashboard Config" button.
+
+
+>Once a new product is created, sub-folders may be created by clicking on the "Create Folder" and specifying a name. The Dashboard Config for that Folder (in that Product) may be downloaded by first clicking on/opening the Folder, then clicking the "Folder Settings" link and finally the "Download Dashboard Config" button.
+
+Dashboard Config files will be downloaded by default to e.g. ```"${HOME}/Downloads/dashboard_config"```. Once moving and/or renaming it as necessary, you can control the behavior of Vigiles with meta-timesys by modifying ```conf/local.conf``` to set the appropriate variable:
+
+
+```sh
+VIGILES_DASHBOARD_CONFIG = "${HOME}/timesys/dashboard_config"
 ```
 
 
