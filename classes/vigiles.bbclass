@@ -184,7 +184,6 @@ def vigiles_write_manifest(d, tdw_tag, dict_out):
 ##
 VIGILES_PREFERRED_BACKFILL = "\
     virtual/kernel \
-    virtual/bootloader \
     virtual/libc \
 "
 
@@ -327,6 +326,12 @@ def vigiles_image_collect(d):
     sys_dict = vigiles_get_build_dict(d)
 
     backfill_list = d.getVar('VIGILES_BACKFILL', True).split()
+
+    boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
+        d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
+    if boot_pn:
+        backfill_list.append(boot_pn)
+
     initramfs_image = d.getVar('INITRAMFS_IMAGE', True)
     if initramfs_image:
         backfill_list.append(initramfs_image)
@@ -382,9 +387,11 @@ def vigiles_image_depends(d):
     if bb.data.inherits_class('image', d):
         backfill_pns = d.getVar('VIGILES_BACKFILL').split()
         deps = [ ':'.join([_pn, 'do_vigiles_pkg']) for _pn in backfill_pns ]
-        _uboot = d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True) or ''
-        if _uboot:
-            deps.append('%s:do_vigiles_uboot_config' % _uboot)
+
+        boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
+            d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
+        if boot_pn:
+            deps.append('%s:do_vigiles_uboot_config' % boot_pn)
 
     return ' '.join(deps)
 
@@ -466,25 +473,28 @@ def _get_uboot_pf(d):
     from oe import recipeutils as oe
 
     pn = d.getVar('PN')
-    bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
+    boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
+        d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
 
-    if not bpn:
-        return bpn
+    if not boot_pn:
+        return ''
 
-    if bb.data.inherits_class('uboot-config', d) and pn == bpn:
-        tsmeta_get_pn(d)
-
-    pv = tsmeta_read_dictname_single(d, 'pn', bpn, 'pv')
+    pv = tsmeta_read_dictname_single(d, 'pn', boot_pn, 'pv')
     if not pv:
         pv = 'unset'
     (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
 
-    vgls_pf = '-'.join([bpn, bpv])
+    vgls_pf = '-'.join([boot_pn, bpv])
     return vgls_pf
 
 
 python do_vigiles_uboot_config() {
     import shutil
+
+    bb.build.exec_func("do_vigiles_pkg", d)
+
+    if not bb.data.inherits_class('uboot-config', d):
+        return
 
     # The following is needed to avoid a configuration conflict
     # when python3.8 is installed on the host system.
@@ -582,13 +592,14 @@ python do_vigiles_uboot_config() {
 
 
 python() {
-    if bb.data.inherits_class('uboot-config', d):
-        pn = d.getVar('PN')
-        bpn = d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
 
-        if pn == bpn:
-            bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
-            d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn)
+    pn = d.getVar('PN')
+    boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
+        d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
+
+    if pn == boot_pn:
+        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
+        d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn)
 }
 
 do_vigiles_uboot_config[nostamp] = "1"
