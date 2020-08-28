@@ -355,7 +355,7 @@ python do_vigiles_image() {
     vigiles_write_manifest(d, "cve", cve_manifest)
 }
 
-addtask do_vigiles_image after do_rootfs before do_image
+addtask do_vigiles_image after do_rootfs before do_vigiles_check
 do_vigiles_image[nostamp] = "1"
 do_rootfs[nostamp] = "1"
 do_rootfs[recrdeptask] += "do_vigiles_pkg"
@@ -598,8 +598,6 @@ python do_vigiles_check() {
     vigiles_uconfig = os.path.join(d.getVar('VIGILES_DIR', True ),
                                    '.'.join([_get_uboot_pf(d), 'config']))
 
-    bb.utils.export_proxies(d)
-
     def run_checkcves(d, cmd, args=[]):
         bb.debug(1, "Checking CVEs against Vigiles Database")
         bb.debug(1, "Using Manifest at: %s" % os.path.relpath(vigiles_in))
@@ -614,6 +612,18 @@ python do_vigiles_check() {
             args = args + ['-u', vigiles_uconfig]
 
         vigiles_env = os.environ.copy()
+
+        # This does the same as bb.utils.export_proxies(), but that isn't
+        # exposed (cleanly) until krogoth..
+        proxy_vars = ['http_proxy', 'HTTP_PROXY', 'https_proxy', 'HTTPS_PROXY',
+                    'ftp_proxy', 'FTP_PROXY', 'no_proxy', 'NO_PROXY',
+                    'GIT_PROXY_COMMAND']
+        for v in proxy_vars:
+            if v not in vigiles_env.keys():
+                v_proxy = d.getVar(v, True)
+                if v_proxy is not None:
+                    vigiles_env[v] = v_proxy
+
         vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE', True )
         vigiles_env['VIGILES_DASHBOARD_CONFIG'] = d.getVar('VIGILES_DASHBOARD_CONFIG', True)
 
@@ -654,7 +664,7 @@ python do_vigiles_check() {
 }
 
 
-addtask do_vigiles_check after do_image before do_image_complete
+addtask do_vigiles_check after do_vigiles_image
 do_vigiles_check[nostamp] = "1"
 
 
@@ -662,4 +672,8 @@ python() {
     if bb.data.inherits_class('kernel', d):
         # Forward-compatibility with later renditions of kernel.bbclass
         d.setVar('CVE_PRODUCT', 'linux_kernel')
+    elif bb.data.inherits_class('image', d):
+        pn = d.getVar('PN', True )
+        bb.build.addtask('do_vigiles_check', 'do_build', 'do_vigiles_image', d)
+        d.appendVarFlag('do_vigiles_check', 'depends', ' %s:do_vigiles_image' % pn)
 }
