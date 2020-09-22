@@ -179,7 +179,6 @@ def vigiles_write_manifest(d, tdw_tag, dict_out):
 # their respective do_vigiles_pkg() tasks.
 ##
 VIGILES_PREFERRED_BACKFILL = "\
-    virtual/kernel \
     virtual/libc \
 "
 
@@ -328,6 +327,11 @@ def vigiles_image_collect(d):
     if boot_pn:
         backfill_list.append(boot_pn)
 
+    kernel_pn = d.getVar('VIGILES_KERNEL_PN', True ) or \
+        d.getVar('PREFERRED_PROVIDER_virtual/kernel', True ) or ''
+    if kernel_pn:
+        backfill_list.append(kernel_pn)
+
     initramfs_image = d.getVar('INITRAMFS_IMAGE', True)
     if initramfs_image:
         backfill_list.append(initramfs_image)
@@ -379,10 +383,15 @@ def vigiles_image_depends(d):
         if boot_pn:
             deps.append('%s:do_vigiles_uboot_config' % boot_pn)
 
+        kernel_pn = d.getVar('VIGILES_KERNEL_PN', True ) or \
+            d.getVar('PREFERRED_PROVIDER_virtual/kernel', True ) or ''
+        if kernel_pn:
+            deps.append('%s:do_vigiles_kconfig' % kernel_pn)
+            deps.append('%s:do_vigiles_pkg' % kernel_pn)
+
     return ' '.join(deps)
 
 
-do_vigiles_image[depends] += "virtual/kernel:do_vigiles_kconfig"
 do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 
@@ -449,9 +458,17 @@ python do_vigiles_kconfig() {
 }
 
 
-do_vigiles_kconfig[depends] += "virtual/kernel:do_configure"
+python() {
 
-addtask do_vigiles_kconfig after do_configure before do_savedefconfig
+    pn = d.getVar('PN', True )
+    kernel_pn = d.getVar('VIGILES_KERNEL_PN', True ) or \
+        d.getVar('PREFERRED_PROVIDER_virtual/kernel', True ) or ''
+
+    if pn == kernel_pn:
+        bb.build.addtask('do_vigiles_kconfig', 'do_savedefconfig', 'do_configure', d)
+        d.appendVarFlag('do_vigiles_kconfig', 'depends', ' %s:do_configure' % pn)
+}
+
 do_vigiles_kconfig[nostamp] = "1"
 
 
