@@ -349,6 +349,7 @@ def vigiles_image_collect(d):
             layers           = sys_dict["layers"],
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION', True ),
+            manifest_name    = d.getVar('VIGILES_MANIFEST_NAME', True ),
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
             whitelist        = (d.getVar('VIGILES_WHITELIST', True ) or "").split(),
         )
@@ -641,10 +642,35 @@ python do_vigiles_check() {
             args = args + ['-u', vigiles_uconfig]
 
         vigiles_env = os.environ.copy()
-        vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE', True )
-        vigiles_env['VIGILES_DASHBOARD_CONFIG'] = d.getVar('VIGILES_DASHBOARD_CONFIG', True)
+
+        #
+        # The following logic allows the Key File and Dashboard Config to be
+        # overridden by the user's environment -- if a build system sets a
+        # generic key in local.conf (e.g. for automated builds), but a
+        # developer wants/needs to use their own private credentials, those can
+        # set in the shell environment.
+        # They are handled in following way -- forwarding the values from the
+        # original shell environment, but still passing the local.conf values on
+        # the command line -- for compatibility with other Vigiles implementations.
+        _orig_env = d.getVar('BB_ORIGENV', False)
+        vigiles_env['VIGILES_KEY_FILE'] = _orig_env.getVar('VIGILES_KEY_FILE', True ) or ''
+        vigiles_env['VIGILES_DASHBOARD_CONFIG'] = _orig_env.getVar('VIGILES_DASHBOARD_CONFIG', True) or ''
+
+        conf_key = d.getVar('VIGILES_KEY_FILE', True )
+        if conf_key:
+            args = args + ['-K', conf_key]
+        conf_dashboard = d.getVar('VIGILES_DASHBOARD_CONFIG', True )
+        if conf_dashboard:
+            args = args + ['-C', conf_dashboard]
+
+        vigiles_env['LINUXLINK_SERVER'] = _orig_env.getVar('LINUXLINK_SERVER', True ) or ''
+
+        _upload_only = bb.utils.to_boolean(d.getVar('VIGILES_UPLOAD_ONLY', True ), False)
+        if _upload_only:
+            args = args + ['-U']
 
         layerdir = d.getVar('VIGILES_LAYERDIR', True )
+
         path = os.path.join(layerdir, "scripts", cmd)
 
         args = [path] + args
@@ -654,7 +680,7 @@ python do_vigiles_check() {
 
     _check_disabled = bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_CHECK', True), False)
     if _check_disabled:
-        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('IMAGE_BASENAME', True))
+        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('VIGILES_MANIFEST_NAME', True ))
         return
 
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
@@ -683,7 +709,7 @@ python do_vigiles_check() {
 
 addtask do_vigiles_check after do_image before do_image_complete
 do_vigiles_check[nostamp] = "1"
-
+do_vigiles_check[vardepsexclude] = "BB_ORIGENV"
 
 python() {
     if bb.data.inherits_class('kernel', d):
