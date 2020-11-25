@@ -217,6 +217,34 @@ It's important to include this file with any support request.
 Advanced Usage
 ==============
 
+### Custom Manifest and Report Names
+
+By default, the Vigiles Manifest and CVE Report files are named after the base
+image that is built (from the Yocto variable "IMAGE_BASENAME"). This can be
+overridden with by setting the configuration variable "VIGILES_MANIFEST_NAME" in _conf/local.conf_:
+
+```
+VIGILES_MANIFEST_NAME = "Custom-Build-Name"
+```
+
+Instead of e.g.
+
+```
+./vigiles
+├── core-image-minimal/
+├── core-image-minimal-cve.json
+└── core-image-minimal-report.txt
+```
+
+.. this will be the result:
+
+```
+./vigiles
+├── Custom-Build-Name/
+├── Custom-Build-Name-cve.json -> Custom-Build-Name/Custom-Build-Name-2020-11-25_20.28.09-cve.json
+└── Custom-Build-Name-report.txt -> Custom-Build-Name/Custom-Build-Name-2020-11-25_20.28.09-report.txt
+```
+
 
 ### Vigiles Whitelist
 
@@ -265,10 +293,20 @@ To use an alternate key, or a key in a non-default location, you can specify the
 VIGILES_KEY_FILE = "/tools/timesys/linuxlink_key"
 ```
 
+If set, this option can be overridden on the command line by setting the
+environment variable VIGILES_KEY_FILE to the location of an alternate Key
+File. This feature can be used by developers to use a personal/local key
+without having to change a shared local.conf for a board.
+
+
 ### Specifying a Product or Manifest
 
 By default your manifest will be uploaded to the top-level folder of your "Private Workspace" Product on the Vigiles Dashboard. This can be changed by downloading the "Dashboard Config" for an alternative Product and/or Folder and specifying it in your local.conf file.
 
+If set, this option can be overridden on the command line by setting the
+environment variable VIGILES_DASHBOARD_CONFIG to the location of an alternate
+Dashboard Config file. This feature can be used by developers to use a
+personal/local key without having to change a shared local.conf for a board.
 
 >New Products can be defined by clicking on the "New Product" product link and specifying a name. To download the Dashboard Config for the top-level folder of that Product, click on the "Product Settings" link and then the "Download Dashboard Config" button.
 
@@ -353,6 +391,27 @@ packagegroup-core-boot
 
 >Note: filtering of packages is performed as the final step in constructing
 >the manifest, after any additional packages are included.
+
+
+### Uploading the Manifest (Only)
+
+In some cases, it may be desired to upload the Vigiles Manifest for a build
+without generating a CVE Report. This can speed up build times and ease
+reporting of automated bulk builds.
+
+This behavior can be enabled by setting the boolean variable
+```VIGILES_UPLOAD_ONLY``` to '1' or 'True' in ```conf/local.conf```
+
+
+>```
+>VIGILES_UPLOAD_ONLY = "1"
+>```
+
+Instead of a text report and a link to the online report, a link to the
+Vigiles Dashboard Product Workspace (as specified with
+VIGILES_DASHBOARD_CONFIG) will be displayed, from where it can be then be
+scanned by the Vigiles Service.
+
 
 
 Maintenance
