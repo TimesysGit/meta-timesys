@@ -363,6 +363,7 @@ def vigiles_image_collect(d):
             layers           = sys_dict["layers"],
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
+            manifest_name    = d.getVar('VIGILES_MANIFEST_NAME'),
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
             whitelist        = sorted(list(vigiles_ignored))
         )
@@ -657,6 +658,32 @@ python do_vigiles_check() {
         vigiles_env = os.environ.copy()
 
         #
+        # The following logic allows the Key File and Dashboard Config to be
+        # overridden by the user's environment -- if a build system sets a
+        # generic key in local.conf (e.g. for automated builds), but a
+        # developer wants/needs to use their own private credentials, those can
+        # set in the shell environment.
+        # They are handled in following way -- forwarding the values from the
+        # original shell environment, but still passing the local.conf values on
+        # the command line -- for compatibility with other Vigiles implementations.
+        _orig_env = d.getVar('BB_ORIGENV', False)
+        vigiles_env['VIGILES_KEY_FILE'] = _orig_env.getVar('VIGILES_KEY_FILE') or ''
+        vigiles_env['VIGILES_DASHBOARD_CONFIG'] = _orig_env.getVar('VIGILES_DASHBOARD_CONFIG') or ''
+
+        conf_key = d.getVar('VIGILES_KEY_FILE')
+        if conf_key:
+            args = args + ['-K', conf_key]
+        conf_dashboard = d.getVar('VIGILES_DASHBOARD_CONFIG')
+        if conf_dashboard:
+            args = args + ['-C', conf_dashboard]
+
+        vigiles_env['LINUXLINK_SERVER'] = _orig_env.getVar('LINUXLINK_SERVER') or ''
+
+        _upload_only = bb.utils.to_boolean(d.getVar('VIGILES_UPLOAD_ONLY'), False)
+        if _upload_only:
+            args = args + ['-U']
+
+        #
         # Vigiles uses python3, and needs to use the Host-installed instance
         #  to avoid racing against the removal of the Yocto-built native
         #  instance when 'INHERIT += rm_work' is used.
@@ -670,9 +697,6 @@ python do_vigiles_check() {
         env_path.insert(0, hosttools_dir)
         vigiles_env['PATH'] = os.path.pathsep.join(env_path)
 
-        vigiles_env['VIGILES_KEY_FILE'] = d.getVar('VIGILES_KEY_FILE')
-        vigiles_env['VIGILES_DASHBOARD_CONFIG'] = d.getVar('VIGILES_DASHBOARD_CONFIG')
-
         layerdir = d.getVar('VIGILES_LAYERDIR')
         path = os.path.join(layerdir, "scripts", cmd)
 
@@ -684,7 +708,7 @@ python do_vigiles_check() {
 
     _check_disabled = bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_CHECK'), False)
     if _check_disabled:
-        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('IMAGE_BASENAME'))
+        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('VIGILES_MANIFEST_NAME'))
         return
 
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
@@ -713,3 +737,4 @@ python do_vigiles_check() {
 
 addtask do_vigiles_check after do_image before do_image_complete
 do_vigiles_check[nostamp] = "1"
+do_vigiles_check[vardepsexclude] = "BB_ORIGENV"
