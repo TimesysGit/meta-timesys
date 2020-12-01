@@ -4,13 +4,21 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import ssl
+import sys
 import urllib.request
 import urllib.parse
 import urllib.error
 from collections import OrderedDict
 
-LINUXLINK_SERVER = 'https://linuxlink.timesys.com'
+
+ll_url_default = 'https://linuxlink.timesys.com'
+ll_url_env = os.getenv('LINUXLINK_SERVER')
+LinuxLinkURL = ll_url_env if ll_url_env else ll_url_default
+LinuxLinkSupportRoute = '/support'
+LinuxLinkSupportURL = LinuxLinkURL + LinuxLinkSupportRoute
+VigilesInfoURL = 'https://www.timesys.com/security/vulnerability-patch-notification/'
 
 
 def make_msg(method, resource, data):
@@ -66,25 +74,86 @@ def read_dashboard_config(config_file):
     return dc_tokens
 
 
+def api_error_message(reason: str, param: str = '', extra: str = ''):
+    from datetime import datetime
+
+    err_dict = {
+        '400': 'The LinuxLink request was empty or insufficient.',
+        '403': 'Invalid credentials were sent to the LinuxLink Server.',
+        '404': 'The specified LinuxLink URL does not exist.',
+        '405': 'An incorrect LinuxLink URL was used.',
+        '412': 'The manifest is malformed or missing fields.',
+        '500': 'The Vigiles Service could not handle the request.',
+        '503': 'The Vigiles Service is currently unavailable.',
+        '504': 'The Vigiles Service is having an issue with the request/manifest.',
+        'not-known': 'The Vigiles Service cannot be reached.',
+        'timeout': 'Attempting to contact the server timed out.',
+        'content': 'The LinuxLink response was empty or malformed.'
+    }
+
+    msg = [
+        '',
+        '%s' % ':\t'.join(['Vigiles Communication Error', err_dict.get(reason, reason)]),
+        '',
+        '%s' % ':\t'.join(['Current Time', datetime.utcnow().isoformat()]),
+        '%s' % ':\t'.join(['Message', extra]),
+        '%s' % ':\t'.join(['Parameter(s)', param]),
+        '',
+        'Please verify your Internet connection, firewall and proxy settings then try again.'
+        '',
+        '',
+        '',
+        'Information about LinuxLink and the Vigiles CheckCVEs Service can be found at:',
+        '',
+        '\t%s' % VigilesInfoURL,
+        '',
+        '',
+        'If the issue persists, please contact LinuxLink support at:',
+        '',
+        '\t%s' % LinuxLinkSupportURL,
+        '',
+    ]
+
+    print("%s" % '\n\t'.join(msg), file=sys.stderr)
+
+
 def _do_api_call(request_dict, json_response):
     try:
         context = ssl._create_unverified_context()
     except AttributeError:
         context = None
 
+    f = None
+    response = None
+
+    url = request_dict['url']
+    err_reason = 'other'
+    err_str = ''
     try:
         r = urllib.request.Request(**request_dict)
         f = urllib.request.urlopen(r, context=context) if context else urllib.request.urlopen(r)
+        if not json_response:
+            return f
+        response = json.loads(f.read().decode('utf-8'), object_pairs_hook=OrderedDict)
     except urllib.error.HTTPError as e:
-        raise Exception('LinuxLink server returned status: %s' % e.code)
+        err_reason = str(e.code)
+        err_str = f.read().decode('utf-8') if f else str(e)
+    except urllib.error.URLError as e:
+        err_reason = 'not-known'
+        err_str = ' '.join([ str(real_e) for real_e in e.args ])
+    except (TypeError, UnicodeDecodeError):
+        err_str = str(e)
+        err_reason = 'content'
     except Exception as e:
-        raise Exception('Unable to connect to LinuxLink server: %s' % e)
+        err_str = f.read().decode('utf-8') if f else str(e)
+        for real_e in e.args:
+            if isinstance(real_e, TimeoutError):
+                err_reason = 'timeout'
+                break
 
-    if not json_response:
-        return f
-
-    response = f.read().decode('utf-8')
-    return json.loads(response, object_pairs_hook=OrderedDict)
+    if err_str:
+        api_error_message(err_reason, url, err_str)
+    return response
 
 
 def api_get(email, key, resource, data_dict={}, json=True):
@@ -95,7 +164,7 @@ def api_get(email, key, resource, data_dict={}, json=True):
         'headers': {
             'X-Auth-Signature': create_hmac(key, msg),
         },
-        'url': LINUXLINK_SERVER + resource + '?%s' % params,
+        'url': LinuxLinkURL + resource + '?%s' % params,
     }
     return _do_api_call(request, json)
 
@@ -107,7 +176,7 @@ def api_post(email, key, resource, data_dict={}, json=True):
         'headers': {
             'X-Auth-Signature': create_hmac(key, msg),
         },
-        'url': LINUXLINK_SERVER + resource,
+        'url': LinuxLinkURL + resource,
         'data': urllib.parse.urlencode(data_dict).encode('utf-8'),
     }
     return _do_api_call(request, json)
