@@ -22,7 +22,7 @@ from distutils import spawn
 from lib import llapi, manifest
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
-API_DOC = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LINUXLINK_SERVER
+API_DOC = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LinuxLinkURL
 INFO_PAGE = 'https://www.timesys.com/security/vulnerability-patch-notification/'
 
 bogus_whitelist = "CVE-1234-1234"
@@ -96,6 +96,16 @@ def handle_cmdline_args():
                         help='U-Boot .config (not defconfig) to submit for CVE filtering',
                         metavar='FILE',
                         dest='uboot_config')
+
+    parser.add_argument('-K', '--keyfile', dest='llkey',
+                        help='Location of LinuxLink credentials file')
+    parser.add_argument('-C', '--dashboard-config', dest='lldashboard',
+                        help='Location of LinuxLink Dashboard Config file')
+
+    parser.add_argument('-U', '--upload-only', dest='upload_only',
+                        help='Upload the manifest only; do not wait for report.',
+                        action='store_true', default=False)
+
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('-l', '--list',
                              action='store_true',
@@ -122,7 +132,7 @@ def read_manifest(manifest_file):
 
 
 
-def print_cves(result, demo=False, outfile=None):
+def print_cves(result, outfile=None):
     arch_cves = result.get('arch_cves', [])
     if arch_cves:
         print('\n\n-- Architecture CVEs --', file=outfile)
@@ -173,20 +183,38 @@ def parse_cvss_counts(counts, severity):
     return c.get('unfixed', 0) + c.get('fixed', 0)
 
 
+def print_report_header(result, f_out=None):
+  from datetime import datetime
+  report_time = result.get('date', datetime.utcnow().isoformat())
+
+  print('-- Vigiles CVE Scanner --\n\n'
+          '\t%s\n\n' % INFO_PAGE, file=f_out)
+  print('-- Date Generated (UTC) --\n', file=f_out)
+  print('\t%s' % report_time, file=f_out)
+
+
+def print_report_overview(result, is_demo=False, f_out=None):
+  report_path = result.get('report_path', '')
+  product_path = result.get('product_path', '')
+
+  if report_path:
+    report_url = '%s%s' % (llapi.LinuxLinkURL, report_path)
+    print('\n-- Vigiles CVE Report --', file=f_out)
+    print('\n\tView detailed online report at:\n'
+            '\t  %s' % report_url, file=f_out)
+  elif product_path:
+    product_url = '%s%s' % (llapi.LinuxLinkURL, product_path)
+    product_name = result.get('product_name', 'Default')
+    print('\n-- Vigiles Dashboard --', file=f_out)
+    print('\n\tThe manifest has been uploaded to the \'%s\' Product Workspace:\n\n'
+            '\t  %s\n' % (product_name, product_url), file=f_out)
+
+  if (is_demo):
+    print('\t  NOTE: Running in Demo Mode will cause this URL to expire '
+      'after one day.', file=f_out)
+
+
 def print_summary(result, outfile=None):
-
-
-    def show_header(f_out=outfile):
-      print('\n-- Vigiles CVE Report --', file=f_out)
-
-      report_url = '%s%s' % (llapi.LINUXLINK_SERVER, result['report_path'])
-
-      print('\n\tView detailed online report at:\n'
-              '\t  %s' % report_url, file=f_out)
-
-      if (demo):
-        print('\t  NOTE: Running in Demo Mode will cause this URL to expire '
-          'after one day.', file=f_out)
 
     def show_subscribed_summary(f_out=outfile):
       counts = result.get('counts', {})
@@ -217,6 +245,7 @@ def print_summary(result, outfile=None):
             file=f_out)
 
     def show_demo_summary(f_out=outfile):
+      cves = result.get('cves', {})
       print('\n-- Vigiles CVE Overview --', file=f_out)
       print('\n\tUnfixed: %d\n'
       '\tUnfixed, Patch Available: %d\n'
@@ -228,12 +257,13 @@ def print_summary(result, outfile=None):
          cves['arch_count'],),
             file=f_out)
 
-    show_header(outfile)
+    is_demo = result.get('demo', False)
 
-    if not demo:
+    if 'counts' in result:
       show_subscribed_summary(outfile)
-    else:
+    elif is_demo:
       show_demo_summary(outfile)
+
 
 def print_foootnotes(f_out=None):
     print('\n-- Vigiles Footnotes --', file=f_out)
@@ -263,13 +293,35 @@ def print_whitelist(wl, outfile=None):
             print('\t(Nothing is Whitelisted)', file=outfile)
 
 
-if __name__ == '__main__':
-    resource = '/api/cves/reports/yocto/'
+def _get_credentials(kf_param, dc_param):
     home_dir = os.path.expanduser('~')
-    key_file = os.getenv('VIGILES_KEY_FILE', '%s/timesys/linuxlink_key' % home_dir)
-    dashboard_config = os.getenv('VIGILES_DASHBOARD_CONFIG', '%s/timesys/dashboard_config' % home_dir)
-    demo = False
-    args = handle_cmdline_args()
+    timesys_dir  = os.path.join(home_dir, 'timesys')
+
+    kf_env = os.getenv('VIGILES_KEY_FILE', '')
+    kf_default = os.path.join(timesys_dir, 'linuxlink_key')
+
+    dc_env = os.getenv('VIGILES_DASHBOARD_CONFIG', '')
+    dc_default = os.path.join(timesys_dir, 'dashboard_config')
+
+    if kf_env:
+        print("Vigiles: Using LinuxLink Key from Environment: %s" % kf_env)
+        key_file = kf_env
+    elif kf_param:
+        print("Vigiles: Using LinuxLink Key from Configuration: %s" % kf_param)
+        key_file = kf_param
+    else:
+        print("Vigiles: Trying LinuxLink Key Default: %s" % kf_default)
+        key_file = kf_default
+
+    if dc_env:
+        print("Vigiles: Using Dashboard Config from Environment: %s" % dc_env)
+        dashboard_config = dc_env
+    elif dc_param:
+        print("Vigiles: Using Dashboard Config Configuration: %s" % dc_param)
+        dashboard_config = dc_param
+    else:
+        print("Vigiles: Trying Dashboard Config Default: %s" % dc_default)
+        dashboard_config = dc_default
 
     try:
         email, key = llapi.read_keyfile(key_file)
@@ -280,11 +332,30 @@ if __name__ == '__main__':
         print(get_usage())
         sys.exit(1)
 
+    vgls_creds = {
+        'email': email,
+        'key': key,
+        'product': dashboard_tokens.get('product', ''),
+        'folder': dashboard_tokens.get('folder', ''),
+    }
+    return vgls_creds
+
+if __name__ == '__main__':
+    resource = '/api/vigiles/manifests'
+    demo = False
+    args = handle_cmdline_args()
+
+    vgls_creds = _get_credentials(args.llkey, args.lldashboard)
+    email = vgls_creds['email']
+    key = vgls_creds['key']
+
     # If there was no proper API keyfile, operate in demo mode.
     if not email or not key:
         demo = True
-        resource += 'demo/'
+        resource += '/demo'
         print_demo_notice(bad_key=True)
+
+    upload_only = args.upload_only
 
     if args.list:
         bb_root = get_bb_root()
@@ -371,29 +442,31 @@ if __name__ == '__main__':
     request = {
       'manifest': manifest_data,
       'subscribe': args.subscribe,
-      'product_token': dashboard_tokens.get('product', ''),
-      'folder_token': dashboard_tokens.get('folder', ''),
+      'product_token': vgls_creds.get('product', ''),
+      'folder_token': vgls_creds.get('folder', ''),
+      'upload_only': upload_only
     }
 
     if kernel_config:
-      request['kconfig'] = kernel_config
+      request['kernel_config'] = kernel_config
 
     if uboot_config:
       request['uboot_config'] = uboot_config
 
-    print('Vigiles: Requesting image analysis from LinuxLink ...\n', file=sys.stderr)
+    _image = manifest.get('image', '')
+    _name = manifest.get('manifest_name', _image)
+    print('Vigiles: Requesting image analysis from LinuxLink for %s (%s) \n'
+          % (_name, _image), file=sys.stderr)
 
     result = llapi.api_post(email, key, resource, request)
+
+    if not result:
+      sys.exit(1)
 
     # the default list contains a harmless but bogus example CVE ID,
     # don't print it here in case that is confusing.
     whitelist = [ item for item in manifest.get('whitelist', []) 
       if not any(bogon == item for bogon in bogus_whitelist.split()) ]
-
-    print('-- Vigiles CVE Scanner --\n\n'
-            '\t%s\n\n' % INFO_PAGE, file=outfile)
-    print('-- Date Generated (UTC) --\n', file=outfile)
-    print('\t%s' % result['date'], file=outfile)
 
     # If no LinuxLink subscription or bogus user/key, it will have fallen back
     # to demo mode
@@ -417,22 +490,20 @@ if __name__ == '__main__':
                   '\tMake sure that you are allowing update emails in your '
                   'LinuxLink preferences.\n', file=outfile)
 
-
-    cves = result.get('cves', [])
-    arch_cves = result.get('arch_cves', [])
-
-    if not cves and not arch_cves:
-        print('Vigiles: No results.. Exiting.')
-        sys.exit(0)
+    print_report_header(result, outfile)
+    print_report_overview(result, demo, outfile)
 
     print_summary(result, outfile=outfile)
 
     if not demo:
-      print_cves(result, demo=demo, outfile=outfile)
-    print_whitelist(whitelist, outfile=outfile)
-    print_foootnotes(f_out=outfile)
+      print_cves(result, outfile=outfile)
+
+    if not upload_only:
+      print_whitelist(whitelist, outfile=outfile)
+      print_foootnotes(f_out=outfile)
 
     if outfile is not None:
+      print_report_overview(result, demo)
       print_summary(result)
       print('\n\tLocal summary written to:\n\t  %s' %
             os.path.relpath(outfile.name))
