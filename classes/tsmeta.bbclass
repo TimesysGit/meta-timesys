@@ -237,9 +237,17 @@ def tsmeta_get_pn(d):
 
 
 def _get_cve_product(d):
+    def _has_native(d):
+        return ('native' in
+            oe.utils.squashspaces(
+                d.getVar('BBCLASSEXTEND', True ) or ''
+            ).split(' ')
+        )
+
     cve_p = d.getVar('CVE_PRODUCT', True )
     if bb.data.inherits_class('uboot-config', d):
-        cve_p = 'u-boot'
+        if not _has_native(d):
+            cve_p = 'u-boot'
     if not cve_p:
         cve_p = d.getVar('PN', True )
     return cve_p
