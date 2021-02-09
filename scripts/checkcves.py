@@ -17,7 +17,7 @@ import sys
 import json
 from distutils import spawn
 
-from lib import llapi, manifest
+from lib import llapi
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
 API_DOC = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LinuxLinkURL
@@ -59,23 +59,6 @@ def print_demo_notice(bad_key=False):
           file=sys.stderr)
 
 
-def get_bb_root():
-    bitbake = spawn.find_executable('bitbake')
-    if bitbake is None:
-        print('Error: bitbake not found in PATH. Do you need to source '
-              'the environment (e.g. oe-init-build-env in poky)?')
-        sys.exit(1)
-    return os.path.abspath(os.path.join(os.path.dirname(bitbake), os.pardir))
-
-
-def generate_manifest(im):
-    print('\nAn image manifest will now be created for "%s".\n'
-          'Please wait.\n' % im.target)
-    manifest = im.generate()
-    print ('Done.\n')
-    return manifest
-
-
 def handle_cmdline_args():
     parser = argparse.ArgumentParser(description=get_usage())
     parser.add_argument('-s', '--subscribe',
@@ -103,18 +86,9 @@ def handle_cmdline_args():
     parser.add_argument('-U', '--upload-only', dest='upload_only',
                         help='Upload the manifest only; do not wait for report.',
                         action='store_true', default=False)
-
-    input_group = parser.add_mutually_exclusive_group()
-    input_group.add_argument('-l', '--list',
-                             action='store_true',
-                             default=False,
-                             dest='list',
-                             help='List available images and exit')
-    input_group.add_argument('-i', '--image',
-                             help='Image name to check')
-    input_group.add_argument('-m', '--manifest',
-                             help='Pre-generated JSON image manifest file to check',
-                             metavar='FILE')
+    parser.add_argument('-m', '--manifest', required=True,
+                        help='Pre-generated JSON image manifest file to check',
+                        metavar='FILE')
     return parser.parse_args()
 
 
@@ -126,8 +100,6 @@ def read_manifest(manifest_file):
         print('Error: Could not open manifest: %s' % e)
         sys.exit(1)
     return manifest_data
-
-
 
 
 def print_cves(result, outfile=None):
@@ -355,60 +327,16 @@ if __name__ == '__main__':
 
     upload_only = args.upload_only
 
-    if args.list:
-        bb_root = get_bb_root()
-        print('\nParsing images. This may take a moment.\n')
-        im = manifest.ImageManifest(bb_root)
-        print('\nThe following images were detected:\n')
-        print('\n'.join(im.images))
-        im.shutdown()
-        sys.exit(1)
-
     if args.outfile:
         outfile = open(args.outfile, 'w')
     else:
         outfile = None
 
-    # read or create image manifest
-    if args.manifest:
-        manifest_data = read_manifest(args.manifest)
-        m = json.loads(manifest_data)
-        if len(m['packages']) == 0:
-            print('No packages found in manifest.\n')
-            sys.exit(1)
-    elif args.image:
-        bb_root = get_bb_root()
-        print('\nValidating image. This may take a moment.\n')
-        im = manifest.ImageManifest(bb_root, args.image)
-        if not im.validate_target():
-            print('\nError: Unable to find image "%s".' % im.target)
-            print('Specify one of the following images, or run without -i to '
-                  'select one:\n')
-            print('\n'.join(im.images))
-            im.shutdown()
-            sys.exit(1)
-        manifest_data = generate_manifest(im)
-        im.shutdown()
-    else:  # prompt for image
-        bb_root = get_bb_root()
-        print('\nAfter parsing, you will be prompted to select an image.\n'
-              'This may take a moment.\n')
-        im = manifest.ImageManifest(bb_root)
-        if not im.validate_target():
-            menu = manifest.MenuSelect(
-                {'title': 'Choose an Image',
-                 'subtitle': ('A CVE report will be generated for '
-                              'the selected image')},
-                im.images)
-            menu.show_menu()
-            if menu.selected is not None:
-                im.set_target(menu.selected)
-            else:
-                print('Error: Unable to find image "%s".\n' % im.target)
-                im.shutdown()
-                sys.exit(1)
-        manifest_data = generate_manifest(im)
-        im.shutdown()
+    manifest_data = read_manifest(args.manifest)
+    m = json.loads(manifest_data)
+    if len(m['packages']) == 0:
+        print('No packages found in manifest.\n')
+        sys.exit(1)
 
     manifest = json.loads(manifest_data)
 
