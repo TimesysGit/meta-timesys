@@ -320,6 +320,12 @@ Dashboard Config files will be downloaded by default to e.g. ```"${HOME}/Downloa
 VIGILES_DASHBOARD_CONFIG = "${HOME}/timesys/dashboard_config"
 ```
 
+### Dynamic subfolder creation
+If a Dashboard Config is used, a subfolder name can be specified for dynamic folder creation. Manifests will be uploaded to a subfolder with this name within the location specified in the Dashbord Config. If one does not exist, it will be created. This option will be overridden by the environment variable ```VIGILES_SUBFOLDER_NAME```. You can control the behavior of Vigiles with meta-timesys by modifying ```conf/local.conf``` to set the appropriate variable:
+
+```sh
+VIGILES_SUBFOLDER_NAME = "Release X.x"
+```
 
 ### Specifying Additional Packages to Check
 

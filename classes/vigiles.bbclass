@@ -664,6 +664,7 @@ python do_vigiles_check() {
         _orig_env = d.getVar('BB_ORIGENV', False)
         vigiles_env['VIGILES_KEY_FILE'] = _orig_env.getVar('VIGILES_KEY_FILE', True ) or ''
         vigiles_env['VIGILES_DASHBOARD_CONFIG'] = _orig_env.getVar('VIGILES_DASHBOARD_CONFIG', True) or ''
+        vigiles_env['VIGILES_SUBFOLDER_NAME'] = _orig_env.getVar('VIGILES_SUBFOLDER_NAME') or ''
 
         conf_key = d.getVar('VIGILES_KEY_FILE', True )
         if conf_key:
@@ -671,6 +672,9 @@ python do_vigiles_check() {
         conf_dashboard = d.getVar('VIGILES_DASHBOARD_CONFIG', True )
         if conf_dashboard:
             args = args + ['-C', conf_dashboard]
+        conf_subfolder_name = d.getVar('VIGILES_SUBFOLDER_NAME')
+        if conf_subfolder_name:
+            args = args + ['-F', conf_subfolder_name]
 
         vigiles_env['LINUXLINK_SERVER'] = _orig_env.getVar('LINUXLINK_SERVER', True ) or ''
 
