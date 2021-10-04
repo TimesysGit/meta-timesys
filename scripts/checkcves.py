@@ -82,6 +82,8 @@ def handle_cmdline_args():
                         help='Location of LinuxLink credentials file')
     parser.add_argument('-C', '--dashboard-config', dest='lldashboard',
                         help='Location of LinuxLink Dashboard Config file')
+    parser.add_argument('-F', '--subfolder-name', dest='subfolder_name',
+                        help='Name of subfolder to upload to')
 
     parser.add_argument('-U', '--upload-only', dest='upload_only',
                         help='Upload the manifest only; do not wait for report.',
@@ -263,7 +265,7 @@ def print_whitelist(wl, outfile=None):
             print('\t(Nothing is Whitelisted)', file=outfile)
 
 
-def _get_credentials(kf_param, dc_param):
+def _get_credentials(kf_param, dc_param, sf_param):
     home_dir = os.path.expanduser('~')
     timesys_dir  = os.path.join(home_dir, 'timesys')
 
@@ -272,6 +274,9 @@ def _get_credentials(kf_param, dc_param):
 
     dc_env = os.getenv('VIGILES_DASHBOARD_CONFIG', '')
     dc_default = os.path.join(timesys_dir, 'dashboard_config')
+
+    sf_env = os.getenv('VIGILES_SUBFOLDER_NAME', '')
+    sf_default = ''
 
     if kf_env:
         print("Vigiles: Using LinuxLink Key from Environment: %s" % kf_env)
@@ -293,6 +298,16 @@ def _get_credentials(kf_param, dc_param):
         print("Vigiles: Trying Dashboard Config Default: %s" % dc_default)
         dashboard_config = dc_default
 
+    if sf_env:
+        print("Vigiles: Using Subfolder Name from Environment: %s" % sf_env)
+        subfolder_name = sf_env
+    elif sf_param:
+        print("Vigiles: Using Subfolder Name from Configuration: %s" % sf_param)
+        subfolder_name = sf_param
+    else:
+        print("Vigiles: Using Subfolder Name Default: %s" % sf_default)
+        subfolder_name = sf_default
+
     try:
         email, key = llapi.read_keyfile(key_file)
         # It is fine if either of these are none, they will just default
@@ -307,6 +322,7 @@ def _get_credentials(kf_param, dc_param):
         'key': key,
         'product': dashboard_tokens.get('product', ''),
         'folder': dashboard_tokens.get('folder', ''),
+        'subfolder_name': subfolder_name,
     }
     return vgls_creds
 
@@ -315,7 +331,7 @@ if __name__ == '__main__':
     demo = False
     args = handle_cmdline_args()
 
-    vgls_creds = _get_credentials(args.llkey, args.lldashboard)
+    vgls_creds = _get_credentials(args.llkey, args.lldashboard, args.subfolder_name)
     email = vgls_creds['email']
     key = vgls_creds['key']
 
@@ -370,7 +386,8 @@ if __name__ == '__main__':
       'subscribe': args.subscribe,
       'product_token': vgls_creds.get('product', ''),
       'folder_token': vgls_creds.get('folder', ''),
-      'upload_only': upload_only
+      'subfolder_name': vgls_creds.get('subfolder_name', ''),
+      'upload_only': upload_only,
     }
 
     if kernel_config:
