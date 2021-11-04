@@ -246,7 +246,8 @@ def _get_cve_product(d):
     cve_p = d.getVar('CVE_PRODUCT', True )
     if bb.data.inherits_class('uboot-config', d):
         if not _has_native(d):
-            cve_p = 'u-boot'
+            if not bb.data.inherits_class('kernel', d):
+                cve_p = 'u-boot'
     if not cve_p:
         cve_p = d.getVar('PN', True )
     return cve_p
