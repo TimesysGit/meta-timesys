@@ -742,3 +742,4 @@ python do_vigiles_check() {
 addtask do_vigiles_check after do_image before do_image_complete
 do_vigiles_check[nostamp] = "1"
 do_vigiles_check[vardepsexclude] = "BB_ORIGENV"
+do_vigiles_check[network] = "1"
