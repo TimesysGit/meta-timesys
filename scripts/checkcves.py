@@ -327,7 +327,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     return vgls_creds
 
 if __name__ == '__main__':
-    resource = '/api/vigiles/manifests'
+    resource = '/api/v1/vigiles/manifests'
     demo = False
     args = handle_cmdline_args()
 
