@@ -19,6 +19,9 @@ do_vigiles_pkg[nostamp] = "1"
 do_vigiles_pkg[rdeptask] += "do_unpack"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
 
+SPDX_ORG ??= "OpenEmbedded ()"
+SPDX_SUPPLIER ??= "Organization: ${SPDX_ORG}"
+
 
 def _get_patched(src_patches):
     #
@@ -392,6 +395,9 @@ def vigiles_image_collect(d):
         )
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
+    # Add package supplier
+    for key in dict_out['packages'].keys():
+        dict_out['packages'][key].update({'package_supplier': d.getVar('SPDX_SUPPLIER')})
     return dict_out
 
 python do_vigiles_image() {
