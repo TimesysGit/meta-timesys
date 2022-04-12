@@ -153,20 +153,40 @@ def vigiles_get_build_dict(d):
 
     return dict_out
 
+def _get_imgdir(d_path, d_name):
+    return os.path.join(d_path, d_name)
+
+def _get_vout_path(d_path, f_name, max_len, tstamp, suffix):
+    f_name = f_name [:max_len - len(suffix) - len(tstamp) - 2]
+    f_name = f_name + "-" + tstamp + suffix
+    return os.path.join(d_path, f_name)
+
+def _get_vlink(d_path, f_name, max_len, suffix):
+    f_name = f_name[:max_len - len(suffix) - 1] + suffix
+    return os.path.join(d_path, f_name)
 
 def vigiles_write_manifest(d, tdw_tag, dict_out):
     import json
 
-    v_dir = "%s" % (d.getVar('VIGILES_DIR_IMAGE'))
-    bb.note("Creating Vigiles Image Directory at %s" % v_dir)
-    bb.utils.mkdirhier(v_dir)
+    v_dir = d.getVar('VIGILES_DIR')
+    m_max_len = int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))
+    v_tstamp = d.getVar('VIGILES_TIMESTAMP')
 
-    f_path = d.getVar('VIGILES_MANIFEST')
+    # truncate manifest name to acceptable configured length
+    _name = d.getVar('VIGILES_MANIFEST_NAME')[:m_max_len]
+    _imgdirname = d.getVar('VIGILES_MANIFEST_NAME')[:m_max_len - 1]
+
+    v_imgdir = _get_imgdir(v_dir, _imgdirname)
+    bb.note("Creating Vigiles Image Directory at %s" % v_imgdir)
+    bb.utils.mkdirhier(v_imgdir)
+
+    f_path = _get_vout_path(v_imgdir, _name, m_max_len, v_tstamp, d.getVar('VIGILES_MANIFEST_SUFFIX'))
     with open(f_path, "w") as f_out:
         s = json.dumps(dict_out, indent=2, sort_keys=True)
         f_out.write(s)
 
-    l_path = d.getVar('VIGILES_MANIFEST_LINK')
+    l_path = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_MANIFEST_SUFFIX'))
+
     if os.path.lexists(l_path):
         os.remove(l_path)
 
@@ -355,6 +375,9 @@ def vigiles_image_collect(d):
             bb.debug(1, "Vigiles: Package: '%s' is ignoring %s" % (pkg_name, pkg_ignored))
         vigiles_ignored.update(pkg_ignored)
 
+    # truncate manifest_name to acceptable configured length
+    _name = d.getVar('VIGILES_MANIFEST_NAME')[:int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))]
+
     dict_out = dict(
             date             = datetime.utcnow().isoformat(),
             distro           = sys_dict["distro"]["codename"],
@@ -363,7 +386,7 @@ def vigiles_image_collect(d):
             layers           = sys_dict["layers"],
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
-            manifest_name    = d.getVar('VIGILES_MANIFEST_NAME'),
+            manifest_name    = _name,
             packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
             whitelist        = sorted(list(vigiles_ignored))
         )
@@ -624,11 +647,19 @@ do_vigiles_uboot_config[nostamp] = "1"
 
 
 python do_vigiles_check() {
-    imgdir = d.getVar('VIGILES_DIR_IMAGE')
+    v_dir = d.getVar('VIGILES_DIR')
+    m_max_len = int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))
+    v_tstamp = d.getVar('VIGILES_TIMESTAMP')
 
-    vigiles_in = d.getVar('VIGILES_MANIFEST_LINK')
-    vigiles_out = d.getVar('VIGILES_REPORT')
-    vigiles_link = d.getVar('VIGILES_REPORT_LINK')
+    # truncate manifest_name to acceptable configured length
+    _name = d.getVar('VIGILES_MANIFEST_NAME')[:m_max_len]
+    _imgdirname = d.getVar('VIGILES_MANIFEST_NAME')[:m_max_len - 1]
+
+    v_imgdir = _get_imgdir(v_dir, _imgdirname)
+
+    vigiles_in = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_MANIFEST_SUFFIX'))
+    vigiles_out = _get_vout_path(v_imgdir, _name, m_max_len, v_tstamp, d.getVar('VIGILES_REPORT_SUFFIX'))
+    vigiles_link = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_REPORT_SUFFIX'))
 
     # The following is needed to avoid a configuration conflict
     # when python3.8 is installed on the host system.
@@ -712,7 +743,7 @@ python do_vigiles_check() {
 
     _check_disabled = bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_CHECK'), False)
     if _check_disabled:
-        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('VIGILES_MANIFEST_NAME'))
+        bb.plain("Vigiles: Skipping Check for %s" % d.getVar('VIGILES_MANIFEST_NAME')[:int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))])
         return
 
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
