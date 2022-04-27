@@ -72,6 +72,25 @@ def _get_patched(src_patches):
 
     return { key: sorted(patched_dict[key]) for key in sorted(patched_dict.keys()) }
 
+def get_cpe_ids(cve_product, version):
+    """
+    Get list of CPE identifiers for the given product and version
+    """
+
+    version = version.split("+git")[0]
+
+    cpe_ids = []
+    for product in cve_product.split():
+        # CVE_PRODUCT in recipes may include vendor information for CPE identifiers. If not,
+        # use wildcard for vendor.
+        if ":" in product:
+            vendor, product = product.split(":", 1)
+        else:
+            vendor = "*"
+
+        cpe_id = f'cpe:2.3:a:{vendor}:{product}:{version}:*:*:*:*:*:*:*'
+        cpe_ids.append(cpe_id)
+    return cpe_ids
 
 python do_vigiles_pkg() {
     pn = d.getVar('PN')
@@ -108,11 +127,15 @@ python do_vigiles_pkg() {
         'summary',
         'homepage',
         'src_uri',
+        'pkg_cpe_id',
     ]
     pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
     manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
     manifest['name'] = pn_dict['pn']
     manifest['version'] = pn_dict['pv']
+    # Add cpe_id for each package in manifest to support spdx format
+    manifest['cpe_id'] = manifest.get('pkg_cpe_id') or get_cpe_ids(manifest['cve_product'], manifest['cve_version'])
+    manifest.pop('pkg_cpe_id')
 
     # Add download location in manifest json
     src_uri_list = manifest.pop('src_uri')
