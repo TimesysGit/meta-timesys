@@ -102,12 +102,23 @@ python do_vigiles_pkg() {
         'srcrev',
         'patched_cves',
         'summary',
-        'homepage'
+        'homepage',
+        'src_uri'
     ]
     pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
     manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
     manifest['name'] = pn_dict['pn']
     manifest['version'] = pn_dict['pv']
+
+    # Add download location in manifest json
+    src_uri_list = manifest.pop('src_uri')
+    for src_uri in src_uri_list:
+        if not src_uri.startswith("file://"):
+            manifest['download_location'] = src_uri
+            break
+    else:
+        manifest['download_location'] = "UNKNOWN"
+
 
     sources = manifest.pop('sources')
     src_patches = sources.get('patches', {})
