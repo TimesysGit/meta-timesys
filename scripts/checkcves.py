@@ -105,15 +105,6 @@ def read_manifest(manifest_file):
 
 
 def print_cves(result, outfile=None):
-    arch_cves = result.get('arch_cves', [])
-    if arch_cves:
-        print('\n\n-- Architecture CVEs --', file=outfile)
-        for cve in arch_cves:
-            print('\n\tCVE ID:  %s' % cve['cve_id'], file=outfile)
-            print('\tURL:     %s%s' % (NVD_BASE_URL, cve['cve_id']), file=outfile)
-            print('\tCVSSv3:  %s' % cve['cvss'], file=outfile)
-            print('\tVector:  %s' % cve['vector'], file=outfile)
-
     cves = result.get('cves', {})
     if cves:
         print('\n\n-- Recipe CVEs --', file=outfile)
@@ -221,12 +212,10 @@ def print_summary(result, outfile=None):
       print('\n-- Vigiles CVE Overview --', file=f_out)
       print('\n\tUnfixed: %d\n'
       '\tUnfixed, Patch Available: %d\n'
-      '\tFixed: %d\n'
-      '\tCPU: %d'
+      '\tFixed: %d'
       % (cves['unfixed_count'],
          cves['unapplied_count'],
-         cves['fixed_count'],
-         cves['arch_count'],),
+         cves['fixed_count']),
             file=f_out)
 
     is_demo = result.get('demo', False)
