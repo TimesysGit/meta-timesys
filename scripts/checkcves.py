@@ -15,23 +15,23 @@ import argparse
 import os
 import sys
 import json
-from distutils import spawn
+import urllib.parse
 
 from lib import llapi
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
-API_DOC = '%s/docs/wiki/engineering/LinuxLink_Key_File' % llapi.LinuxLinkURL
+API_DOC = 'https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File'
 INFO_PAGE = 'https://www.timesys.com/security/vulnerability-patch-notification/'
 
 bogus_whitelist = "CVE-1234-1234"
 
 def get_usage():
-    return('This script sends a json manifest file for an image to LinuxLink '
+    return('This script sends a json manifest file for an image to Vigiles '
            'to check the CVE status of the recipes. You may specify a manifest '
            'file, or generate one from a given image name.  If no image or '
            'manifest is specified, you will be prompted to select an image.\n\n'
-           'Subscribing to notifications requires a LinuxLink API keyfile, and '
-           'an active LinuxLink subscription.\n\n'
+           'Subscribing to notifications requires a Vigiles API keyfile, and '
+           'an active Vigiles subscription.\n\n'
            'See this document for keyfile information:\n'
            '%s\n\n'
            % API_DOC)
@@ -79,9 +79,9 @@ def handle_cmdline_args():
                         dest='uboot_config')
 
     parser.add_argument('-K', '--keyfile', dest='llkey',
-                        help='Location of LinuxLink credentials file')
+                        help='Location of Vigiles credentials file')
     parser.add_argument('-C', '--dashboard-config', dest='lldashboard',
-                        help='Location of LinuxLink Dashboard Config file')
+                        help='Location of Vigiles Dashboard Config file')
     parser.add_argument('-F', '--subfolder-name', dest='subfolder_name',
                         help='Name of subfolder to upload to')
 
@@ -161,12 +161,12 @@ def print_report_overview(result, is_demo=False, f_out=None):
   product_path = result.get('product_path', '')
 
   if report_path:
-    report_url = '%s%s' % (llapi.LinuxLinkURL, report_path)
+    report_url = urllib.parse.urljoin(llapi.VigilesURL, report_path)
     print('\n-- Vigiles CVE Report --', file=f_out)
     print('\n\tView detailed online report at:\n'
             '\t  %s' % report_url, file=f_out)
   elif product_path:
-    product_url = '%s%s' % (llapi.LinuxLinkURL, product_path)
+    product_url = urllib.parse.urljoin(llapi.VigilesURL, product_path)
     product_name = result.get('product_name', 'Default')
     print('\n-- Vigiles Dashboard --', file=f_out)
     print('\n\tThe manifest has been uploaded to the \'%s\' Product Workspace:\n\n'
@@ -268,13 +268,13 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_default = ''
 
     if kf_env:
-        print("Vigiles: Using LinuxLink Key from Environment: %s" % kf_env)
+        print("Vigiles: Using Key from Environment: %s" % kf_env)
         key_file = kf_env
     elif kf_param:
-        print("Vigiles: Using LinuxLink Key from Configuration: %s" % kf_param)
+        print("Vigiles: Using Key from Configuration: %s" % kf_param)
         key_file = kf_param
     else:
-        print("Vigiles: Trying LinuxLink Key Default: %s" % kf_default)
+        print("Vigiles: Trying Key Default: %s" % kf_default)
         key_file = kf_default
 
     if dc_env:
@@ -298,7 +298,13 @@ def _get_credentials(kf_param, dc_param, sf_param):
         subfolder_name = sf_default
 
     try:
-        email, key = llapi.read_keyfile(key_file)
+        key_info = llapi.read_keyfile(key_file)
+        email = key_info.get('email', None)
+        key = key_info.get('key', None)
+        is_enterprise = key_info.get('enterprise', False)
+        if is_enterprise:
+            llapi.VigilesURL = key_info.get('server_url', llapi.VigilesURL)
+
         # It is fine if either of these are none, they will just default
         dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
     except Exception as e:
@@ -309,9 +315,10 @@ def _get_credentials(kf_param, dc_param, sf_param):
     vgls_creds = {
         'email': email,
         'key': key,
-        'product': dashboard_tokens.get('product', ''),
+        'product_or_group': dashboard_tokens.get('product_or_group', ''),
         'folder': dashboard_tokens.get('folder', ''),
         'subfolder_name': subfolder_name,
+        'is_enterprise': is_enterprise,
     }
     return vgls_creds
 
@@ -323,6 +330,7 @@ if __name__ == '__main__':
     vgls_creds = _get_credentials(args.llkey, args.lldashboard, args.subfolder_name)
     email = vgls_creds['email']
     key = vgls_creds['key']
+    is_enterprise = vgls_creds['is_enterprise']
 
     # If there was no proper API keyfile, operate in demo mode.
     if not email or not key:
@@ -373,7 +381,7 @@ if __name__ == '__main__':
     request = {
       'manifest': manifest_data,
       'subscribe': args.subscribe,
-      'product_token': vgls_creds.get('product', ''),
+      'group_token' if is_enterprise else 'product_token': vgls_creds.get('product_or_group', ''),
       'folder_token': vgls_creds.get('folder', ''),
       'subfolder_name': vgls_creds.get('subfolder_name', ''),
       'upload_only': upload_only,
@@ -387,7 +395,7 @@ if __name__ == '__main__':
 
     _image = manifest.get('image', '')
     _name = manifest.get('manifest_name', _image)
-    print('Vigiles: Requesting image analysis from LinuxLink for %s (%s) \n'
+    print('Vigiles: Requesting image analysis for %s (%s) \n'
           % (_name, _image), file=sys.stderr)
 
     result = llapi.api_post(email, key, resource, request)
@@ -400,27 +408,27 @@ if __name__ == '__main__':
     whitelist = [ item for item in manifest.get('whitelist', []) 
       if not any(bogon == item for bogon in bogus_whitelist.split()) ]
 
-    # If no LinuxLink subscription or bogus user/key, it will have fallen back
+    # If no Vigiles subscription or bogus user/key, it will have fallen back
     # to demo mode
     demo_result = result.get('demo', False)
     if not demo and demo_result:
         print_demo_notice()
         demo = demo_result
 
-    # If notification subscription was requested but there was no LinuxLink
+    # If notification subscription was requested but there was no Vigiles
     # account / seat:
     sub_result = result.get('subscribed', False)
     if args.subscribe:
         print('\n-- Vigiles CVE Weekly Report --\n', file=outfile)
         if not sub_result:
             print('\tWarning: Could not subscribe to weekly CVE report!\n'
-                '\t  Please check that you have an active LinuxLink '
+                '\t  Please check that you have an active Vigiles '
                 'subscription.\n', file=outfile)
         else:
             print('\tNotice: You subscribed to weekly email notifications for '
                   'this report.\n'
                   '\tMake sure that you are allowing update emails in your '
-                  'LinuxLink preferences.\n', file=outfile)
+                  'Vigiles preferences.\n', file=outfile)
 
     print_report_header(result, outfile)
     print_report_overview(result, demo, outfile)
