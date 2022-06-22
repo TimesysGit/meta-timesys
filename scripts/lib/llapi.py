@@ -41,7 +41,7 @@ def create_hmac(key, msg):
 def read_keyfile(key_file):
     try:
         with open(key_file, 'r') as f:
-            key_info = json.load(f, encoding='utf-8')
+            key_info = json.load(f)
     except (OSError, IOError, UnicodeDecodeError):
             email, key = (None, None)
     except Exception:
@@ -62,7 +62,7 @@ def read_dashboard_config(config_file):
 
     try:
         with open(config_file, 'r') as f:
-            cfg_info = json.load(f, encoding='utf-8')
+            cfg_info = json.load(f)
     except (OSError, IOError, UnicodeDecodeError):
             pass
     except Exception:
