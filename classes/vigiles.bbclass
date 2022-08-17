@@ -115,7 +115,7 @@ python do_vigiles_pkg() {
         'pv'
     ]
     src_vars = [
-        'cve_check_whitelist',
+        'cve_check_ignore',
         'cve_product',
         'cve_version',
         'layer',
@@ -406,7 +406,7 @@ def vigiles_image_collect(d):
         oe.utils.squashspaces(d.getVar('VIGILES_WHITELIST') or "").split()
     )
     for pkg_name, pkg_dict in vgls_pkgs.items():
-        pkg_ignored = pkg_dict.get('cve_check_whitelist', [])
+        pkg_ignored = pkg_dict.get('cve_check_ignore', [])
         if pkg_ignored:
             bb.debug(1, "Vigiles: Package: '%s' is ignoring %s" % (pkg_name, pkg_ignored))
         vigiles_ignored.update(pkg_ignored)
