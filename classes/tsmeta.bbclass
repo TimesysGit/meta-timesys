@@ -62,7 +62,7 @@ tsmeta_lvars_pn = " \
 "
 
 tsmeta_lvars_src = "\
-    CVE_CHECK_WHITELIST     \
+    CVE_CHECK_IGNORE     \
     FILESEXTRAPATHS         \
     SRC_URI                 \
 "
