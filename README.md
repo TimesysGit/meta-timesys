@@ -282,6 +282,29 @@ VIGILES_KERNEL_CONFIG = "/projects/kernel/linux-4.14-ts+imx-1.0/.config"
 ```
 
 
+### U-Boot Config Filter
+
+The Vigiles CVE Scanner can be configured to upload a U-Boot _.config_ file to LinuxLink along with the image manifest. This filter will reduce the number of U-Boot CVEs reported by removing those related to features which are not being built for your U-Boot. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
+
+* Automatic Detection
+
+This will use the _.config_ for the U-Boot specified in ```PREFERRED_PROVIDER_virtual/bootloader``` once the Yocto task ```do_configure``` is executed. 
+
+
+```
+VIGILES_UBOOT_CONFIG = "auto"
+```
+
+
+* Manual Specification
+
+**NOTE: This must be a _full_ U-Boot config, not a defconfig!**
+
+```
+VIGILES_UBOOT_CONFIG = "</projects/uboot/uboot-2020.04/.config>"
+```
+
+
 ### Specifying a LinuxLink Key File
 
 Full CVE reporting requires a LinuxLink License Key, though the Vigiles CVE Scanner will still execute in 
