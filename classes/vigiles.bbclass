@@ -557,8 +557,6 @@ def _get_uboot_pf(d):
 python do_vigiles_uboot_config() {
     import shutil
 
-    bb.build.exec_func("do_vigiles_pkg", d)
-
     if not bb.data.inherits_class('uboot-config', d):
         return
 
@@ -663,7 +661,7 @@ python() {
         d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True ) or ''
 
     if pn == boot_pn:
-        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
+        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile do_vigiles_pkg', d)
         d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn)
 }
 
