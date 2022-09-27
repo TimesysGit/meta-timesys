@@ -853,7 +853,7 @@ def tsmeta_pn_list(d):
         tsmeta_debug(d, 'image_pns', pn_out)
         return pn_out
 
-    import globs
+    import glob
     def get_manifest_pkgs(sys_dict):
         manifest_path = d.getVar('IMAGE_MANIFEST')
 
