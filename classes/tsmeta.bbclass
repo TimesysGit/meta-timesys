@@ -853,13 +853,28 @@ def tsmeta_pn_list(d):
         tsmeta_debug(d, 'image_pns', pn_out)
         return pn_out
 
+    import glob
     def get_manifest_pkgs(sys_dict):
         manifest_path = d.getVar('IMAGE_MANIFEST')
 
         rootfs_pkgs = list()
-        if os.path.exists(manifest_path):
-            bb.plain("Using RootFS Manifest %s" % manifest_path)
-            with open(manifest_path) as f_desc:
+        pathName = os.path.dirname(manifest_path)
+        if not os.path.exists(manifest_path):
+            files = glob.glob(pathName + "/" + "*.rootfs.manifest")
+            if len(files) == 1:
+                usePath = files[0]
+            else:
+                bb.error("Can't find RootFS in any place")
+        else:
+            usePath = manifest_path
+
+        bb.plain("***** Path is %s" % pathName)
+        files = os.listdir(pathName)
+        for f in files:
+            bb.plain(f)
+        if os.path.exists(usePath):
+            bb.plain("Using RootFS Manifest %s" % usePath)
+            with open(usePath) as f_desc:
                 rootfs_pkgs = [ line.split()[0] for line in f_desc ]
         else:
             bb.error("RootFS Manifest Not Found: %s" % manifest_path)
