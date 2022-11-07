@@ -62,7 +62,7 @@ tsmeta_lvars_pn = " \
 "
 
 tsmeta_lvars_src = "\
-    CVE_CHECK_WHITELIST     \
+    CVE_CHECK_IGNORE     \
     FILESEXTRAPATHS         \
     SRC_URI                 \
 "
@@ -424,7 +424,7 @@ def tsmeta_get_pkg(d):
 
         with open (sp_file, 'r') as infile:
             for line in infile:
-                key, value = line.split(":", 1)
+                key, value = line.replace("PKG:", "PKG_").split(":", 1)
                 pn_dict[sp][key] = oe.utils.squashspaces(value)
 
     dict_out = dict()
