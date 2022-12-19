@@ -34,7 +34,7 @@ https://www.yoctoproject.org/docs/2.6/ref-manual/ref-manual.html#ref-manual-syst
 ### Clone poky and meta-timesys
 
 ```sh
-RELEASE=thud
+RELEASE=langdale
 git clone git://git.yoctoproject.org/poky.git -b $RELEASE
 git clone https://github.com/TimesysGit/meta-timesys.git -b $RELEASE
 ```
