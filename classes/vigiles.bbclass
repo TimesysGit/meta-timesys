@@ -790,22 +790,20 @@ python do_vigiles_check() {
     try:
         check_out, _ = run_checkcves(d, "checkcves.py", 
             [ '-m', vigiles_in, '-o', vigiles_out ])
+
+        bb.plain(check_out)
+
+        if os.path.lexists(vigiles_link):
+            os.remove(vigiles_link)
+        if os.path.exists(vigiles_out):
+            os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
+
     except bb.process.CmdError as err:
-        bb.error("Vigiles: failed to execute checkcves.py: %s" % err)
-        return
-    except bb.process.CmdError as err:
-        bb.error("Vigiles: checkcves.py failed: %s" % err)
-        return
+        bb.warn("Vigiles: checkcves.py failed: %s" % err)
     except bb.process.NotFoundError as err:
-        bb.error("Vigiles: checkcves.py could not be found: %s" % err)
-        return
-
-    bb.plain(check_out)
-
-    if os.path.lexists(vigiles_link):
-        os.remove(vigiles_link)
-    if os.path.exists(vigiles_out):
-        os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
+        bb.warn("Vigiles: checkcves.py could not be found: %s" % err)
+    except Exception as err:
+        bb.warn("Vigiles: run_checkcves failed: %s" % err)
 }
 
 
