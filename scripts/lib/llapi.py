@@ -43,12 +43,17 @@ def read_keyfile(key_file):
         with open(key_file, 'r') as f:
             key_info = json.load(f)
     except (OSError, IOError, UnicodeDecodeError):
-            email, key = (None, None)
+        email, key = (None, None)
     except Exception:
         raise Exception("Unable to parse key file: %s" % key_file)
     else:
-        email = key_info.get('email', '').strip()
-        key = key_info.get('key', '').strip()
+        email, key = parse_credentials(key_info)
+
+    return (email, key)
+
+def parse_credentials(credentials):
+    email = credentials.get('email', '').strip()
+    key = credentials.get('key', '').strip()
 
     return (email, key)
 

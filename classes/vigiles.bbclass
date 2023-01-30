@@ -737,6 +737,7 @@ python do_vigiles_check() {
         # original shell environment, but still passing the local.conf values on
         # the command line -- for compatibility with other Vigiles implementations.
         _orig_env = d.getVar('BB_ORIGENV', False)
+        vigiles_env['VIGILES_API_CREDENTIALS'] = _orig_env.getVar('VIGILES_API_CREDENTIALS') or ''
         vigiles_env['VIGILES_KEY_FILE'] = _orig_env.getVar('VIGILES_KEY_FILE') or ''
         vigiles_env['VIGILES_DASHBOARD_CONFIG'] = _orig_env.getVar('VIGILES_DASHBOARD_CONFIG') or ''
         vigiles_env['VIGILES_SUBFOLDER_NAME'] = _orig_env.getVar('VIGILES_SUBFOLDER_NAME') or ''

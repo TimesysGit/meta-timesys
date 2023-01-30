@@ -258,6 +258,8 @@ def _get_credentials(kf_param, dc_param, sf_param):
     home_dir = os.path.expanduser('~')
     timesys_dir  = os.path.join(home_dir, 'timesys')
 
+    c_env = os.getenv('VIGILES_API_CREDENTIALS', '')
+
     kf_env = os.getenv('VIGILES_KEY_FILE', '')
     kf_default = os.path.join(timesys_dir, 'linuxlink_key')
 
@@ -267,7 +269,9 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_env = os.getenv('VIGILES_SUBFOLDER_NAME', '')
     sf_default = ''
 
-    if kf_env:
+    if c_env:
+        print("Vigiles: Using LinixLink Credentials in Environment")
+    elif kf_env:
         print("Vigiles: Using LinuxLink Key from Environment: %s" % kf_env)
         key_file = kf_env
     elif kf_param:
@@ -298,7 +302,15 @@ def _get_credentials(kf_param, dc_param, sf_param):
         subfolder_name = sf_default
 
     try:
-        email, key = llapi.read_keyfile(key_file)
+        email, key = (None, None)
+
+        # If Vigiles API credentials are specified in the environment, they
+        # are used by default instead of the keyfile.
+        if c_env:
+            email, key = llapi.parse_credentials(c_env)
+        else:
+            email, key = llapi.read_keyfile(key_file)
+
         # It is fine if either of these are none, they will just default
         dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
     except Exception as e:
