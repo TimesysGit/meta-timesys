@@ -370,6 +370,13 @@ def _filter_excluded_packages(d, vgls_pkgs):
     for pkg_key in pkg_matches:
         vgls_pkgs.pop(pkg_key)
 
+def _get_packages(d, pn_list):
+    indict = tsmeta_read_dictdir(d, "cve")
+    dict_out = {}
+    for pn in pn_list:
+        if pn in indict.keys() and indict.get(pn, {}).get("license", "").lower() != "closed":
+            dict_out[pn] = indict.get(pn, {})
+    return dict_out
 
 def vigiles_image_collect(d):
     from datetime import datetime
@@ -409,7 +416,7 @@ def vigiles_image_collect(d):
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION', True ),
             manifest_name    = _name,
-            packages         = tsmeta_read_dictdir_files(d, "cve", pn_list),
+            packages         = _get_packages(d, pn_list),
             whitelist        = (d.getVar('VIGILES_WHITELIST', True ) or "").split(),
         )
     dict_out.update(_get_extra_packages(d))
