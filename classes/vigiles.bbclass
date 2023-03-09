@@ -379,7 +379,9 @@ def _get_packages(d, pn_list):
     include_closed_license = bb.utils.to_boolean(d.getVar('VIGILES_INCLUDE_CLOSED_LICENSES', True))
     dict_out = {}
     for pn in pn_list:
-        if pn in indict.keys() and indict.get(pn, {}).get("license", "").lower() != "closed":
+        if pn in indict.keys():
+            if not include_closed_license and indict.get(pn, {}).get("license", "").lower() == "closed":
+                continue
             dict_out[pn] = indict.get(pn, {})
     return dict_out
 
