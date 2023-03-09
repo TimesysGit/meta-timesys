@@ -433,15 +433,26 @@ This behavior can be enabled by setting the boolean variable
 ```VIGILES_UPLOAD_ONLY``` to '1' or 'True' in ```conf/local.conf```
 
 
->```
->VIGILES_UPLOAD_ONLY = "1"
->```
+```
+VIGILES_UPLOAD_ONLY = "1"
+```
 
 Instead of a text report and a link to the online report, a link to the
 Vigiles Dashboard Product Workspace (as specified with
 VIGILES_DASHBOARD_CONFIG) will be displayed, from where it can be then be
 scanned by the Vigiles Service.
 
+
+### Include "CLOSED" License Packages in SBOM
+
+Packages that have a closed license are not included in the SBOM by default.
+
+To include packages that have a closed license, set ```VIGILES_INCLUDE_CLOSED_LICENSES```
+to "1" or "True" in ```conf/local.conf```.
+
+```
+VIGILES_INCLUDE_CLOSED_LICENSES = "1"
+```
 
 
 Maintenance
