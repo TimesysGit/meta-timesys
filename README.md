@@ -445,6 +445,12 @@ VIGILES_DASHBOARD_CONFIG) will be displayed, from where it can be then be
 scanned by the Vigiles Service.
 
 
+### Include the Packages with "CLOSED" license in SBOM
+
+To include a package having "CLOSED" license set VIGILES_INCLUDE_CLOSED_LICENSES 
+to "1" or "True" in local.conf file. By default vigiles will not include these packages
+in generated SBOM
+
 
 Maintenance
 ===========
