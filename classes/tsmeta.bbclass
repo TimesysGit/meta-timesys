@@ -316,7 +316,7 @@ def _get_cve_version(d):
     
     # get version from makefile for external uboot
     boot_pn = d.getVar('VIGILES_UBOOT_PN', True) or \
-        d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True) or '
+        d.getVar('PREFERRED_PROVIDER_virtual/bootloader', True) or ''
     if d.getVar('PN', True) == boot_pn:
         tmpdir = d.getVar('TMPDIR', True)
         src_dir = d.getVar('S', True)
