@@ -254,11 +254,10 @@ def _get_cve_product(d):
     return cve_p
 
 
-def _detect_kernel_version(d):
+def _get_version_from_makefile(d):
     import os
     import sys
 
-    _version = None
     _major = _minor = _revision = _extra = None
     source_dir = os.path.relpath(d.getVar('S'))
     makefile_path = os.path.join(source_dir, 'Makefile')
@@ -282,15 +281,31 @@ def _detect_kernel_version(d):
                     _extra = val
             f_in.close()
     except Exception as e:
-        bb.warn("Could not read/parse kernel Makefile (%s): %s." %
+        bb.warn("Could not read/parse package Makefile (%s): %s." %
                    (makefile_path, e))
-    finally:
-        if _major and _minor and _revision:
-            _version = '.'.join([_major, _minor, _revision])
-            if _extra:
-                _version = _version + _extra
+    return _major, _minor, _revision, _extra
+
+def _detect_kernel_version(d):
+    _version = ""
+    _major, _minor, _revision, _extra = _get_version_from_makefile(d)
+
+    if _major and _minor and _revision:
+        _version = '.'.join([_major, _minor, _revision])
+        if _extra:
+            _version += _extra
     return _version
 
+def _detect_uboot_version(d):
+    _version = ""
+    _major, _minor, _revision, _extra = _get_version_from_makefile(d)
+
+    if _major and _minor:
+        _version = '.'.join([_major, _minor])
+        if _revision:
+            _version += _revision
+        if _extra:
+            _version += _extra
+    return _version
 
 def _get_cve_version(d):
     import oe.recipeutils as oe
@@ -298,6 +313,15 @@ def _get_cve_version(d):
     cve_v = d.getVar('CVE_VERSION')
     if bb.data.inherits_class('kernel', d):
         cve_v = _detect_kernel_version(d)
+    
+    # get version from makefile for external uboot
+    boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
+        d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
+    if d.getVar("PN") == boot_pn:
+        tmpdir = d.getVar("TMPDIR")
+        src_dir = d.getVar("S")
+        if not src_dir.startswith(tmpdir):
+            cve_v = _detect_uboot_version(d)
 
     if not cve_v:
         pv = d.getVar('PV')
