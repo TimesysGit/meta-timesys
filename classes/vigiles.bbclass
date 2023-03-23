@@ -308,10 +308,18 @@ def _get_extra_packages(d):
     if header[0].lower() == "product":
         extra_rows = extra_rows[1:]
 
+    include_closed_license = bb.utils.to_boolean(d.getVar(
+        "VIGILES_INCLUDE_CLOSED_LICENSES"
+    ))
+
     for row in extra_rows:
         pkg = row[0].replace(' ', '-')
         ver = row[1].replace(' ', '.')
         license = row[2]
+
+        if not include_closed_license and license == "CLOSED":
+            continue
+
         license_key = pkg + ver
 
         bb.debug(1, "Extra Package: %s, Version: %s, License: %s = %s" %
