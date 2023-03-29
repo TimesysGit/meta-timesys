@@ -25,6 +25,8 @@ tsmeta_image_dir = "${tsmeta_dir}/image"
 tsmeta_layers_dir = "${tsmeta_dir}/layers"
 tsmeta_machine_dir = "${tsmeta_dir}/machine"
 tsmeta_preferred_dir = "${tsmeta_dir}/preferred"
+tsmeta_build_deps_dir = "${tsmeta_dir}/build_deps"
+tsmeta_runtime_deps_dir = "${tsmeta_dir}/runtime_deps"
 
 tsmeta_lvars_pkg = " \
     ALTERNATIVE     \
