@@ -92,6 +92,112 @@ def get_cpe_ids(cve_product, version):
         cpe_ids.append(cpe_id)
     return cpe_ids
 
+def vigiles_get_build_dependencies(d):
+    taskdepdata = d.getVar("BB_TASKDEPDATA")
+    current_pn = d.getVar("PN")
+    task_name = "do_collect_build_deps"
+    dep_dict = {
+        'pn': current_pn,
+        'deps': sorted(set([
+            dep[0] for dep in taskdepdata.values()
+            if dep[0] != current_pn and dep[1] == task_name 
+            ]))
+        }
+
+    tsmeta_write_dict(d, "build_deps", dep_dict)
+
+vigiles_get_build_dependencies[vardepsexclude] += "BB_TASKDEPDATA"
+
+python do_collect_build_deps() {
+    vigiles_get_build_dependencies(d)
+}
+
+addtask do_collect_build_deps after do_package do_packagedata do_unpack before do_populate_sdk do_build do_rm_work
+do_collect_build_deps[nostamp] = "1"
+do_collect_build_deps[deptask] = "do_collect_build_deps"
+
+def collect_package_providers(d):
+    import oe.packagedata
+    providers = {}
+
+    taskdepdata = d.getVar("BB_TASKDEPDATA", False)
+    deps = sorted(set(
+        dep[0] for dep in taskdepdata.values() if dep[0] != d.getVar("PN")
+    ))
+    deps.append(d.getVar("PN"))
+
+    for dep_pn in deps:
+        recipe_data = oe.packagedata.read_pkgdata(dep_pn, d)
+        for pkg in recipe_data.get("PACKAGES", "").split():
+            pkg_data = oe.packagedata.read_subpkgdata_dict(pkg, d)
+            rprovides = set(n for n, _ in bb.utils.explode_dep_versions2(pkg_data.get("RPROVIDES", "")).items())
+            rprovides.add(pkg)
+
+            for r in rprovides:
+                providers[r] = pkg
+
+    return providers
+
+collect_package_providers[vardepsexclude] += "BB_TASKDEPDATA"
+
+
+def parse_rdeps(pkg, rdep_dict):
+    def _split_ver(s):
+        ver = s.split('(', 1)[-1].split(')', 1)[0].strip()
+        return ver if ver != s else ''
+
+    rdeps = rdep_dict.get(pkg, {}).get("rdepends", [])
+    out = {}
+    if len(rdeps) > 1:
+        for r in rdeps[1:]:
+            dep_pkg = r.split()[0]
+            out[dep_pkg] = _split_ver(r)
+    return out
+
+python do_collect_runtime_deps() {
+    is_native = bb.data.inherits_class("native", d) or bb.data.inherits_class("cross", d)
+    providers = collect_package_providers(d)
+    pn = d.getVar("PN")
+    if not is_native:
+        bb.build.exec_func("read_subpackage_metadata", d)
+        for package in d.getVar("PACKAGES").split():
+            localdata = bb.data.createCopy(d)
+            pkg_name = d.getVar("PKG:%s" % package) or package
+            localdata.setVar("PKG", pkg_name)
+            localdata.setVar('OVERRIDES', d.getVar("OVERRIDES", False) + ":" + package)
+            
+            deps = bb.utils.explode_dep_versions2(localdata.getVar("RDEPENDS") or "")
+            rdeps = set()  
+            for dep, _ in deps.items():
+                if dep in rdeps:
+                    continue
+
+                if dep not in providers:
+                    continue
+
+                dep = providers[dep]
+
+                if not oe.packagedata.packaged(dep, d):
+                    continue
+
+                dep_pkg_data = oe.packagedata.read_subpkgdata_dict(dep, d)
+                dep_pkg = dep_pkg_data["PKG"]
+                rdeps.add(dep_pkg)
+
+            dep_dict = {
+                'pn': package,
+                'deps': list(rdeps)
+                }
+
+            tsmeta_write_dictname(localdata, "runtime_deps", pkg_name, dep_dict)
+}
+
+addtask do_collect_runtime_deps after do_collect_build_deps before do_build do_rm_work
+
+do_collect_runtime_deps[rdeptask] = "do_collect_build_deps"
+do_rootfs[recrdeptask] += "do_collect_build_deps do_collect_runtime_deps"
+do_populate_sdk[recrdeptask] += "do_collect_build_deps do_collect_runtime_deps"
+
 python do_vigiles_pkg() {
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -448,7 +554,19 @@ def vigiles_image_collect(d):
     _filter_excluded_packages(d, dict_out['packages'])
     # Add package supplier
     for key in dict_out['packages'].keys():
-        dict_out['packages'][key].update({'package_supplier': d.getVar('SPDX_SUPPLIER')})
+        bdep_fpath = tsmeta_get_type_path(d, "build_deps", key)
+        bdeps = tsmeta_read_json(d, bdep_fpath)
+
+        rdep_fpath = tsmeta_get_type_path(d, "runtime_deps", key)
+        rdeps = tsmeta_read_json(d, rdep_fpath)
+
+        dict_out['packages'][key].update({
+            'package_supplier': d.getVar('SPDX_SUPPLIER'),
+            'dependencies': {
+                'build': bdeps.get('deps', []),
+                'runtime': rdeps.get('deps', []),
+            },
+        })
     return dict_out
 
 python do_vigiles_image() {
@@ -695,7 +813,7 @@ python() {
 
     if pn == boot_pn:
         bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile do_vigiles_pkg', d)
-        d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn)
+        d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn) 
 }
 
 do_vigiles_uboot_config[nostamp] = "1"
