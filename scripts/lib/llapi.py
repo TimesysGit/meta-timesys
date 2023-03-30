@@ -7,6 +7,7 @@ import json
 import os
 import ssl
 import sys
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -18,6 +19,8 @@ vigiles_url_env = os.getenv('LINUXLINK_SERVER')
 VigilesURL = vigiles_url_env if vigiles_url_env else vigiles_url_default
 VigilesSupportURL = 'https://linuxlink.timesys.com/support'
 VigilesInfoURL = 'https://www.timesys.com/security/vulnerability-patch-notification/'
+VigilesApiMaxRetries = 5
+VigilesApiRetryTimeout = 5
 
 
 def make_msg(method, resource, data):
@@ -126,32 +129,48 @@ def _do_api_call(request_dict, json_response):
     response = None
 
     url = request_dict['url']
-    err_reason = 'other'
-    err_str = ''
-    try:
-        r = urllib.request.Request(**request_dict)
-        f = urllib.request.urlopen(r, context=context) if context else urllib.request.urlopen(r)
-        if not json_response:
-            return f
-        response = json.loads(f.read().decode('utf-8'), object_pairs_hook=OrderedDict)
-    except urllib.error.HTTPError as e:
-        err_reason = str(e.code)
-        err_str = f.read().decode('utf-8') if f else str(e)
-    except urllib.error.URLError as e:
-        err_reason = 'not-known'
-        err_str = ' '.join([ str(real_e) for real_e in e.args ])
-    except (TypeError, UnicodeDecodeError):
-        err_str = str(e)
-        err_reason = 'content'
-    except Exception as e:
-        err_str = f.read().decode('utf-8') if f else str(e)
-        for real_e in e.args:
-            if isinstance(real_e, TimeoutError):
-                err_reason = 'timeout'
-                break
+    
+    for index in range(VigilesApiMaxRetries):
+        err_reason = 'other'
+        err_str = ''
+        retry = False
+        retry_count = index + 1
+        try:
+            r = urllib.request.Request(**request_dict)
+            f = urllib.request.urlopen(r, context=context) if context else urllib.request.urlopen(r)
+            if not json_response:
+                return f
+            response = json.loads(f.read().decode('utf-8'), object_pairs_hook=OrderedDict)
+        except urllib.error.HTTPError as e:
+            err_reason = str(e.code)
+            err_str = f.read().decode('utf-8') if f else str(e)
+        except urllib.error.URLError as e:
+            err_reason = 'not-known'
+            err_str = ' '.join([str(real_e) for real_e in e.args])
+            retry = True
+        except (TypeError, UnicodeDecodeError) as e:
+            err_str = str(e)
+            err_reason = 'content'
+        except Exception as e:
+            err_str = f.read().decode('utf-8') if f else str(e)
+            for real_e in e.args:
+                if isinstance(real_e, TimeoutError):
+                    err_reason = 'timeout'
+                    retry = True
+                    break
 
-    if err_str:
-        api_error_message(err_reason, url, err_str)
+        if err_str and (retry is False or retry_count == VigilesApiMaxRetries):
+            api_error_message(err_reason, url, err_str)
+
+        # Error occurred which might be resolved by a retry
+        if retry and retry_count < VigilesApiMaxRetries:
+            print('({1} of {2} retries) Unable to connect to Vigiles Servers, Retrying in {0} secs'.format(
+                    VigilesApiRetryTimeout, retry_count, VigilesApiMaxRetries), file=sys.stderr)
+            time.sleep(VigilesApiRetryTimeout)
+            continue
+
+        break
+
     return response
 
 
