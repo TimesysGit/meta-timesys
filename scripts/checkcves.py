@@ -270,7 +270,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_default = ''
 
     if c_env:
-        print("Vigiles: Using LinixLink Credentials in Environment")
+        print("Vigiles: Using LinuxLink Credentials in Environment")
     elif kf_env:
         print("Vigiles: Using LinuxLink Key from Environment: %s" % kf_env)
         key_file = kf_env
