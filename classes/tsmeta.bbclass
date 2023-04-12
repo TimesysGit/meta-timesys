@@ -545,7 +545,8 @@ python tsmeta_get_image() {
 
     tempdict = { key.replace("IMAGE_", "").lower(): d.getVar(key) \
         for key in d.keys() if key.startswith("IMAGE_") and \
-        not (key.startswith("IMAGE_CMD_") or key.startswith("IMAGE_FEATURES")) }
+        not (key.startswith("IMAGE_CMD_") or key.startswith("IMAGE_CMD:") \
+        or key.startswith("IMAGE_FEATURES")) }
 
     extra_keys = [
         'EXTRA_IMAGE_INSTALL',
