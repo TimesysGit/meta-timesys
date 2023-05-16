@@ -198,6 +198,32 @@ do_collect_runtime_deps[rdeptask] = "do_collect_build_deps"
 do_rootfs[recrdeptask] += "do_collect_build_deps do_collect_runtime_deps"
 do_populate_sdk[recrdeptask] += "do_collect_build_deps do_collect_runtime_deps"
 
+
+def get_package_checksum(d):
+    from bb.fetch2 import CHECKSUM_LIST
+
+    allowed_checksums = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512", "MD2", "MD4", "MD5", "MD6")
+    checksums = []
+
+    for src_uri in d.getVar('SRC_URI').split():
+        fetch_data = bb.fetch2.FetchData(src_uri, d)
+        if fetch_data.localpath and fetch_data.method.supports_checksum(fetch_data):
+            for checksum_id in CHECKSUM_LIST:
+                if checksum_id.upper() not in allowed_checksums:
+                    continue
+
+                checksum = getattr(fetch_data, "%s_expected" % checksum_id)
+                if checksum is None:
+                    continue
+
+                checksums.append({
+                    "algorithm": checksum_id.upper(),
+                    "checksum_value": checksum
+                })
+    
+    return checksums
+
+
 python do_vigiles_pkg() {
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -267,6 +293,8 @@ python do_vigiles_pkg() {
         manifest.pop('srcrev')
     if not len(manifest['patched_cves']):
         manifest.pop('patched_cves')
+
+    manifest['checksums'] = get_package_checksum(d)
 
     tsmeta_write_dict(d, "cve", manifest)
 }
