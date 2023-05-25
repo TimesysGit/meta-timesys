@@ -162,12 +162,12 @@ python do_collect_runtime_deps() {
         bb.build.exec_func("read_subpackage_metadata", d)
         for package in d.getVar("PACKAGES").split():
             localdata = bb.data.createCopy(d)
-            pkg_name = d.getVar("PKG:%s" % package) or package
+            pkg_name = d.getVar("PKG:%s" % package) or d.getVar("PKG_%s" % package) or package
             localdata.setVar("PKG", pkg_name)
             localdata.setVar('OVERRIDES', d.getVar("OVERRIDES", False) + ":" + package)
             
             deps = bb.utils.explode_dep_versions2(localdata.getVar("RDEPENDS") or "")
-            rdeps = set()  
+            rdeps = set()
             for dep, _ in deps.items():
                 if dep in rdeps:
                     continue
@@ -185,7 +185,7 @@ python do_collect_runtime_deps() {
                 rdeps.add(dep_pkg)
 
             dep_dict = {
-                'pn': package,
+                'pn': pn,
                 'deps': list(rdeps)
                 }
 
@@ -228,17 +228,6 @@ python do_vigiles_pkg() {
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
 
-    suffixes = d.getVar('SPECIAL_PKGSUFFIX').split()
-    prefixes = ['nativesdk-']
-    substrings = ['-cross-', '-source-']
-
-    if (pn.endswith(tuple(suffixes)) or
-        pn.startswith(tuple(prefixes)) or
-        any(substr in pn for substr in substrings)):
-        bb.debug(1, "Skipping extended PN %s [ %s ]" % (pn, bpn))
-        return
-    elif pn != bpn:
-        bb.debug(2, "Keeping extended PN %s [ %s ]" % (pn, bpn))
 
     bb.build.exec_func("do_tsmeta_pkgvars", d)
 
@@ -525,10 +514,53 @@ def _get_packages(d, pn_list):
             if not include_closed_license and indict.get(pn, {}).get("license", "").lower() == "closed":
                 continue
             dict_out[pn] = indict.get(pn, {})
+            dict_out[pn]["component_type"] = ["component"]
     return dict_out
 
 def vigiles_image_collect(d):
     from datetime import datetime
+
+    def add_dependencies(key):
+        bdeps = tsmeta_read_dictname(d, "build_deps", key)
+        include_deps_as_pkgs(bdeps.get("deps", []), "build")
+        rdeps = tsmeta_read_dictname(d, "runtime_deps", key)
+        include_deps_as_pkgs(rdeps.get("deps", []), "runtime")
+
+        dict_out['packages'][key].update({
+            'package_supplier': d.getVar('SPDX_SUPPLIER'),
+            'dependencies': {
+                'build': bdeps.get('deps', []),
+                'runtime': rdeps.get('deps', []),
+            },
+            
+        })
+
+    def include_deps_as_pkgs(deps, component_type):
+        dependency_only_comment = {
+            "build": "Dependency Only; This component was identified as a build dependency by Vigiles",
+            "runtime": "Dependency Only; This component was identified as a runtime dependency by Vigiles",
+            "build&runtime": "Dependency Only; This component was identified as a build and runtime dependency by Vigiles",
+        }
+        for dep in deps:
+            if dep not in dict_out["packages"].keys():
+                dep_pn = tsmeta_read_dictname(d, f'{component_type}_deps', dep).get("pn", dep)
+                dict_out['packages'][dep] = tsmeta_read_dictname(d, 'cve', dep_pn)
+                dict_out['packages'][dep]["comment"] = dependency_only_comment[component_type]
+                dict_out['packages'][dep]["component_type"] = [component_type]
+                add_dependencies(dep)
+            else:
+                component_type_list = dict_out["packages"][dep].get("component_type", [])
+                if not component_type_list:
+                    continue
+                if component_type and component_type not in component_type_list:
+                    dict_out["packages"][dep]["component_type"].append(component_type)
+                if "component" not in component_type_list:
+                    if "build" in component_type_list and "runtime" in component_type_list:
+                        dict_out['packages'][dep]["comment"] = dependency_only_comment["build&runtime"]
+                    elif "build" in component_type_list:
+                        dict_out['packages'][dep]["comment"] = dependency_only_comment["build"]
+                    elif "runtime" in component_type_list:
+                        dict_out['packages'][dep]["comment"] = dependency_only_comment["runtime"]
 
     sys_dict = vigiles_get_build_dict(d)
 
@@ -581,20 +613,11 @@ def vigiles_image_collect(d):
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
     # Add package supplier
-    for key in dict_out['packages'].keys():
-        bdep_fpath = tsmeta_get_type_path(d, "build_deps", key)
-        bdeps = tsmeta_read_json(d, bdep_fpath)
+    pkg_list = list(dict_out['packages'].keys())
 
-        rdep_fpath = tsmeta_get_type_path(d, "runtime_deps", key)
-        rdeps = tsmeta_read_json(d, rdep_fpath)
+    for key in pkg_list:
+        add_dependencies(key)
 
-        dict_out['packages'][key].update({
-            'package_supplier': d.getVar('SPDX_SUPPLIER'),
-            'dependencies': {
-                'build': bdeps.get('deps', []),
-                'runtime': rdeps.get('deps', []),
-            },
-        })
     return dict_out
 
 python do_vigiles_image() {
