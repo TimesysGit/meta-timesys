@@ -307,7 +307,8 @@ def _get_credentials(kf_param, dc_param, sf_param):
         # If Vigiles API credentials are specified in the environment, they
         # are used by default instead of the keyfile.
         if c_env:
-            email, key = llapi.parse_credentials(c_env)
+            creds = json.loads(c_env)
+            email, key = llapi.parse_credentials(creds)
         else:
             email, key = llapi.read_keyfile(key_file)
 

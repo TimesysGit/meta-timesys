@@ -52,7 +52,6 @@ def read_keyfile(key_file):
     return (email, key)
 
 def parse_credentials(credentials):
-    credentials = json.loads(credentials)
     email = credentials.get('email', '').strip()
     key = credentials.get('key', '').strip()
 
