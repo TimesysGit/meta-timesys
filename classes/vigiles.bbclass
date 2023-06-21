@@ -538,8 +538,8 @@ def vigiles_image_collect(d):
         dict_out['packages'][key].update({
             'package_supplier': d.getVar('SPDX_SUPPLIER', True),
             'dependencies': {
-                'build': bdeps.get('deps', []),
-                'runtime': rdeps.get('deps', []),
+                'build': sorted(bdeps.get('deps', [])),
+                'runtime': sorted(rdeps.get('deps', [])),
             },
             
         })
@@ -563,6 +563,7 @@ def vigiles_image_collect(d):
                     continue
                 if component_type and component_type not in component_type_list:
                     dict_out["packages"][dep]["component_type"].append(component_type)
+                    dict_out["packages"][dep]["component_type"].sort()
                 if "component" not in component_type_list:
                     if "build" in component_type_list and "runtime" in component_type_list:
                         dict_out['packages'][dep]["comment"] = dependency_only_comment["build&runtime"]
