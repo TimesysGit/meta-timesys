@@ -113,7 +113,7 @@ addtask do_collect_build_deps after do_package do_packagedata do_unpack before d
 do_collect_build_deps[nostamp] = "1"
 do_collect_build_deps[deptask] = "do_collect_build_deps"
 
-def collect_package_providers(d):
+def vigiles_collect_package_providers(d):
     import oe.packagedata
     providers = {}
 
@@ -136,7 +136,7 @@ def collect_package_providers(d):
 
     return providers
 
-collect_package_providers[vardepsexclude] += "BB_TASKDEPDATA"
+vigiles_collect_package_providers[vardepsexclude] += "BB_TASKDEPDATA"
 
 
 def parse_rdeps(pkg, rdep_dict):
@@ -154,7 +154,7 @@ def parse_rdeps(pkg, rdep_dict):
 
 python do_collect_runtime_deps() {
     is_native = bb.data.inherits_class("native", d) or bb.data.inherits_class("cross", d)
-    providers = collect_package_providers(d)
+    providers = vigiles_collect_package_providers(d)
     pn = d.getVar("PN", True)
     if not is_native:
         bb.build.exec_func("read_subpackage_metadata", d)
