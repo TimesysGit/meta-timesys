@@ -885,12 +885,12 @@ def tsmeta_pn_list(d):
         manifest_path = d.getVar('IMAGE_MANIFEST', True )
 
         rootfs_pkgs = list()
-        if os.path.exists(manifest_path):
+        if manifest_path and os.path.exists(manifest_path):
             bb.plain("Using RootFS Manifest %s" % manifest_path)
             with open(manifest_path) as f_desc:
                 rootfs_pkgs = [ line.split()[0] for line in f_desc ]
         else:
-            bb.error("RootFS Manifest Not Found: %s" % manifest_path)
+            bb.warn("RootFS Manifest Not Found: %s. Generated SBOM might be incomplete." % manifest_path)
         return rootfs_pkgs
 
     pkg_pn_map = get_pkg_lookup()
