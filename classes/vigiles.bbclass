@@ -572,6 +572,22 @@ def vigiles_image_collect(d):
                     elif "runtime" in component_type_list:
                         dict_out['packages'][dep]["comment"] = dependency_only_comment["runtime"]
 
+    def set_package_field_defaults(manifest):
+        for pkg, pkg_dict in manifest.get("packages", {}).items():
+            if not pkg_dict.get("version", ""):
+                pkg_dict["version"] = "unset"
+            if not pkg_dict.get("cve_version", ""):
+                pkg_dict["cve_version"] = pkg_dict["version"]
+            if not pkg_dict.get("name", ""):
+                pkg_dict["name"] = pkg
+            if not pkg_dict.get("cve_product", ""):
+                pkg_dict["cve_product"] = pkg
+            if not pkg_dict.get("license", ""):
+                pkg_dict["license"] = "unknown"
+            if not pkg_dict.get("checksums", ""):
+                pkg_dict["checksums"] = []
+        return manifest
+
     sys_dict = vigiles_get_build_dict(d)
 
     backfill_list = d.getVar('VIGILES_BACKFILL', True).split()
@@ -617,6 +633,9 @@ def vigiles_image_collect(d):
 
     for key in pkg_list:
         add_dependencies(key)
+
+    # Add default package fields
+    dict_out = set_package_field_defaults(dict_out)
 
     return dict_out
 
