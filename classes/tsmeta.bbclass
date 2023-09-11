@@ -328,7 +328,7 @@ def _get_cve_version(d):
     if not cve_v:
         pv = d.getVar('PV')
         uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
-        (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
+        (bpv, pfx, sfx) = oe.get_recipe_pv_with_pfx_sfx(pv, uri_type)
         cve_v = bpv
     return cve_v
 
