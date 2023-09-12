@@ -27,6 +27,9 @@ INFO_PAGE = 'https://www.timesys.com/security/vulnerability-patch-notification/'
 
 bogus_whitelist = "CVE-1234-1234"
 
+class InvalidDashboardConfig(BaseException):
+    pass
+
 def get_usage():
     return('This script sends a json manifest file for an image to Vigiles '
            'to check the CVE status of the recipes. You may specify a manifest '
@@ -256,6 +259,31 @@ def print_whitelist(wl, outfile=None):
             print('\t(Nothing is Whitelisted)', file=outfile)
 
 
+def check_dashboard_config(conf_dashboard, default_dc_used):
+    err_prefix = "Invalid Dashboard Config."
+    err_suffix = " Report will be generated in Private Workspace instead."
+    
+    try:
+        with open(conf_dashboard, "r") as f:
+            conf = json.load(f)
+            if conf.get("product", conf.get("group")):
+                if len(conf) > 1:
+                    if conf.get("folder"):
+                        return
+                else:
+                    return
+            err_msg = err_prefix + err_suffix
+    except FileNotFoundError:
+        if default_dc_used:
+            return
+        err_msg = "Dashboard config doesn't exists at %s." %conf_dashboard + err_suffix
+    except json.decoder.JSONDecodeError:
+        err_msg = err_prefix + err_suffix
+    except Exception as e:
+        err_msg = "Unable to parse Dashboard config : %s." %e + err_suffix
+    raise InvalidDashboardConfig(err_msg)
+
+
 def _get_credentials(kf_param, dc_param, sf_param):
     home_dir = os.path.expanduser('~')
     timesys_dir  = os.path.join(home_dir, 'timesys')
@@ -269,6 +297,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_env = os.getenv('VIGILES_SUBFOLDER_NAME', '')
     sf_default = ''
 
+    default_dc_used = False
     if kf_env:
         print("Vigiles: Using Key from Environment: %s" % kf_env)
         key_file = kf_env
@@ -288,6 +317,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     else:
         print("Vigiles: Trying Dashboard Config Default: %s" % dc_default)
         dashboard_config = dc_default
+        default_dc_used = True
 
     if sf_env:
         print("Vigiles: Using Subfolder Name from Environment: %s" % sf_env)
@@ -307,10 +337,18 @@ def _get_credentials(kf_param, dc_param, sf_param):
         if is_enterprise:
             llapi.VigilesURL = key_info.get('server_url', llapi.VigilesURL)
 
-        # It is fine if either of these are none, they will just default
-        dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
+        dashboard_tokens = {}
+        # Validate dashboard config
+        # Bypass Validation check for demo mode
+        if email and key:
+            check_dashboard_config(dashboard_config, default_dc_used)
+
+            # It is fine if either of these are none, they will just default
+            dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
+    except InvalidDashboardConfig as e:
+        print('\nVigiles Error: %s\n' % e)
     except Exception as e:
-        print('Error: %s\n' % e)
+        print('\nVigiles Error: %s\n' % e)
         print(get_usage())
         sys.exit(1)
 
