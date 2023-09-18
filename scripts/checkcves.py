@@ -28,6 +28,11 @@ bogus_whitelist = "CVE-1234-1234"
 class InvalidDashboardConfig(BaseException):
     pass
 
+
+class InvalidLinuxlinkKey(BaseException):
+    pass
+
+
 def get_usage():
     return('This script sends a json manifest file for an image to Vigiles '
            'to check the CVE status of the recipes. You may specify a manifest '
@@ -282,6 +287,32 @@ def check_dashboard_config(conf_dashboard, default_dc_used):
     raise InvalidDashboardConfig(err_msg)
 
 
+def check_linuxlink_key(key, default_key_used):
+    err_prefix = "Invalid Linuxlink key."
+    err_suffix = " Report will be generated in Demo mode instead."
+    
+    try:
+        with open(key, "r") as f:
+            ll_key = json.load(f)
+            if ll_key.get("key") and ll_key.get("email"):
+                if len(ll_key) > 2:
+                    is_enterprise = ll_key.get("is_enterprise")
+                    if isinstance(is_enterprise, bool) :
+                        return
+                else:
+                    return
+            err_msg = err_prefix + err_suffix
+    except FileNotFoundError:
+        if default_key_used:
+            return
+        err_msg = "Linuxlink key doesn't exists at %s." %key + err_suffix
+    except json.decoder.JSONDecodeError:
+        err_msg = err_prefix + err_suffix
+    except Exception as e:
+        err_msg = "Unable to parse Linuxlink: %s." %e + err_suffix
+    raise InvalidLinuxlinkKey(err_msg)
+
+
 def _get_credentials(kf_param, dc_param, sf_param):
     home_dir = os.path.expanduser('~')
     timesys_dir  = os.path.join(home_dir, 'timesys')
@@ -295,6 +326,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_env = os.getenv('VIGILES_SUBFOLDER_NAME', '')
     sf_default = ''
 
+    default_key_used = False
     default_dc_used = False
     if kf_env:
         print("Vigiles: Using Key from Environment: %s" % kf_env)
@@ -305,6 +337,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     else:
         print("Vigiles: Trying Key Default: %s" % kf_default)
         key_file = kf_default
+        default_key_used = True
 
     if dc_env:
         print("Vigiles: Using Dashboard Config from Environment: %s" % dc_env)
@@ -327,7 +360,11 @@ def _get_credentials(kf_param, dc_param, sf_param):
         print("Vigiles: Using Subfolder Name Default: %s" % sf_default)
         subfolder_name = sf_default
 
+    vgls_creds = {}
+    dashboard_tokens = {}
+
     try:
+        check_linuxlink_key(key_file, default_key_used)
         key_info = llapi.read_keyfile(key_file)
         email = key_info.get('email', None)
         key = key_info.get('key', key_info.get('organization_key', None))
@@ -335,7 +372,6 @@ def _get_credentials(kf_param, dc_param, sf_param):
         if is_enterprise:
             llapi.VigilesURL = key_info.get('server_url', llapi.VigilesURL)
 
-        dashboard_tokens = {}
         # Validate dashboard config
         # Bypass Validation check for demo mode
         if email and key:
@@ -343,13 +379,17 @@ def _get_credentials(kf_param, dc_param, sf_param):
 
             # It is fine if either of these are none, they will just default
             dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
+        
+    except InvalidLinuxlinkKey as e:
+        print('\nVigiles Error: %s\n' % e)
+        return vgls_creds
     except InvalidDashboardConfig as e:
         print('\nVigiles Error: %s\n' % e)
     except Exception as e:
         print('\nVigiles Error: %s\n' % e)
         print(get_usage())
         sys.exit(1)
-
+    
     vgls_creds = {
         'email': email,
         'key': key,
@@ -358,6 +398,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
         'subfolder_name': subfolder_name,
         'is_enterprise': is_enterprise,
     }
+
     return vgls_creds
 
 if __name__ == '__main__':
@@ -366,9 +407,9 @@ if __name__ == '__main__':
     args = handle_cmdline_args()
 
     vgls_creds = _get_credentials(args.llkey, args.lldashboard, args.subfolder_name)
-    email = vgls_creds['email']
-    key = vgls_creds['key']
-    is_enterprise = vgls_creds['is_enterprise']
+    email = vgls_creds.get('email')
+    key = vgls_creds.get('key')
+    is_enterprise = vgls_creds.get('is_enterprise')
 
     # If there was no proper API keyfile, operate in demo mode.
     if not email or not key:
