@@ -29,7 +29,7 @@ If you do not already have an environment configured, please use the following t
 
 ### Review the Yocto system requirements here:
 
-http://www.yoctoproject.org/docs/2.4/ref-manual/ref-manual.html#intro-requirements
+https://docs.yoctoproject.org/2.0.3/ref-manual/ref-manual.html#intro-requirements
 
 ### Clone poky and meta-timesys
 
