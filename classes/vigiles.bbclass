@@ -225,6 +225,36 @@ def get_package_checksum(d):
     return checksums
 
 
+def get_package_annotations(d):
+    from datetime import datetime
+
+    def add_annotation(comment):
+        tool_name = d.getVar("VIGILES_SPDX_TOOL_NAME")
+        tool_version = d.getVar("VIGILES_TOOL_VERSION")
+
+        annotation = {}
+        annotation["annotationDate"] = datetime.utcnow().isoformat()
+        annotation["annotationType"] = "OTHER"
+        annotation["comment"] = comment
+        
+        if tool_name and tool_version:
+            annotation["annotator"] = "Tool: %s - %s" % (tool_name, tool_version)
+        
+        return annotation
+
+    annotations = []
+
+    if bb.data.inherits_class("native", d) or bb.data.inherits_class("cross", d):
+        annotation = add_annotation("isNative")
+        annotations.append(annotation)
+
+    if d.getVar("SPDX_CUSTOM_ANNOTATION_VARS"):
+        for var in d.getVar('SPDX_CUSTOM_ANNOTATION_VARS').split():
+            annotation = add_annotation(var + "=" + d.getVar(var))
+            annotations.append(annotation)
+    return annotations
+
+
 def vigiles_collect_pkg_info(d):
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -284,6 +314,7 @@ def vigiles_collect_pkg_info(d):
         manifest.pop('patched_cves')
 
     manifest['checksums'] = get_package_checksum(d)
+    manifest['annotations'] = get_package_annotations(d)
 
     tsmeta_write_dict(d, "cve", manifest)
 
