@@ -603,6 +603,18 @@ def vigiles_image_collect(d):
     if kernel_pn:
         backfill_list.append(kernel_pn)
 
+    if "tegra" in sys_dict.get('layers', {}).keys():
+        secure_os = d.getVar('PREFERRED_PROVIDER_virtual/secure-os', True) or ''
+        if secure_os:
+            backfill_list.append(secure_os)
+            pn_dict = tsmeta_read_dictname(d, "pn", secure_os)
+            deps = pn_dict.get("depends", [])
+
+            for dep in deps:
+                if dep.startswith("virtual") or "native" in dep or "cross" in dep:
+                    continue
+                backfill_list.append(dep)
+
     initramfs_image = d.getVar('INITRAMFS_IMAGE', True)
     if initramfs_image:
         backfill_list.append(initramfs_image)
