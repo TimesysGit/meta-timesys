@@ -110,6 +110,7 @@ vigiles_get_build_dependencies[vardepsexclude] += "BB_TASKDEPDATA"
 
 python do_collect_build_deps() {
     vigiles_get_build_dependencies(d)
+    bb.build.exec_func("do_vigiles_pkg", d)
 }
 
 addtask do_collect_build_deps after do_package do_packagedata do_unpack before do_populate_sdk do_build do_rm_work
