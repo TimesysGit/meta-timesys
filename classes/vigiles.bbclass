@@ -110,7 +110,7 @@ vigiles_get_build_dependencies[vardepsexclude] += "BB_TASKDEPDATA"
 
 python do_collect_build_deps() {
     vigiles_get_build_dependencies(d)
-    bb.build.exec_func("do_vigiles_pkg", d)
+    vigiles_collect_pkg_info(d)
 }
 
 addtask do_collect_build_deps after do_package do_packagedata do_unpack before do_populate_sdk do_build do_rm_work
@@ -237,10 +237,9 @@ def get_package_checksum(d):
     return checksums
 
 
-python do_vigiles_pkg() {
+def vigiles_collect_pkg_info(d):
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
-
 
     bb.build.exec_func("do_tsmeta_pkgvars", d)
 
@@ -299,7 +298,12 @@ python do_vigiles_pkg() {
     manifest['checksums'] = get_package_checksum(d)
 
     tsmeta_write_dict(d, "cve", manifest)
+
+
+python do_vigiles_pkg() {
+    vigiles_collect_pkg_info(d)
 }
+
 
 def vigiles_get_build_dict(d):
     dict_in = dict (
@@ -696,7 +700,6 @@ def vigiles_image_depends(d):
             d.getVar('PREFERRED_PROVIDER_virtual/kernel') or ''
         if kernel_pn:
             deps.append('%s:do_vigiles_kconfig' % kernel_pn)
-            deps.append('%s:do_vigiles_pkg' % kernel_pn)
 
     return ' '.join(deps)
 
@@ -761,6 +764,7 @@ def _find_config(d, vgls_pf, config_in):
 
 
 python do_vigiles_kconfig() {
+    vigiles_collect_pkg_info(d)
     vgls_pf = _get_kernel_pf(d)
     config_in = d.getVar('VIGILES_KERNEL_CONFIG') or ''
     _find_config(d, vgls_pf, config_in)
@@ -803,6 +807,7 @@ def _get_uboot_pf(d):
 python do_vigiles_uboot_config() {
     import shutil
 
+    vigiles_collect_pkg_info(d)
     if not bb.data.inherits_class('uboot-config', d):
         return
 
@@ -908,7 +913,7 @@ python() {
         d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
 
     if pn == boot_pn:
-        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile do_vigiles_pkg', d)
+        bb.build.addtask('do_vigiles_uboot_config', 'do_rm_work', 'do_compile', d)
         d.appendVarFlag('do_vigiles_uboot_config', 'depends', ' %s:do_compile' % pn) 
 }
 
