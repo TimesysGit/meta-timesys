@@ -34,8 +34,9 @@ https://docs.yoctoproject.org/4.3.2/ref-manual/system-requirements.html#system-r
 ### Clone poky and meta-timesys
 
 ```sh
-git clone git://git.yoctoproject.org/poky.git
-git clone https://github.com/TimesysGit/meta-timesys.git
+RELEASE=nanbield
+git clone git://git.yoctoproject.org/poky.git -b $RELEASE
+git clone https://github.com/TimesysGit/meta-timesys.git -b $RELEASE
 ```
 
 ### Activate yocto build environment (needed for manifest creation)
