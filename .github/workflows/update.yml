@@ -1,0 +1,75 @@
+name: Update Real Remote to Fork
+
+on:
+  workflow_dispatch:
+  schedule:
+    # run every night @ 01:00 am
+    - cron: '1 0 * * *'
+
+jobs:
+  fetch-updates:
+    runs-on: ubuntu-latest
+    environment: upstream-link
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Update
+        run: |
+          git fetch -p origin
+          git checkout master
+          
+          # Note: upstream needs to point to the origin repo
+          git remote add upstream "${{ vars.UPSTREAM_URL }}"
+          git fetch -p upstream
+
+          if git diff --quiet origin/master..upstream/master; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          git rebase upstream/master
+
+      - name: Push Updates
+        id: push-branch
+        run: |
+          git config --global user.email "device-platform-github-bot@noreply.verkada.com"
+          git config --global user.name "Device Platform GitHub Bot"
+
+          git push
+
+      - name: Post job success status to slack
+        if: ${{ success() }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # device-platform-newsfeed
+          channel-id: 'GQ968L7RC'
+          # For posting a simple plain text message
+          slack-message: |
+            ${{ github.repository }}: ${{ github.workflow }}: ${{ job.status }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Post job failure status to slack
+        if: ${{ ! success() }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # device-platform-newsfeed
+          channel-id: 'GQ968L7RC'
+          # For posting a simple plain text message
+          slack-message: |
+            ${{ github.repository }}: ${{ github.workflow }}: *${{ job.status }}*
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            <@UCUGH2DGQ> <@U040UU3FR28> <@U032H2U0KL5> <@U015UP4P483> 
+
+          # dennis, ahmad, chinmayi, robert
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
