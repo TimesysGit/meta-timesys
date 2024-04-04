@@ -29,13 +29,14 @@ If you do not already have an environment configured, please use the following t
 
 ### Review the Yocto system requirements here:
 
-https://docs.yoctoproject.org/dev/ref-manual/system-requirements.html#system-requirements
+https://docs.yoctoproject.org/5.0/ref-manual/system-requirements.html#system-requirements
 
 ### Clone poky and meta-timesys
 
 ```sh
-git clone git://git.yoctoproject.org/poky.git
-git clone https://github.com/TimesysGit/meta-timesys.git
+RELEASE=scarthgap
+git clone git://git.yoctoproject.org/poky.git -b $RELEASE
+git clone https://github.com/TimesysGit/meta-timesys.git -b $RELEASE
 ```
 
 ### Activate yocto build environment (needed for manifest creation)
