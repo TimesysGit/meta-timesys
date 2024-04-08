@@ -1,5 +1,25 @@
 # Changelog
 
+## [v2.21.0+warrior] - 2024-04-11
+
+### Added
+
+* [CHANGELOG.md] add changelog
+* [vigiles.conf] add vigiles tool version - VIGILES_TOOL_VERSION
+
+### Changed
+
+* [vigiles.bbclass] populate info of packages included as build dependencies in SBOM
+* [README.md] Update link to Yocto's Reference Manual 
+* [vigiles.bbclass] add packages related to Trusted OS as components
+* [checkcves.py] Display error message if invalid linuxlink key is used
+* [checkcves.py] Display error message if dashboard config is invalid 
+
+### Fixed
+
+* [vigiles.bbclass] Report runtime dependencies against PN
+* [vigiles. bbclass] Resolve circular dependency with meta-tegra
+
 ## [v2.20.0+warrior] - 2023-07-13
 
 ### Changed
