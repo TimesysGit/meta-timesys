@@ -280,7 +280,7 @@ def check_dashboard_config(conf_dashboard, default_dc_used):
         if default_dc_used:
             return
         err_msg = "Dashboard config doesn't exists at %s." %conf_dashboard + err_suffix
-    except json.decoder.JSONDecodeError:
+    except ValueError:
         err_msg = err_prefix + err_suffix
     except Exception as e:
         err_msg = "Unable to parse Dashboard config : %s." %e + err_suffix
@@ -306,7 +306,7 @@ def check_linuxlink_key(key, default_key_used):
         if default_key_used:
             return
         err_msg = "Linuxlink key doesn't exists at %s." %key + err_suffix
-    except json.decoder.JSONDecodeError:
+    except ValueError:
         err_msg = err_prefix + err_suffix
     except Exception as e:
         err_msg = "Unable to parse Linuxlink: %s." %e + err_suffix
