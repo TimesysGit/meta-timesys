@@ -688,6 +688,18 @@ def vigiles_image_collect(d):
 
     return dict_out
 
+python () {
+    pn = d.getVar("PN")
+    initramfs_image = d.getVar("INITRAMFS_IMAGE")
+
+    if pn == initramfs_image:
+        if bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_INITRAMFS_SBOM')):
+            d.setVar('VIGILES_DISABLE_INITRAMFS_REPORT', d.getVar('VIGILES_DISABLE_INITRAMFS_SBOM'))
+            d.appendVarFlag('do_vigiles_image', 'noexec', "1")
+        if bb.utils.to_boolean(d.getVar('VIGILES_DISABLE_INITRAMFS_REPORT')):
+            d.appendVarFlag('do_vigiles_check', 'noexec', "1")
+}
+
 python do_vigiles_image() {
     bb.note("Collecting Vigiles Metadata")
     cve_manifest = vigiles_image_collect(d)
