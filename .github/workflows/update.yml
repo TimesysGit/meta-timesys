@@ -12,30 +12,36 @@ jobs:
     environment: upstream-link
     strategy:
       fail-fast: false
+      matrix:
+        branch_name:
+          - dunfell
+          - kirkstone
+          - scarthgap
+          - master
 
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ matrix.branch_name }}
           submodules: recursive
           fetch-depth: 0
 
       - name: Update
         run: |
           git fetch -p origin
-          git checkout master
+          git checkout ${{ matrix.branch_name }}
           
           # Note: upstream needs to point to the origin repo
           git remote add upstream "${{ vars.UPSTREAM_URL }}"
           git fetch -p upstream
 
-          if git diff --quiet origin/master..upstream/master; then
+          if git diff --quiet origin/${{ matrix.branch_name }}..upstream/${{ matrix.branch_name }}; then
             echo "No changes detected"
             exit 0
           fi
 
-          git rebase upstream/master
+          git rebase upstream/${{ matrix.branch_name }}
 
       - name: Push Updates
         id: push-branch
@@ -54,6 +60,7 @@ jobs:
           # For posting a simple plain text message
           slack-message: |
             ${{ github.repository }}: ${{ github.workflow }}: ${{ job.status }}
+            Branch: ${{ matrix.branch_name }}
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -67,9 +74,10 @@ jobs:
           # For posting a simple plain text message
           slack-message: |
             ${{ github.repository }}: ${{ github.workflow }}: *${{ job.status }}*
+            Branch: ${{ matrix.branch_name }}
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            <@UCUGH2DGQ> <@U040UU3FR28> <@U032H2U0KL5> <@U015UP4P483> 
+            <@UCUGH2DGQ>
 
-          # dennis, ahmad, chinmayi, robert
+          # dennis
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
