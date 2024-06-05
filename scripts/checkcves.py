@@ -296,9 +296,10 @@ def check_linuxlink_key(key, default_key_used):
     try:
         with open(key, "r") as f:
             ll_key = json.load(f)
-            if ll_key.get("key") and ll_key.get("email"):
+            parsed_key = ll_key.get("key", ll_key.get("organization_key"))
+            if parsed_key and ll_key.get("email"):
                 if len(ll_key) > 2:
-                    is_enterprise = ll_key.get("is_enterprise")
+                    is_enterprise = ll_key.get("enterprise", False)
                     if isinstance(is_enterprise, bool) :
                         return
                 else:
