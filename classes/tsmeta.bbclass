@@ -64,7 +64,6 @@ tsmeta_lvars_pn = " \
 "
 
 tsmeta_lvars_src = "\
-    CVE_CHECK_WHITELIST     \
     FILESEXTRAPATHS         \
     SRC_URI                 \
 "
@@ -79,6 +78,7 @@ tsmeta_vars_src = "\
     SRCREV                  \
     SUMMARY                 \
     HOMEPAGE                \
+    CVE_CHECK_CVE_WHITELIST \
 "
 
 
