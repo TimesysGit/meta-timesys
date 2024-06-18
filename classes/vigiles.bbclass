@@ -239,6 +239,7 @@ def get_package_checksum(d):
 
 
 def vigiles_collect_pkg_info(d):
+    import ast
     pn = d.getVar('PN', True)
     bpn = d.getVar('BPN', True)
 
@@ -249,7 +250,7 @@ def vigiles_collect_pkg_info(d):
         'pv'
     ]
     src_vars = [
-        'cve_check_whitelist',
+        'cve_check_cve_whitelist',
         'cve_product',
         'cve_version',
         'layer',
@@ -279,6 +280,9 @@ def vigiles_collect_pkg_info(d):
             break
     else:
         manifest['download_location'] = "UNKNOWN"
+
+    check_cve_whitelist = ast.literal_eval(manifest.pop("cve_check_cve_whitelist") or "{}")
+    manifest["cve_check_cve_whitelist"] = list(check_cve_whitelist.keys())
 
     sources = manifest.pop('sources')
     src_patches = sources.get('patches', {})
@@ -668,7 +672,7 @@ def vigiles_image_collect(d):
         oe.utils.squashspaces(d.getVar('VIGILES_WHITELIST', True ) or "").split()
     )
     for pkg_name, pkg_dict in vgls_pkgs.items():
-        pkg_ignored = pkg_dict.get('cve_check_whitelist', [])
+        pkg_ignored = pkg_dict.get('cve_check_cve_whitelist', [])
         if pkg_ignored:
             bb.debug(1, "Vigiles: Package: '%s' is ignoring %s" % (pkg_name, pkg_ignored))
         vigiles_ignored.update(pkg_ignored)
