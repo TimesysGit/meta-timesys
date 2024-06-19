@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.24.0+scarthgap] - 2024-06-20
+
+### Added
+
+* [vigiles.bbclass] Add custom annotations to packages in generated SBOM 
+* [vigiles.bbclass] Add feature to disable sbom and report generation for initramfs image
+
+### Fixed
+
+* [checkcves.py] Fix API key parsing in 'check_linuxlink_key' function
+
 ## [v2.23.0+scarthgap] - 2024-05-13
 
 ### Added
