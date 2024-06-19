@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.21.0+pyro] - 2024-06-20
+
+### Added
+
+* [vigiles.bbclass] Add feature to disable sbom and report generation for initramfs image
+
+### Fixed
+
+* [checkcves.py] Fix API key parsing in 'check_linuxlink_key' function
+* [vigiles.bbclass] Fix: Use correct variable name for whitelisting package cve
+
 ## [v2.20.0+pyro] - 2024-04-11
 
 ### Added
