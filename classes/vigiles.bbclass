@@ -559,29 +559,29 @@ def vigiles_image_collect(d):
         rdep_pns = get_dep_pns(key_pn, rdeps.get('deps', []), "runtime_deps")
         include_deps_as_pkgs(rdeps.get("deps", []), "runtime", parsed_keys)
 
-        
-        if dict_out['packages'][key_pn].get('dependencies'):
-            # build 
-            existing_bdeps = dict_out['packages'][key_pn]['dependencies'].get('build', [])
-            new_bdeps = [dep for dep in bdeps.get("deps", []) if dep not in existing_bdeps]
-            if new_bdeps:
-                include_deps_as_pkgs(new_bdeps, "build", parsed_keys)
-            dict_out['packages'][key_pn]['dependencies']['build'] = sorted(list(set(existing_bdeps + new_bdeps)))
+        if dict_out['packages'].get(key_pn):
+            if dict_out['packages'][key_pn].get('dependencies'):
+                # build 
+                existing_bdeps = dict_out['packages'][key_pn]['dependencies'].get('build', [])
+                new_bdeps = [dep for dep in bdeps.get("deps", []) if dep not in existing_bdeps]
+                if new_bdeps:
+                    include_deps_as_pkgs(new_bdeps, "build", parsed_keys)
+                dict_out['packages'][key_pn]['dependencies']['build'] = sorted(list(set(existing_bdeps + new_bdeps)))
 
-            # runtime
-            existing_rdeps = dict_out['packages'][key_pn]['dependencies'].get('runtime', [])
-            new_rdeps = [dep for dep in rdeps.get("deps", []) if dep not in parsed_keys]
-            if new_rdeps:
-                include_deps_as_pkgs(new_rdeps, "runtime", parsed_keys)
-            dict_out['packages'][key_pn]['dependencies']['runtime'] = sorted(list(set(existing_rdeps + rdep_pns)))
-        else:
-            dict_out['packages'][key_pn].update({
-                'package_supplier': d.getVar('SPDX_SUPPLIER'),
-                'dependencies': {
-                    'build': sorted(bdeps.get('deps', [])),
-                    'runtime': sorted(rdep_pns),
-                },
-            })  
+                # runtime
+                existing_rdeps = dict_out['packages'][key_pn]['dependencies'].get('runtime', [])
+                new_rdeps = [dep for dep in rdeps.get("deps", []) if dep not in parsed_keys]
+                if new_rdeps:
+                    include_deps_as_pkgs(new_rdeps, "runtime", parsed_keys)
+                dict_out['packages'][key_pn]['dependencies']['runtime'] = sorted(list(set(existing_rdeps + rdep_pns)))
+            else:
+                dict_out['packages'][key_pn].update({
+                    'package_supplier': d.getVar('SPDX_SUPPLIER'),
+                    'dependencies': {
+                        'build': sorted(bdeps.get('deps', [])),
+                        'runtime': sorted(rdep_pns),
+                    },
+                })  
 
     def include_deps_as_pkgs(deps, component_type, parsed_keys):
         dependency_only_comment = {
