@@ -1003,6 +1003,11 @@ python do_vigiles_check() {
             bb.debug(1, "Using U-Boot Config: %s" % os.path.relpath(vigiles_uconfig))
             args = args + ['-u', vigiles_uconfig]
 
+        ecosystems = d.getVar('VIGILES_ECOSYSTEMS')
+        if ecosystems:
+            bb.debug(1, "Using Ecosystems: %s" % ecosystems)
+            args = args + ['-e', ecosystems]
+
         vigiles_env = os.environ.copy()
 
         #
