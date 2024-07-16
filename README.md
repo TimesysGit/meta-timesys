@@ -474,6 +474,52 @@ VIGILES_DISABLE_INITRAMFS_REPORT = "1"
 ```
 
 
+### Specifying ecosystems that should be used for generating report (Enterprise Vigiles Only)
+
+Ecosystems could be specified to include ecosystem specific vulnerabilities into the vulnerability report.
+This feature is currently available for Enterprise vigiles only.
+
+To specify ecosystems to be used set VIGILES_ECOSYSTEMS to a comma seperated string of ecosystems
+
+```
+VIGILES_ECOSYSTEMS = "Linux, Maven, PyPI, Ubuntu:20.04:LTS"
+```
+
+To include all the ecosystems set VIGILES_ECOSYSTEMS to "all"
+
+```
+VIGILES_ECOSYSTEMS = "all"
+```
+
+Below is the list of valid ecosystems that can be used
+```
+AlmaLinux:
+['AlmaLinux', 'AlmaLinux:8', 'AlmaLinux:9']
+
+Alpine:
+['Alpine', 'Alpine:v3.10', 'Alpine:v3.11', 'Alpine:v3.12', 'Alpine:v3.13', 'Alpine:v3.14', 'Alpine:v3.15', 'Alpine:v3.16',
+ 'Alpine:v3.17', 'Alpine:v3.18', 'Alpine:v3.19', 'Alpine:v3.2', 'Alpine:v3.20', 'Alpine:v3.3', 'Alpine:v3.4', 'Alpine:v3.5',
+ 'Alpine:v3.6', 'Alpine:v3.7', 'Alpine:v3.8', 'Alpine:v3.9']
+
+Debian:
+['Debian', 'Debian:10', 'Debian:11', 'Debian:12', 'Debian:13', 'Debian:3.0', 'Debian:3.1', 'Debian:4.0', 'Debian:5.0',
+ 'Debian:6.0', 'Debian:7', 'Debian:8', 'Debian:9']
+
+Rocky:
+['Rocky Linux', 'Rocky Linux:8', 'Rocky Linux:9']
+
+Ubuntu:
+['Ubuntu', 'Ubuntu:14.04:LTS', 'Ubuntu:16.04:LTS', 'Ubuntu:18.04:LTS', 'Ubuntu:20.04:LTS', 'Ubuntu:22.04:LTS', 'Ubuntu:23.10',
+ 'Ubuntu:24.04:LTS', 'Ubuntu:Pro:14.04:LTS', 'Ubuntu:Pro:16.04:LTS', 'Ubuntu:Pro:18.04:LTS', 'Ubuntu:Pro:20.04:LTS',
+ 'Ubuntu:Pro:22.04:LTS', 'Ubuntu:Pro:24.04:LTS']
+
+Others:
+['Android', 'Bitnami', 'CRAN', 'GIT', 'GSD', 'GitHub Actions', 'Go', 'Hackage', 'Hex', 'Linux', 'Maven', 'NuGet', 'OSS-Fuzz',
+ 'Packagist', 'Pub', 'PyPI', 'RubyGems', 'SwiftURL', 'UVI', 'crates.io', 'npm']
+
+```
+
+
 Maintenance
 ===========
 
