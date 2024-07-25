@@ -128,15 +128,15 @@ def print_cves(result, outfile=None):
         for pkg, info in cves.items():
             for cve in info:
                 print('\n\tRecipe:  %s' % pkg, file=outfile)
-                print('\tVersion: %s' % cve['version'], file=outfile)
-                print('\tCVE ID:  %s' % cve['cve_id'], file=outfile)
-                print('\tURL:     %s%s' % (NVD_BASE_URL, cve['cve_id']), file=outfile)
-                print('\tCVSSv3:  %s' % cve['cvss'], file=outfile)
-                print('\tVector:  %s' % cve['vector'], file=outfile)
-                print('\tStatus:  %s' % cve['status'], file=outfile)
+                print('\tVersion: %s' % cve.get('version'), file=outfile)
+                print('\tCVE ID:  %s' % cve.get('cve_id'), file=outfile)
+                print('\tURL:     %s%s' % (NVD_BASE_URL, cve.get('cve_id')), file=outfile)
+                print('\tCVSSv3:  %s' % cve.get('cvss'), file=outfile)
+                print('\tVector:  %s' % cve.get('vector'), file=outfile)
+                print('\tStatus:  %s' % cve.get('status'), file=outfile)
                 patches = cve.get('fixedby')
                 if patches:
-                    if cve['status'] == 'Unfixed, Patch Available':
+                    if cve.get('status') == 'Unfixed, Patch Available':
                         print('\tPatched in meta-timesys-security commit(s):',
                               file=outfile)
                     else:
@@ -229,12 +229,10 @@ def print_summary(result, outfile=None):
       print('\n-- Vigiles CVE Overview --', file=f_out)
       print('\n\tUnfixed: %d\n'
       '\tUnfixed, Patch Available: %d\n'
-      '\tFixed: %d\n'
-      '\tCPU: %d'
-      % (cves['unfixed_count'],
-         cves['unapplied_count'],
-         cves['fixed_count'],
-         cves['arch_count'],),
+      '\tFixed: %d'
+      % (cves.get('unfixed_count', 0),
+         cves.get('unapplied_count', 0),
+         cves.get('fixed_count', 0)),
             file=f_out)
 
     is_demo = result.get('demo', False)
