@@ -405,6 +405,7 @@ VIGILES_BACKFILL := "${@' '.join( \
     [ d.getVar('PREFERRED_PROVIDER_%s' % virt, True) or '' \
         for virt in d.getVar('VIGILES_PREFERRED_BACKFILL', True).split() ] \
 )}"
+VIGILES_BACKFILL += "${VIGILES_EXTRA_BACKFILL}"
 
 
 ##
