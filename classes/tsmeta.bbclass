@@ -309,9 +309,16 @@ def _detect_uboot_version(d):
             _version += _extra
     return _version
 
-def _get_cve_version(d):
+def _get_recipe_pv_with_pfx_sfx(pv, uri_type):
     import oe.recipeutils as oe
+    if hasattr(oe, 'get_recipe_pv_with_pfx_sfx'):
+        func = oe.get_recipe_pv_with_pfx_sfx
+    else:
+        # For yocto kirkstone or older:
+        func = oe.get_recipe_pv_without_srcpv
+    return func(pv, uri_type)
 
+def _get_cve_version(d):
     cve_v = d.getVar('CVE_VERSION')
     if bb.data.inherits_class('kernel', d):
         cve_v = _detect_kernel_version(d)
@@ -328,7 +335,7 @@ def _get_cve_version(d):
     if not cve_v:
         pv = d.getVar('PV')
         uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
-        (bpv, pfx, sfx) = oe.get_recipe_pv_with_pfx_sfx(pv, uri_type)
+        (bpv, pfx, sfx) = _get_recipe_pv_with_pfx_sfx(pv, uri_type)
         cve_v = bpv
     return cve_v
 

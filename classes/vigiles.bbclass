@@ -848,8 +848,6 @@ do_vigiles_kconfig[nostamp] = "1"
 
 
 def _get_uboot_pf(d):
-    from oe import recipeutils as oe
-
     pn = d.getVar('PN')
     boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
         d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
@@ -860,7 +858,7 @@ def _get_uboot_pf(d):
     pv = tsmeta_read_dictname_single(d, 'pn', boot_pn, 'pv')
     if not pv:
         pv = 'unset'
-    (bpv, pfx, sfx) = oe.get_recipe_pv_with_pfx_sfx(pv, 'git')
+    (bpv, pfx, sfx) = _get_recipe_pv_with_pfx_sfx(pv, 'git')
 
     vgls_pf = '-'.join([boot_pn, bpv])
     return vgls_pf
