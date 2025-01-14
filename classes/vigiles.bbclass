@@ -387,6 +387,7 @@ VIGILES_BACKFILL := "${@' '.join( \
         for virt in d.getVar('VIGILES_PREFERRED_BACKFILL', True).split() ] \
 )}"
 
+VIGILES_BACKFILL += "${VIGILES_EXTRA_BACKFILL}"
 
 ##
 #   Additional packages can be included in the manifest by setting

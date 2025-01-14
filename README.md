@@ -380,6 +380,18 @@ VIGILES_EXTRA_PACKAGES = " \
 "
 ```
 
+In order to explicitly include packages which are built by the Bitbake/Yocto
+process but for some reason not present in rootfs manifest (e.g.
+some bootloader or custom firmware may be not picked up through the recursive
+RDEPENDS for the image), ```VIGILES_EXTRA_BACKFILL``` may be used.
+
+For example, one may set this in their local.conf:
+
+```
+VIGILES_EXTRA_BACKFILL = "some-firmware-package"
+```
+
+
 ##### CSV Format
 
 The CSV files consist of an optional header and the following fields:
