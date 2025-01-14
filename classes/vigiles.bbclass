@@ -1096,11 +1096,11 @@ python do_vigiles_check() {
             os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
 
     except bb.process.CmdError as err:
-        bb.error("Vigiles: checkcves.py failed: %s" % err)
+        tsmeta_error(d, "Vigiles: checkcves.py failed: %s" % err)
     except bb.process.NotFoundError as err:
-        bb.error("Vigiles: checkcves.py could not be found: %s" % err)
+        tsmeta_error(d, "Vigiles: checkcves.py could not be found: %s" % err)
     except Exception as err:
-        bb.error("Vigiles: run_checkcves failed: %s" % err)
+        tsmeta_error(d, "Vigiles: run_checkcves failed: %s" % err)
 }
 
 

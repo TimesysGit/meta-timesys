@@ -81,6 +81,10 @@ tsmeta_vars_src = "\
     HOMEPAGE                \
 "
 
+def tsmeta_error(d, *args, **kwargs):
+    throw_errors = bb.utils.to_boolean(d.getVar('VIGILES_THROW_ERRORS'), False)
+    func = bb.error if throw_errors else bb.warn
+    func(*args, **kwargs)
 
 def tsmeta_get_type_dir(d, tsm_type):
     key = "tsmeta_" + tsm_type.lower() + "_dir"

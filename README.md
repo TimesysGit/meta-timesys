@@ -474,6 +474,17 @@ To disable initramfs report generation only, set VIGILES_DISABLE_INITRAMFS_REPOR
 VIGILES_DISABLE_INITRAMFS_REPORT = "1"
 ```
 
+### Fail build on CVEs checking issues
+
+Bitbake warnings on checkcves.py failures (e.g. network communication issues
+with Vigiles servers) may go unnoticed. This can be unnaceptable e.g. in cases
+when CVE analysis is triggered by continuous integration. To make sure bitbake
+process fails (exit code is not 0) in such cases, set
+```VIGILES_THROW_ERRORS``` to '1' or 'True' in ```conf/local.conf```
+
+```
+VIGILES_THROW_ERRORS = "1"
+```
 
 Maintenance
 ===========
