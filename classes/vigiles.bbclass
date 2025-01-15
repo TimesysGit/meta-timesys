@@ -566,31 +566,38 @@ def vigiles_image_collect(d):
                 dep_pns.add(dep_pn)
         return list(dep_pns)
 
+    def get_pkgs(src):
+        all_pkgs = src.get("deps", [])
+        if bb.utils.to_boolean(d.getVar('VIGILES_SBOM_ROOTFS_MANIFEST_ONLY')):
+            return [p for p in all_pkgs if p in rootfs_pkg_set]
+        return all_pkgs
+
     def add_dependencies(key, parsed_keys=set()):
         if key in parsed_keys:
             return
 
         parsed_keys.add(key)
-
         bdeps = tsmeta_read_dictname(d, "build_deps", key)
-        include_deps_as_pkgs(bdeps.get("deps", []), "build", parsed_keys)
+        bdeps_pkgs = get_pkgs(bdeps)
+        include_deps_as_pkgs(bdeps_pkgs, "build", parsed_keys)
         rdeps = tsmeta_read_dictname(d, "runtime_deps", key)
+        rdeps_pkgs = get_pkgs(rdeps)
         key_pn = rdeps.get("pn", bdeps.get("pn", key))
-        rdep_pns = get_dep_pns(key_pn, rdeps.get('deps', []), "runtime_deps")
-        include_deps_as_pkgs(rdeps.get("deps", []), "runtime", parsed_keys)
+        rdep_pns = get_dep_pns(key_pn, rdeps_pkgs, "runtime_deps")
+        include_deps_as_pkgs(rdeps_pkgs, "runtime", parsed_keys)
 
         if dict_out['packages'].get(key_pn):
             if dict_out['packages'][key_pn].get('dependencies'):
                 # build 
                 existing_bdeps = dict_out['packages'][key_pn]['dependencies'].get('build', [])
-                new_bdeps = [dep for dep in bdeps.get("deps", []) if dep not in existing_bdeps]
+                new_bdeps = [dep for dep in bdeps_pkgs if dep not in existing_bdeps]
                 if new_bdeps:
                     include_deps_as_pkgs(new_bdeps, "build", parsed_keys)
                 dict_out['packages'][key_pn]['dependencies']['build'] = sorted(list(set(existing_bdeps + new_bdeps)))
 
                 # runtime
                 existing_rdeps = dict_out['packages'][key_pn]['dependencies'].get('runtime', [])
-                new_rdeps = [dep for dep in rdeps.get("deps", []) if dep not in parsed_keys]
+                new_rdeps = [dep for dep in rdeps_pkgs if dep not in parsed_keys]
                 if new_rdeps:
                     include_deps_as_pkgs(new_rdeps, "runtime", parsed_keys)
                 dict_out['packages'][key_pn]['dependencies']['runtime'] = sorted(list(set(existing_rdeps + rdep_pns)))
@@ -598,7 +605,7 @@ def vigiles_image_collect(d):
                 dict_out['packages'][key_pn].update({
                     'package_supplier': d.getVar('SPDX_SUPPLIER'),
                     'dependencies': {
-                        'build': sorted(bdeps.get('deps', [])),
+                        'build': sorted(bdeps_pkgs),
                         'runtime': sorted(rdep_pns),
                     },
                 })  
@@ -711,6 +718,7 @@ def vigiles_image_collect(d):
     _filter_excluded_packages(d, dict_out['packages'])
     # Add package supplier
     pkg_list = list(dict_out['packages'].keys())
+    rootfs_pkg_set = set(pkg_list)
 
     for key in pkg_list:
         add_dependencies(key)
