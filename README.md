@@ -465,6 +465,16 @@ VIGILES_INCLUDE_CLOSED_LICENSES = "0"
 ```
 
 
+### Exclude native and build-only packages in SBOM
+
+To exclude all packages except backfill packages (packages built during the BitBake process
+but not listed in the SBOM, because they may not be a part of the final rootfs manifest or 
+dependencies of its packages e.g., glibc) and packages present in rootfs
+manifest, set VIGILES_SBOM_ROOTFS_MANIFEST_ONLY = "1"
+
+**Note:** This might result in the SBOM which is not NTIA compliant.
+
+
 ### Disable SBOM and Report generation for initramfs image
 
 SBOM and report generation for the initramfs image can be disabled in local conf.
