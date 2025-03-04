@@ -520,6 +520,26 @@ Others:
 ```
 
 
+### Subscribe SBOM Report Notification (Enterprise Vigiles Only)
+
+SBOM report notifications can be configured in `local.conf` using `VIGILES_NOTIFICATION_FREQUENCY`. This setting allows users to set notification frequency for their report
+This feature is currently available for Enterprise vigiles only.
+
+By default, it is empty (`""`), meaning no subscription setting will be applied
+
+To enable notifications, set one of the following values:
+
+```
+"none", "daily", "weekly", "monthly"
+```
+
+For example, To enable weekly notifications, set:
+
+```
+VIGILES_NOTIFICATION_FREQUENCY = "weekly"
+```
+
+
 Maintenance
 ===========
 
