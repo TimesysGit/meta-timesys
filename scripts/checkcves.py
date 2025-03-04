@@ -80,9 +80,7 @@ def print_demo_notice(bad_key=False):
 def handle_cmdline_args():
     parser = argparse.ArgumentParser(description=get_usage())
     parser.add_argument('-s', '--subscribe',
-                        help='Subscribe to weekly email reports for this manifest',
-                        action='store_true',
-                        default=False,
+                        help='Set subscription frequency for sbom report notifications: "none", "daily", "weekly", "monthly"',
                         dest='subscribe')
     parser.add_argument('-o', '--outfile',
                         help='Print results to FILE instead of STDOUT',
@@ -512,7 +510,6 @@ if __name__ == '__main__':
 
     request = {
       'manifest': manifest_data,
-      'subscribe': args.subscribe,
       'group_token' if is_enterprise else 'product_token': vgls_creds.get('product_or_group', ''),
       'folder_token': vgls_creds.get('folder', ''),
       'subfolder_name': vgls_creds.get('subfolder_name', ''),
@@ -544,6 +541,19 @@ if __name__ == '__main__':
         else:
             print('WARNING: Ecosystems based scanning is available only for enterprise edition')
 
+    subscribe = args.subscribe and args.subscribe.strip() or None
+    valid_subscribe = ["none", "daily", "weekly", "monthly"]
+    if subscribe:
+        subscribe = subscribe.lower()
+        if is_enterprise:
+            if subscribe in valid_subscribe:
+                request["subscribe"] = subscribe
+            else:
+                print('ERROR: Invalid subscription frequency. Choose from: none, daily, weekly, monthly')
+                sys.exit(1)
+        else:
+            print('WARNING: The subscribe option is currently only supported with the Enterprise edition')
+
     _image = manifest.get('image', '')
     _name = manifest.get('manifest_name', _image)
     print('Vigiles: Requesting image analysis for %s (%s) \n'
@@ -566,20 +576,19 @@ if __name__ == '__main__':
         print_demo_notice()
         demo = demo_result
 
-    # If notification subscription was requested but there was no Vigiles
+    # If notification subscription was requested but there was no Enterprise Vigiles
     # account / seat:
-    sub_result = result.get('subscribed', False)
-    if args.subscribe:
-        print('\n-- Vigiles Vulnerability Weekly Report --\n', file=outfile)
-        if not sub_result:
-            print('\tWarning: Could not subscribe to weekly Vulnerability report!\n'
-                '\t  Please check that you have an active Vigiles '
-                'subscription.\n', file=outfile)
+    if subscribe in valid_subscribe and subscribe != "none":
+        print('\n-- Vigiles Vulnerability %s Report --\n' % subscribe.capitalize(), file=outfile)
+        if not is_enterprise:
+            print('\tWarning: Could not subscribe to %s Vulnerability report!\n'
+                '\t  Please check that you have an active Enterprise Vigiles '
+                'subscription.\n' % subscribe, file=outfile)
         else:
-            print('\tNotice: You subscribed to weekly email notifications for '
-                  'this report.\n'
-                  '\tMake sure that you are allowing update emails in your '
-                  'Vigiles preferences.\n', file=outfile)
+            print('\tNotice: You subscribed to %s email notifications for '
+                'this report.\n'
+                '\tMake sure that you are allowing update emails in your '
+                'Vigiles preferences.\n' % subscribe, file=outfile)
 
     print_report_header(result, outfile)
     print_report_overview(result, demo, outfile)

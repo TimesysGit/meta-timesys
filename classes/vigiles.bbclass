@@ -992,6 +992,11 @@ python do_vigiles_check() {
             bb.debug(1, "Using Ecosystems: %s" % ecosystems)
             args = args + ['-e', ecosystems]
 
+        subscribe = d.getVar('VIGILES_NOTIFICATION_FREQUENCY', True)
+        if subscribe:
+            bb.debug(1, "Setting SBOM report notification frequency to: %s" % subscribe)
+            args = args + ['-s', subscribe]
+
         vigiles_env = os.environ.copy()
 
         # This does the same as bb.utils.export_proxies(), but that isn't
