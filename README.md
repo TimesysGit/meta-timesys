@@ -12,8 +12,7 @@ What is Vigiles?
 Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database.A high-level overview of the detected vulnerabilities is returned and a full detailed analysis can be viewed online.
 
 
-Register (free) and download the API key to access the full feature set based on Vigiles Basic, Plus or Prime:
-https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
+To request a trial account, please contact us at sales@timesys.com
 
 
 Pre-Requisites
@@ -114,7 +113,7 @@ Vigiles: Requesting image analysis from LinuxLink ...
 	https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
 
 	The script will continue in demo mode, which will link you to temporarily available online results only.
-	You will need to login or register for a free account in order to see the report.
+	To request a trial account, please contact us at sales@timesys.com
 
 	For more information on the security notification service, please visit:
 	https://www.timesys.com/security/vulnerability-patch-notification/
