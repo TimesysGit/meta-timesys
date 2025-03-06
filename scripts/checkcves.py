@@ -16,6 +16,7 @@ import os
 import sys
 import json
 import urllib.parse
+import logging
 
 from lib import llapi
 
@@ -41,6 +42,27 @@ class InvalidDashboardConfig(BaseException):
 class InvalidLinuxlinkKey(BaseException):
     pass
 
+logger = logging.Logger("Vigiles")
+logger.setLevel(logging.DEBUG)
+
+# show logs in stdout
+if not logger.hasHandlers():
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(levelname)s Vigiles: %(message)s"))
+    logger.addHandler(handler)
+
+def debug(msg):
+    return logger.debug(msg)
+
+def info(msg):
+    return logger.info(msg)
+
+def warn(msg):
+    return logger.warning(msg)
+
+def error(msg):
+    return logger.error(msg)
+
 
 def get_usage():
     return('This script sends a json manifest file for an image to Vigiles '
@@ -55,24 +77,21 @@ def get_usage():
 
 
 def print_demo_notice(bad_key=False):
-    print('\n-- Vigiles Demo Mode Notice --', file=sys.stderr)
+    notice = '\n-- Vigiles Demo Mode Notice --\n'
 
     if bad_key:
-         print('\tNo API keyfile was found, or the contents were invalid.\n\n'
-              '\tPlease see this document for API key information:\n'
-              '\t%s\n' % API_DOC,
-              file=sys.stderr)
+        notice += '\tNo API keyfile was found, or the contents were invalid.\n\n'
+        notice += '\tPlease see this document for API key information:\n'
+        notice += '\t%s\n\n' % API_DOC
     else:
-        print('\tNo active subscription for this account.\n', file=sys.stderr)
+        notice += '\tNo active subscription for this account.\n'
 
-    print('\tThe script will continue in demo mode, which will link you to '
-            'temporarily available online results only.\n'
-          '\tTo request a trial account, please contact us at sales@timesys.com\n', 
-          file=sys.stderr)
-    print('\tFor more information on the security notification service, '
-            'please visit:\n'
-          '\t%s\n' % INFO_PAGE,
-          file=sys.stderr)
+    notice += '\tThe script will continue in demo mode, which will link you to '
+    notice += 'temporarily available online results only.\n'
+    notice += '\tTo request a trial account, please contact us at sales@timesys.com\n\n'
+    notice += '\tFor more information on the security notification service, please visit:\n'
+    notice += '\t%s\n' % INFO_PAGE
+    warn(notice)
 
 
 def handle_cmdline_args():
@@ -117,7 +136,7 @@ def read_manifest(manifest_file):
         with open(manifest_file, 'r') as f:
             manifest_data = ''.join(line.rstrip() for line in f)
     except (OSError, IOError, UnicodeDecodeError) as e:
-        print('Error: Could not open manifest: %s' % e)
+        error('Could not open manifest: %s' % e)
         sys.exit(1)
     return manifest_data
 
@@ -378,35 +397,35 @@ def _get_credentials(kf_param, dc_param, sf_param):
     default_key_used = False
     default_dc_used = False
     if kf_env:
-        print("Vigiles: Using Key from Environment: %s" % kf_env)
+        debug("Using Key from Environment: %s" % kf_env)
         key_file = kf_env
     elif kf_param:
-        print("Vigiles: Using Key from Configuration: %s" % kf_param)
+        debug("Using Key from Configuration: %s" % kf_param)
         key_file = kf_param
     else:
-        print("Vigiles: Trying Key Default: %s" % kf_default)
+        debug("Trying Key Default: %s" % kf_default)
         key_file = kf_default
         default_key_used = True
 
     if dc_env:
-        print("Vigiles: Using Dashboard Config from Environment: %s" % dc_env)
+        debug("Using Dashboard Config from Environment: %s" % dc_env)
         dashboard_config = dc_env
     elif dc_param:
-        print("Vigiles: Using Dashboard Config Configuration: %s" % dc_param)
+        debug("Using Dashboard Config Configuration: %s" % dc_param)
         dashboard_config = dc_param
     else:
-        print("Vigiles: Trying Dashboard Config Default: %s" % dc_default)
+        debug("Trying Dashboard Config Default: %s" % dc_default)
         dashboard_config = dc_default
         default_dc_used = True
 
     if sf_env:
-        print("Vigiles: Using Subfolder Name from Environment: %s" % sf_env)
+        debug("Using Subfolder Name from Environment: %s" % sf_env)
         subfolder_name = sf_env
     elif sf_param:
-        print("Vigiles: Using Subfolder Name from Configuration: %s" % sf_param)
+        debug("Using Subfolder Name from Configuration: %s" % sf_param)
         subfolder_name = sf_param
     else:
-        print("Vigiles: Using Subfolder Name Default: %s" % sf_default)
+        debug("Using Subfolder Name Default: %s" % sf_default)
         subfolder_name = sf_default
 
     vgls_creds = {}
@@ -430,12 +449,12 @@ def _get_credentials(kf_param, dc_param, sf_param):
             dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
         
     except InvalidLinuxlinkKey as e:
-        print('\nVigiles Error: %s\n' % e)
+        warn("%s\n" % e)
         return vgls_creds
     except InvalidDashboardConfig as e:
-        print('\nVigiles Error: %s\n' % e)
+        warn("%s\n" % e)
     except Exception as e:
-        print('\nVigiles Error: %s\n' % e)
+        error("%s\n" % e)
         print(get_usage())
         sys.exit(1)
     
@@ -476,7 +495,7 @@ if __name__ == '__main__':
     manifest_data = read_manifest(args.manifest)
     m = json.loads(manifest_data)
     if len(m['packages']) == 0:
-        print('No packages found in manifest.\n')
+        error('No packages found in manifest.\n')
         sys.exit(1)
 
     manifest = json.loads(manifest_data)
@@ -490,9 +509,9 @@ if __name__ == '__main__':
             with open(args.kconfig, 'r') as kconfig:
                 kernel_config = kconfig.read().strip()
         except (OSError, IOError, UnicodeDecodeError) as e:
-            print('Error: Could not open kernel config: %s' % e)
+            error('Could not open kernel config: %s' % e)
             sys.exit(1)
-        print('Vigiles: Kernel Config based filtering has been applied', file=sys.stderr)
+        debug('Kernel Config based filtering has been applied')
 
     # U-Boot and SPL filtering works the same way as kernel config filtering
     if not args.uboot_config:
@@ -502,9 +521,9 @@ if __name__ == '__main__':
             with open(args.uboot_config, 'r') as uconfig:
                 uboot_config = uconfig.read().strip()
         except (OSError, IOError, UnicodeDecodeError) as e:
-            print('Error: Could not open U-Boot config: %s' % e)
+            error('Could not open U-Boot config: %s' % e)
             sys.exit(1)
-        print('Vigiles: U-Boot Config based filtering has been applied', file=sys.stderr)
+        debug('U-Boot Config based filtering has been applied')
 
     request = {
       'manifest': manifest_data,
@@ -533,11 +552,11 @@ if __name__ == '__main__':
                     if ecosystem not in ALL_ECOSYSTEMS:
                         invalid_ecosystems.add(ecosystem)
                 if invalid_ecosystems:
-                    print('WARNING: Skipping invalid ecosystems: %s. Refer to README.md for valid ecosystems.' % ",".join(invalid_ecosystems))
+                    warn('Skipping invalid ecosystems: %s. Refer to README.md for valid ecosystems.' % ",".join(invalid_ecosystems))
                 ecosystems = [e for e in ecosystems if e not in invalid_ecosystems]
             request['ecosystems'] = ",".join(ecosystems)
         else:
-            print('WARNING: Ecosystems based scanning is available only for enterprise edition')
+            warn('Ecosystems based scanning is available only for enterprise edition')
 
     subscribe = args.subscribe and args.subscribe.strip() or None
     valid_subscribe = ["none", "daily", "weekly", "monthly"]
@@ -547,15 +566,15 @@ if __name__ == '__main__':
             if subscribe in valid_subscribe:
                 request["subscribe"] = subscribe
             else:
-                print('ERROR: Invalid subscription frequency. Choose from: none, daily, weekly, monthly')
+                error('Invalid subscription frequency. Choose from: none, daily, weekly, monthly')
                 sys.exit(1)
         else:
-            print('WARNING: The subscribe option is currently only supported with the Enterprise edition')
+            warn('The subscribe option is currently only supported with the Enterprise edition')
 
     _image = manifest.get('image', '')
     _name = manifest.get('manifest_name', _image)
-    print('Vigiles: Requesting image analysis for %s (%s) \n'
-          % (_name, _image), file=sys.stderr)
+    info('Requesting image analysis for %s (%s) \n'
+          % (_name, _image))
 
     result = llapi.api_post(email, key, resource, request)
 
