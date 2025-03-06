@@ -976,6 +976,40 @@ python() {
 do_vigiles_uboot_config[nostamp] = "1"
 
 
+def log_vigiles_response(d, log_type="INFO", msg="", response=""):
+    def log(l_type, log_buffer):
+        if l_type == "DEBUG":
+            return bb.debug(1, log_buffer)
+        if l_type == "ERROR":
+            error_level = d.getVar("VIGILES_ERROR_LEVEL", True) or ""
+            error_level = error_level.upper()
+            if error_level not in ["INFO", "WARNING", "ERROR", "FATAL"]:
+                bb.fatal("Invalid value for VIGILES_ERROR_LEVEL. Choose from INFO, WARNING, ERROR or FATAL")
+            l_type = error_level
+
+        return error_level_map[l_type](log_buffer)
+    
+    error_level_map = {
+        "DEBUG": bb.debug,
+        "WARNING": bb.warn,
+        "ERROR": bb.error,
+        "FATAL": bb.fatal,
+        "INFO": bb.plain
+    }
+    log_buffer = msg or ""
+    for line in response.splitlines():
+        log_type_list = [lt for lt in error_level_map if line.startswith(lt)]
+        if log_type_list:
+            log(log_type, log_buffer)
+            log_buffer = line
+            log_type = log_type_list[0]
+        else:
+            log_buffer += "\n" + line
+
+    if log_buffer:
+        log(log_type, log_buffer)
+
+
 python do_vigiles_check() {
     v_dir = d.getVar('VIGILES_DIR', True )
     m_max_len = int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH', True ))
@@ -1078,19 +1112,17 @@ python do_vigiles_check() {
         check_out, _ = run_checkcves(d, "checkcves.py", 
             [ '-m', vigiles_in, '-o', vigiles_out ])
 
-        bb.plain(check_out)
+        log_vigiles_response(d, response=check_out)
 
         if os.path.lexists(vigiles_link):
             os.remove(vigiles_link)
         if os.path.exists(vigiles_out):
             os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
 
-    except bb.process.CmdError as err:
-        bb.warn("Vigiles: checkcves.py failed: %s" % err)
     except bb.process.NotFoundError as err:
-        bb.warn("Vigiles: checkcves.py could not be found: %s" % err)
+        log_vigiles_response(d, "ERROR", "Vigiles: checkcves.py could not be found:\n", str(err))
     except Exception as err:
-        bb.warn("Vigiles: run_checkcves failed: %s" % err)
+        log_vigiles_response(d, "ERROR", "Vigiles: run_checkcves failed:\n", str(err))
 }
 
 
