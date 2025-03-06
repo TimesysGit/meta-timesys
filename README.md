@@ -497,6 +497,13 @@ To disable initramfs report generation only, set VIGILES_DISABLE_INITRAMFS_REPOR
 VIGILES_DISABLE_INITRAMFS_REPORT = "1"
 ```
 
+### Setting Error Level for Vigiles Errors
+
+Users can configure the VIGILES_ERROR_LEVEL in conf/local.conf to control how errors related to vigiles check are logged. Depending on the specific use case, the error level can be set to `FATAL`, `ERROR`, `WARNING` or `INFO` to log error messages as bitbake's fatal, error, warn or plain logs. The default is set to `INFO`.
+
+```
+VIGILES_ERROR_LEVEL = "FATAL"
+```
 
 ### Specifying ecosystems that should be used for generating report (Enterprise Vigiles Only)
 
