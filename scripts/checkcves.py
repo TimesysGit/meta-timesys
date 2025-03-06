@@ -69,8 +69,7 @@ def print_demo_notice(bad_key=False):
 
     print('\tThe script will continue in demo mode, which will link you to '
             'temporarily available online results only.\n'
-          '\tYou will need to login or register for a free account in order to '
-            'see the report.\n', 
+          '\tTo request a trial account, please contact us at sales@timesys.com\n', 
           file=sys.stderr)
     print('\tFor more information on the security notification service, '
             'please visit:\n'
