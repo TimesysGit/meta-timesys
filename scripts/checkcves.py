@@ -532,9 +532,9 @@ if __name__ == '__main__':
                 for ecosystem in ecosystems:
                     if ecosystem not in ALL_ECOSYSTEMS:
                         invalid_ecosystems.add(ecosystem)
-                        ecosystems.remove(ecosystem)
                 if invalid_ecosystems:
                     print('WARNING: Skipping invalid ecosystems: %s. Refer to README.md for valid ecosystems.' % ",".join(invalid_ecosystems))
+                ecosystems = [e for e in ecosystems if e not in invalid_ecosystems]
             request['ecosystems'] = ",".join(ecosystems)
         else:
             print('WARNING: Ecosystems based scanning is available only for enterprise edition')
