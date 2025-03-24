@@ -552,77 +552,89 @@ def vigiles_image_collect(d):
                 dep_pns.add(dep_pn)
         return list(dep_pns)
 
-    def get_pkgs(src):
-        all_pkgs = src.get("deps", [])
-        if bb.utils.to_boolean(d.getVar('VIGILES_SBOM_ROOTFS_MANIFEST_ONLY', True)):
-            return [p for p in all_pkgs if p in rootfs_pkg_set]
-        return all_pkgs
+    def add_dependencies(dict_out):
+        from collections import deque, defaultdict
 
-    def add_dependencies(key, parsed_keys=set()):
-        if key in parsed_keys:
-            return
+        def get_pkgs(src):
+            all_pkgs = src.get("deps", [])
+            if bb.utils.to_boolean(d.getVar('VIGILES_SBOM_ROOTFS_MANIFEST_ONLY', True)):
+                return [p for p in all_pkgs if p in rootfs_pkg_set]
+            return all_pkgs
 
-        parsed_keys.add(key)
-        bdeps = tsmeta_read_dictname(d, "build_deps", key)
-        bdeps_pkgs = get_pkgs(bdeps)
-        include_deps_as_pkgs(bdeps_pkgs, "build", parsed_keys)
-        rdeps = tsmeta_read_dictname(d, "runtime_deps", key)
-        rdeps_pkgs = get_pkgs(rdeps)
-        key_pn = rdeps.get("pn", bdeps.get("pn", key))
-        rdep_pns = get_dep_pns(key_pn, rdeps_pkgs, "runtime_deps")
-        include_deps_as_pkgs(rdeps_pkgs, "runtime", parsed_keys)
-
-        if dict_out['packages'].get(key_pn):
-            if dict_out['packages'][key_pn].get('dependencies'):
-                # build 
-                existing_bdeps = dict_out['packages'][key_pn]['dependencies'].get('build', [])
-                new_bdeps = [dep for dep in bdeps_pkgs if dep not in existing_bdeps]
-                if new_bdeps:
-                    include_deps_as_pkgs(new_bdeps, "build", parsed_keys)
-                dict_out['packages'][key_pn]['dependencies']['build'] = sorted(list(set(existing_bdeps + new_bdeps)))
-
-                # runtime
-                existing_rdeps = dict_out['packages'][key_pn]['dependencies'].get('runtime', [])
-                new_rdeps = [dep for dep in rdeps_pkgs if dep not in parsed_keys]
-                if new_rdeps:
-                    include_deps_as_pkgs(new_rdeps, "runtime", parsed_keys)
-                dict_out['packages'][key_pn]['dependencies']['runtime'] = sorted(list(set(existing_rdeps + rdep_pns)))
-            else:
-                dict_out['packages'][key_pn].update({
-                    'package_supplier': d.getVar('SPDX_SUPPLIER', True),
-                    'dependencies': {
-                        'build': sorted(bdeps_pkgs),
-                        'runtime': sorted(rdep_pns),
-                    },
-                })
-
-    def include_deps_as_pkgs(deps, component_type, parsed_keys):
         dependency_only_comment = {
             "build": "Dependency Only; This component was identified as a build dependency by Vigiles",
             "runtime": "Dependency Only; This component was identified as a runtime dependency by Vigiles",
             "build&runtime": "Dependency Only; This component was identified as a build and runtime dependency by Vigiles",
         }
-        for dep in deps:
-            dep_pn = tsmeta_read_dictname(d, '%s_deps' % component_type, dep).get("pn", dep)
-            if dep_pn not in dict_out["packages"].keys():
-                dict_out['packages'][dep_pn] = tsmeta_read_dictname(d, 'cve', dep_pn)
-                dict_out['packages'][dep_pn]["comment"] = dependency_only_comment[component_type]
-                dict_out['packages'][dep_pn]["component_type"] = [component_type]
-            else:
-                component_type_list = dict_out["packages"][dep_pn].get("component_type", [])
-                if not component_type_list:
-                    continue
-                if component_type and component_type not in component_type_list:
-                    dict_out["packages"][dep_pn]["component_type"].append(component_type)
-                    dict_out["packages"][dep_pn]["component_type"].sort()
-                if "component" not in component_type_list:
-                    if "build" in component_type_list and "runtime" in component_type_list:
-                        dict_out['packages'][dep_pn]["comment"] = dependency_only_comment["build&runtime"]
-                    elif "build" in component_type_list:
-                        dict_out['packages'][dep_pn]["comment"] = dependency_only_comment["build"]
-                    elif "runtime" in component_type_list:
-                        dict_out['packages'][dep_pn]["comment"] = dependency_only_comment["runtime"]
-            add_dependencies(dep, parsed_keys)
+
+        packages = dict_out['packages']
+        deps = defaultdict(lambda : {"build": set(), "runtime": set()})
+        rootfs_pkg_set = set(packages.keys())
+        queue = deque(rootfs_pkg_set)
+        parsed_keys = set()
+        build_deps = set()
+        runtime_deps = set()
+
+        while queue:
+            key = queue.popleft()
+            if key in parsed_keys:
+                continue
+
+            parsed_keys.add(key)
+
+            bdep_dict = tsmeta_read_dictname(d, "build_deps", key)
+            rdep_dict = tsmeta_read_dictname(d, "runtime_deps", key)
+
+            bdeps = get_pkgs(bdep_dict)
+            rdeps = get_pkgs(rdep_dict)
+
+            key_pn = bdep_dict.get("pn", rdep_dict.get("pn")) or key
+
+            # Collect PN's of the package to avoid multiple packages with same cve_product
+            bdep_pns = get_dep_pns(key_pn, bdeps, "build_deps")
+            rdep_pns = get_dep_pns(key_pn, rdeps, "runtime_deps")
+
+            deps[key_pn]["build"].update(bdep_pns)
+            deps[key_pn]["runtime"].update(rdep_pns)
+
+            queue.extend(bdeps + rdeps)
+
+            build_deps.update(bdep_pns)
+            runtime_deps.update(rdep_pns)
+
+        build_and_runtime = build_deps & runtime_deps
+        build_only = build_deps - runtime_deps
+        runtime_only = runtime_deps - build_deps
+        
+        for pkg, dep_info in deps.items():
+            if not packages.get(pkg):
+                pkg_info = tsmeta_read_dictname(d, 'cve', pkg)
+                packages[pkg] = pkg_info
+            
+            if "dependencies" not in packages[pkg]:
+                packages[pkg]["dependencies"] = {"build": [], "runtime": []}
+            
+            packages[pkg]["dependencies"]["build"] = sorted(list(dep_info["build"]))
+            packages[pkg]["dependencies"]["runtime"] = sorted(list(dep_info["runtime"]))
+            packages[pkg]["package_supplier"] = d.getVar('SPDX_SUPPLIER', True)
+            component_type = packages[pkg].get("component_type", [])
+            if not component_type:
+                packages[pkg]["component_type"] = []
+
+            if pkg in build_and_runtime:
+                packages[pkg]["component_type"].extend(["build", "runtime"])
+                if not component_type:
+                    packages[pkg]["comment"] = dependency_only_comment["build&runtime"]
+            elif pkg in build_only:
+                packages[pkg]["component_type"].append("build")
+                if not component_type:
+                    packages[pkg]["comment"] = dependency_only_comment["build"]
+            elif pkg in runtime_only:
+                packages[pkg]["component_type"].append("runtime")
+                if not component_type:
+                    packages[pkg]["comment"] = dependency_only_comment["runtime"]
+
+            packages[pkg]["component_type"].sort()
 
     def set_package_field_defaults(manifest):
         for pkg, pkg_dict in manifest.get("packages", {}).items():
@@ -702,13 +714,8 @@ def vigiles_image_collect(d):
         )
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
-    # Add package supplier
-    pkg_list = list(dict_out['packages'].keys())
-    rootfs_pkg_set = set(pkg_list)
-
-    for key in pkg_list:
-        add_dependencies(key)
-
+    
+    add_dependencies(dict_out)
     # Add default package fields
     dict_out = set_package_field_defaults(dict_out)
 
