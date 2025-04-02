@@ -283,7 +283,7 @@ def vigiles_collect_pkg_info(d):
     pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
     manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
     manifest['name'] = pn_dict['pn']
-    manifest['version'] = pn_dict['pv']
+    manifest['version'] = manifest.get('cve_version', pn_dict['pv'])
     # Add cpe_id for each package in manifest to support spdx format
     manifest['cpe_id'] = manifest.get('pkg_cpe_id') or get_cpe_ids(manifest['cve_product'], manifest['cve_version'])
     manifest.pop('pkg_cpe_id')
