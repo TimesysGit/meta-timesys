@@ -330,6 +330,13 @@ def _get_cve_version(d):
         uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
         (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
         cve_v = bpv
+    
+    if isinstance(cve_v, str):
+        # Remove +git extension from version string
+        cve_v = cve_v.split("+git")[0]
+        
+        # For patchlevel versions like 6.1+20181013
+        cve_v = cve_v.replace("+", ".")
     return cve_v
 
 
