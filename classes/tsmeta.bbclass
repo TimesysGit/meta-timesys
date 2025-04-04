@@ -478,6 +478,7 @@ python do_tsmeta_pkgvars() {
     tsmeta_get_src(d)
     tsmeta_get_pkg(d)
 }
+do_tsmeta_pkgvars[lockfiles] = "${tsmeta_dir}/tsmeta_lockfile"
 
 
 def tsmeta_collect_preferred(d):
