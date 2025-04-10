@@ -8,3 +8,6 @@ jobs:
   running-pr-security-checks:
     uses: verkada/securitybots/.github/workflows/pr-checks.yml@main
     secrets: inherit
+  running-pr-semgrep-check:
+    uses: verkada/securitybots/.github/workflows/semgrep-pr-checks.yml@main
+    secrets: inherit
