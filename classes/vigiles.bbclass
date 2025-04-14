@@ -88,7 +88,7 @@ def get_cpe_ids(cve_product, version):
         else:
             vendor = "*"
 
-        cpe_id = 'cpe:2.3:a:{%s}:{%s}:{%s}:*:*:*:*:*:*:*' % (vendor, product, version)
+        cpe_id = 'cpe:2.3:a:%s:%s:%s:*:*:*:*:*:*:*' % (vendor, product, version)
         cpe_ids.append(cpe_id)
     return cpe_ids
 
