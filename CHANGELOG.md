@@ -1,5 +1,29 @@
 # Changelog
 
+## [v2.24.0] - 2025-04-18
+
+### Added
+
+* [feature] Add option to specify ecosystems for generating vulnerability report
+* [feature] Added support to subscribe frequency for notification during manifest upload
+* [vigiles.bbclass] Support extra backfill packages
+* [vigiles.bbclass] Add option to exclude native and build-only packages
+* [feature] Add VIGILES_ERROR_LEVEL to log vigiles related error messages
+
+### Changed
+
+* [docs] Remove references to free account registration
+* [general] Improve version parsing for accurate reporting in the SBOM
+* [tsmeta.bbclass] Add file locking to prevent concurrent access
+
+### Fixed
+
+* [vigiles.bbclass] Fix: Keyerror while updating runtime dependencies
+* [checkcves.py] Handle KeyErrors when data is unavailable from upload API response
+* [layer] Updated LAYERSERIES_COMPAT_timesys for master
+* [checkcves.py] Optimize ecosystem filtering when consecutive invalid entries occur
+* [vigiles.bbclass] Optimize adding dependencies to fix leakages in final SBOM
+
 ## [v2.23.0] - 2024-06-20
 
 ### added
