@@ -76,21 +76,43 @@ def get_cpe_ids(cve_product, version):
     """
     Get list of CPE identifiers for the given product and version
     """
+    import re
 
     version = version.split("+git")[0]
+    match = re.match(r"^(.*)[~-]([a-zA-Z].+)$", version)
+    if match:
+        version = match.group(1)
+        update = match.group(2)
+    else:
+        update = "*"
 
     cpe_ids = []
     for product in cve_product.split():
-        # CVE_PRODUCT in recipes may include vendor information for CPE identifiers. If not,
-        # use wildcard for vendor.
+        # CVE_PRODUCT in recipes may include vendor information for CPE identifiers.
+        # If not, use wildcard for vendor.
         if ":" in product:
             vendor, product = product.split(":", 1)
         else:
             vendor = "*"
 
-        cpe_id = "cpe:2.3:a:%s:%s:%s:*:*:*:*:*:*:*" % (vendor, product, version)
-        cpe_ids.append(cpe_id)
+        cpe_id = "cpe:2.3:a:%s:%s:%s:%s:*:*:*:*:*:*" % (vendor, product, version, update)
+        if validate_cpe_ids(cpe_id):
+            cpe_ids.append(cpe_id)
+        else:
+            bb.plain("For package %s, could not generate CPE ID." % cve_product)
+
     return cpe_ids
+
+def validate_cpe_ids(cpe_id):
+    """
+    Validates a CPE 2.3 string using regex.
+    Returns True if valid, else False.
+    """
+    import re
+    return bool(re.search(
+        r"^cpe:2\.3:[aho](?::(?:[a-zA-Z0-9!\"#$%&'()*+,\\\-_.\/;<=>?@\[\]^`{|}%\+]|\\:)+){10}$",
+        cpe_id
+    ))
 
 def vigiles_get_build_dependencies(d):
     taskdepdata = d.getVar("BB_TASKDEPDATA")
@@ -257,6 +279,14 @@ def vigiles_collect_pkg_info(d):
     # Add cpe_id for each package in manifest to support spdx format
     manifest['cpe_id'] = manifest.get('pkg_cpe_id') or get_cpe_ids(manifest['cve_product'], manifest['cve_version'])
     manifest.pop('pkg_cpe_id')
+
+    # Clean up cve_version by removing leading '-' or '~' if present
+    import re
+    cve_version = manifest['cve_version']
+    match = re.match(r"^(.*)([~-])([a-zA-Z].+)$", cve_version)
+    if match:
+        sep = match.group(2)
+        manifest['cve_version'] = cve_version.replace(sep, "", 1)
 
     # Add download location in manifest json
     src_uri_list = manifest.pop('src_uri')
