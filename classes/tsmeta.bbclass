@@ -106,8 +106,12 @@ def tsmeta_read_json(d, trj_path):
     import json
     dict_in = dict()
     if os.path.exists(trj_path):
-        with open(trj_path) as f:
-            dict_in = json.load(f)
+        lock = bb.utils.lockfile(trj_path + ".lock")
+        try:
+            with open(trj_path) as f:
+                dict_in = json.load(f)
+        finally:
+            bb.utils.unlockfile(lock)
     return dict_in
 
 def tsmeta_write_json(d, dict_out, twj_path):
@@ -115,8 +119,12 @@ def tsmeta_write_json(d, dict_out, twj_path):
 
     s = json.dumps(dict_out, indent=8, sort_keys=False)
     if twj_path:
-        with open(twj_path, "w") as f:
-            f.write(s)
+        lock = bb.utils.lockfile(twj_path + ".lock")
+        try:
+            with open(twj_path, "w") as f:
+                f.write(s)
+        finally:
+            bb.utils.unlockfile(lock)
 
 
 def tsmeta_write_dictname(d, tsm_type, twd_name, twd_dict):
@@ -477,7 +485,6 @@ python do_tsmeta_pkgvars() {
     tsmeta_get_src(d)
     tsmeta_get_pkg(d)
 }
-do_tsmeta_pkgvars[lockfiles] = "${tsmeta_dir}/tsmeta_lockfile"
 
 
 def tsmeta_collect_preferred(d):
