@@ -1,4 +1,5 @@
 # Copyright (C) 2018 Timesys Corporation
+# Copyright (C) 2025 Lynx Software Technologies, Inc. All rights reserved.
 
 import base64
 import hashlib
@@ -14,11 +15,11 @@ import urllib.error
 from collections import OrderedDict
 
 
-vigiles_url_default = 'https://linuxlink.timesys.com'
+vigiles_url_default = 'https://vigiles.lynx.com'
 vigiles_url_env = os.getenv('LINUXLINK_SERVER')
 VigilesURL = vigiles_url_env if vigiles_url_env else vigiles_url_default
-VigilesSupportURL = 'https://linuxlink.timesys.com/support'
-VigilesInfoURL = 'https://www.timesys.com/security/vulnerability-patch-notification/'
+VigilesSupportURL = 'https://vigiles.lynx.com/support'
+VigilesInfoURL = 'https://www.lynx.com/solutions/vulnerability-mitigation-management'
 VigilesApiMaxRetries = 5
 VigilesApiRetryTimeout = 5
 
