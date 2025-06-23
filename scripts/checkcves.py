@@ -5,7 +5,7 @@
 # scripts/checkcves.py - Online CVE Database Interface.
 #
 # Copyright (C) 2019 Timesys Corporation
-#
+# Copyright (C) 2025 Lynx Software Technologies, Inc. All rights reserved.
 #
 # This source is released under the MIT License.
 #
@@ -21,8 +21,8 @@ import logging
 from lib import llapi
 
 NVD_BASE_URL = 'https://nvd.nist.gov/vuln/detail/'
-API_DOC = 'https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File'
-INFO_PAGE = 'https://www.timesys.com/security/vulnerability-patch-notification/'
+API_DOC = 'https://vigiles.lynx.com/docs/vigiles_api_key_file.html'
+INFO_PAGE = 'https://www.lynx.com/solutions/vulnerability-mitigation-management'
 
 bogus_whitelist = "CVE-1234-1234"
 
@@ -69,7 +69,7 @@ def get_usage():
            'to check the CVE status of the recipes. You may specify a manifest '
            'file, or generate one from a given image name.  If no image or '
            'manifest is specified, you will be prompted to select an image.\n\n'
-           'Subscribing to notifications requires a Vigiles API keyfile, and '
+           'Subscribing to notifications requires a Vigiles API keyfile and '
            'an active Vigiles subscription.\n\n'
            'See this document for keyfile information:\n'
            '%s\n\n'
@@ -80,8 +80,8 @@ def print_demo_notice(bad_key=False):
     notice = '\n-- Vigiles Demo Mode Notice --\n'
 
     if bad_key:
-        notice += '\tNo API keyfile was found, or the contents were invalid.\n\n'
-        notice += '\tPlease see this document for API key information:\n'
+        notice += '\tNo Vigiles API keyfile was found, or the contents were invalid.\n\n'
+        notice += '\tPlease see this document for Vigiles API key information:\n'
         notice += '\t%s\n\n' % API_DOC
     else:
         notice += '\tNo active subscription for this account.\n'
@@ -89,7 +89,7 @@ def print_demo_notice(bad_key=False):
     notice += '\tThe script will continue in demo mode, which will link you to '
     notice += 'temporarily available online results only.\n'
     notice += '\tTo request a trial account, please contact us at sales@timesys.com\n\n'
-    notice += '\tFor more information on the security notification service, please visit:\n'
+    notice += '\tFor more information on the vulnerability management service, please visit:\n'
     notice += '\t%s\n' % INFO_PAGE
     warn(notice)
 
@@ -112,7 +112,7 @@ def handle_cmdline_args():
                         dest='uboot_config')
 
     parser.add_argument('-K', '--keyfile', dest='llkey',
-                        help='Location of Vigiles credentials file')
+                        help='Location of Vigiles API key file')
     parser.add_argument('-C', '--dashboard-config', dest='lldashboard',
                         help='Location of Vigiles Dashboard Config file')
     parser.add_argument('-F', '--subfolder-name', dest='subfolder_name',
@@ -355,7 +355,7 @@ def check_dashboard_config(conf_dashboard, default_dc_used):
 
 
 def check_linuxlink_key(key, default_key_used):
-    err_prefix = "Invalid Linuxlink key."
+    err_prefix = "Invalid API key."
     err_suffix = " Report will be generated in Demo mode instead."
     
     try:
@@ -373,11 +373,11 @@ def check_linuxlink_key(key, default_key_used):
     except FileNotFoundError:
         if default_key_used:
             return
-        err_msg = "Linuxlink key doesn't exists at %s." %key + err_suffix
+        err_msg = "API key doesn't exists at %s." %key + err_suffix
     except ValueError:
         err_msg = err_prefix + err_suffix
     except Exception as e:
-        err_msg = "Unable to parse Linuxlink: %s." %e + err_suffix
+        err_msg = "Unable to parse API key: %s." %e + err_suffix
     raise InvalidLinuxlinkKey(err_msg)
 
 
