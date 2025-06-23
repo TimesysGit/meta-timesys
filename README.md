@@ -1,15 +1,13 @@
-![Timesys Vigiles](https://www.timesys.com/wp-content/uploads/vigiles-cve-monitoring.png "Timesys Vigiles")
-
 What is meta-timesys?
 =====================
 
-This Yocto layer provides scripts for image manifest generation used for security monitoring and notification as part of the **[Timesys Vigiles](https://www.timesys.com/security/vigiles/)** product offering.
+This Yocto layer provides scripts for SBOM generation used for vulnerability monitoring and notification as part of the **[Vigiles](https://www.lynx.com/solutions/vulnerability-mitigation-management)** product offering.
 
 
 What is Vigiles?
 ================
 
-Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Timesys CVE database.A high-level overview of the detected vulnerabilities is returned and a full detailed analysis can be viewed online.
+Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Vigiles CVE database.A high-level overview of the detected vulnerabilities is returned and a full detailed analysis can be viewed online.
 
 
 To request a trial account, please contact us at sales@timesys.com
@@ -82,18 +80,18 @@ $ readlink vigiles/core-image-minimal-report.txt
 core-image-minimal/core-image-minimal-2019-06-07_19.22.40-report.txt
 ```
 
-_The output will differ based on whether you are running with a LinuxLink subscription or in Demo Mode_.
+_The output will differ based on whether you are running with a Vigiles subscription or in Demo Mode_.
 
 
 ##### Subscription Mode Console Output
 ```
-Vigiles: Requesting image analysis from LinuxLink ...
+Vigiles: Requesting image analysis ...
 
 
 -- Vigiles CVE Report --
 
 	View detailed online report at:
-	  https://linuxlink.timesys.com/cves/reports/ODUzOA.D9xLIQ.KKiK2E76n---q6_-KmJrsZ9ap9Y
+	  https://vigiles.lynx.com/cves/reports/ODUzOA.D9xLIQ.KKiK2E76n---q6_-KmJrsZ9ap9Y
 
 	Unfixed: 62 (0 RFS, 60 Kernel, 2 Toolchain)
 	Unfixed, Patch Available: 7 (2 RFS, 0 Kernel, 5 Toolchain)
@@ -110,21 +108,21 @@ Vigiles: Requesting image analysis from LinuxLink ...
 	No API keyfile was found, or the contents were invalid.
 
 	Please see this document for API key information:
-	https://linuxlink.timesys.com/docs/wiki/engineering/LinuxLink_Key_File
+	https://vigiles.lynx.com/docs/vigiles_api_key_file.html
 
 	The script will continue in demo mode, which will link you to temporarily available online results only.
 	To request a trial account, please contact us at sales@timesys.com
 
-	For more information on the security notification service, please visit:
-	https://www.timesys.com/security/vulnerability-patch-notification/
+	For more information on the vulnerability management service, please visit:
+	https://www.lynx.com/solutions/vulnerability-mitigation-management
 
-Vigiles: Requesting image analysis from LinuxLink ...
+Vigiles: Requesting image analysis ...
 
 
 -- Vigiles CVE Report --
 
 	Complete online report at:
-	  https://linuxlink.timesys.com/cves/reports/ODUyMA.D9wwnQ.9MTUnSVk6Xi-Q1kO0ea--e4wVJ4
+	  https://vigiles.lynx.com/cves/reports/ODUyMA.D9wwnQ.9MTUnSVk6Xi-Q1kO0ea--e4wVJ4
 	  NOTE: Running in Demo Mode will cause this URL to expire after one day.
 
 -- Vigiles CVE Overview --
@@ -203,7 +201,7 @@ In both operating modes, the local summary will include the console output as we
 
 ### CVE Manifest
 
-The Vigiles CVE Scanner creates and sends a manifest describing your build to the LinuxLink Server. This manifest is located at
+The Vigiles CVE Scanner creates and sends a manifest describing your build to the Vigiles Server. This manifest is located at
 
 ```sh
 $ readlink vigiles/core-image-minimal-cve.json 
@@ -261,7 +259,7 @@ VIGILES_WHITELIST += "\
 
 ### Kernel Config Filter
 
-The Vigiles CVE Scanner can be configured to upload a Linux Kernel _.config_ file to LinuxLink along with the image manifest. This filter will reduce the number of kernel CVEs reported by removing those related to features which are not being built for your kernel. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
+The Vigiles CVE Scanner can be configured to upload a Linux Kernel _.config_ file along with the SBOM. This filter will reduce the number of kernel CVEs reported by removing those related to features which are not being built for your kernel. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
 
 * Automatic Detection
 
@@ -284,7 +282,7 @@ VIGILES_KERNEL_CONFIG = "/projects/kernel/linux-4.14-ts+imx-1.0/.config"
 
 ### U-Boot Config Filter
 
-The Vigiles CVE Scanner can be configured to upload a U-Boot _.config_ file to LinuxLink along with the image manifest. This filter will reduce the number of U-Boot CVEs reported by removing those related to features which are not being built for your U-Boot. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
+The Vigiles CVE Scanner can be configured to upload a U-Boot _.config_ file along with the SBOM. This filter will reduce the number of U-Boot CVEs reported by removing those related to features which are not being built for your U-Boot. There are 2 ways to enable this feature -- Automatic Detection or Manual Specification
 
 * Automatic Detection
 
@@ -305,9 +303,9 @@ VIGILES_UBOOT_CONFIG = "</projects/uboot/uboot-2020.04/.config>"
 ```
 
 
-### Specifying a LinuxLink Key File
+### Specifying a Vigiles API Key File
 
-Full CVE reporting requires a LinuxLink License Key, though the Vigiles CVE Scanner will still execute in 
+Full CVE reporting requires a Vigiles API Key, though the Vigiles CVE Scanner will still execute in
 Demo Mode and produce an abbreviated report if one is not configured.
 
 To use an alternate key, or a key in a non-default location, you can specify the location in _conf/local.conf_ with a statement like the following:
@@ -573,11 +571,11 @@ VIGILES_NOTIFICATION_FREQUENCY = "weekly"
 Maintenance
 ===========
 
-The Vigiles CVE Scanner and meta-timesys are maintained by [The Timesys Security team](mailto:vigiles@timesys.com).
+The Vigiles CVE Scanner and meta-timesys are maintained by [The Lynx Security team](mailto:vigiles@timesys.com).
 
 For Updates, Support and More Information, please see:
 
-[Vigiles Website](https://www.timesys.com/security/vigiles/)
+[Vigiles Website](https://www.lynx.com/solutions/vulnerability-mitigation-management)
 
 and
 
