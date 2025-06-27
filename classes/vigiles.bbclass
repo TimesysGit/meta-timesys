@@ -226,14 +226,14 @@ def get_package_checksum(d):
 
 
 def get_package_annotations(d):
-    from datetime import datetime
+    from datetime import datetime, UTC
 
     def add_annotation(comment):
         tool_name = d.getVar("VIGILES_SPDX_TOOL_NAME")
         tool_version = d.getVar("VIGILES_TOOL_VERSION")
 
         annotation = {}
-        annotation["annotationDate"] = datetime.utcnow().isoformat()
+        annotation["annotationDate"] = datetime.now(UTC).isoformat()
         annotation["annotationType"] = "OTHER"
         annotation["comment"] = comment
         
@@ -555,7 +555,7 @@ def _get_packages(d, pn_list):
     return dict_out
 
 def vigiles_image_collect(d):
-    from datetime import datetime
+    from datetime import datetime, UTC
 
     def get_dep_pns(pn, deps, tsmeta_dir):
         dep_pns = set()
@@ -715,7 +715,7 @@ def vigiles_image_collect(d):
     _name = d.getVar('VIGILES_MANIFEST_NAME')[:int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))]
 
     dict_out = dict(
-            date             = datetime.utcnow().isoformat(),
+            date             = datetime.now(UTC).isoformat(),
             distro           = sys_dict["distro"]["codename"],
             distro_version   = sys_dict["distro"]["version"],
             image            = sys_dict["image"]["basename"],
