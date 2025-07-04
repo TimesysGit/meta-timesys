@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.25.0] - 2025-07-08
+
+### Changed
+
+* [general] Updated TimeSys and LinuxLink references
+
 ## [v2.24.0] - 2025-04-18
 
 ### Added
