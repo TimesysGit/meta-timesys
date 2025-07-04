@@ -1,6 +1,12 @@
 # Changelog
 
-## [2.22.0+pyro] - 2025-04-18
+## [v2.23.0+pyro] - 2025-07-08
+
+### Changed
+
+* [general] Updated TimeSys and LinuxLink references
+
+## [v2.22.0+pyro] - 2025-04-18
 
 ### Added
 
