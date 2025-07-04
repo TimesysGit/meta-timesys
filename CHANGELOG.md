@@ -1,6 +1,12 @@
 # Changelog
 
-## [2.11.0+jethro] - 2025-04-18
+## [v2.12.0+jethro] - 2025-07-08
+
+### Changed
+
+* [general] Updated TimeSys and LinuxLink references
+
+## [v2.11.0+jethro] - 2025-04-18
 
 ### Added
 
