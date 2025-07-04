@@ -1,6 +1,12 @@
 # Changelog
 
-## [2.13.0+krogoth] - 2025-04-18
+## [v2.14.0+krogoth] - 2025-07-08
+
+### Changed
+
+* [general] Updated TimeSys and LinuxLink references
+
+## [v2.13.0+krogoth] - 2025-04-18
 
 ### Added
 
