@@ -16,7 +16,6 @@ require conf/vigiles.conf
 
 addtask do_vigiles_pkg after do_packagedata before do_rm_work
 do_vigiles_pkg[nostamp] = "1"
-do_vigiles_pkg[rdeptask] += "do_unpack"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
 
 SPDX_ORG ??= "OpenEmbedded ()"
@@ -132,7 +131,7 @@ python do_collect_build_deps() {
     vigiles_collect_pkg_info(d)
 }
 
-addtask do_collect_build_deps after do_package do_packagedata do_unpack before do_populate_sdk do_build do_rm_work
+addtask do_collect_build_deps after do_package do_packagedata before do_populate_sdk do_build do_rm_work
 do_collect_build_deps[nostamp] = "1"
 do_collect_build_deps[deptask] = "do_collect_build_deps"
 
