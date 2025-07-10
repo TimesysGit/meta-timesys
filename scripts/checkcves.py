@@ -222,8 +222,9 @@ def parse_cvss_counts(counts, severity):
 
 
 def print_report_header(result, f_out=None):
-  from datetime import datetime
-  report_time = result.get('date', datetime.utcnow().isoformat())
+  from datetime import datetime, timezone
+
+  report_time = result.get('date', datetime.now(timezone.utc).isoformat())
 
   print('-- Vigiles Vulnerability Scanner --\n\n'
           '\t%s\n\n' % INFO_PAGE, file=f_out)
