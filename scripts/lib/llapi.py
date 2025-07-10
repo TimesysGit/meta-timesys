@@ -78,7 +78,7 @@ def read_dashboard_config(config_file):
 
 
 def api_error_message(reason: str, param: str = '', extra: str = ''):
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     err_dict = {
         '400': 'The Vigiles request was empty or insufficient.',
@@ -98,7 +98,7 @@ def api_error_message(reason: str, param: str = '', extra: str = ''):
         '',
         '%s' % ':\t'.join(['Vigiles Communication Error', err_dict.get(reason, reason)]),
         '',
-        '%s' % ':\t'.join(['Current Time', datetime.utcnow().isoformat()]),
+        '%s' % ':\t'.join(['Current Time', datetime.now(timezone.utc).isoformat()]),
         '%s' % ':\t'.join(['Message', extra]),
         '%s' % ':\t'.join(['Parameter(s)', param]),
         '',
