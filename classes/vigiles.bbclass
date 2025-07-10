@@ -571,7 +571,7 @@ def _get_packages(d, pn_list):
     return dict_out
 
 def vigiles_image_collect(d):
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     def get_dep_pns(pn, deps, tsmeta_dir):
         dep_pns = set()
@@ -731,7 +731,7 @@ def vigiles_image_collect(d):
     _name = d.getVar('VIGILES_MANIFEST_NAME')[:int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))]
 
     dict_out = dict(
-            date             = datetime.utcnow().isoformat(),
+            date             = datetime.now(timezone.utc).isoformat(),
             distro           = sys_dict["distro"]["codename"],
             distro_version   = sys_dict["distro"]["version"],
             image            = sys_dict["image"]["basename"],
