@@ -10,7 +10,7 @@ What is Vigiles?
 Vigiles is a vulnerability management tool that provides build-time Yocto CVE Analysis of target images. It does this by collecting metadata about packages to be installed and uploading it to be compared against the Vigiles CVE database.A high-level overview of the detected vulnerabilities is returned and a full detailed analysis can be viewed online.
 
 
-To request a trial account, please contact us at sales@timesys.com
+To request a trial account, please get in touch with us at sales@timesys.com
 
 
 Pre-Requisites
@@ -80,10 +80,8 @@ $ readlink vigiles/core-image-minimal-report.txt
 core-image-minimal/core-image-minimal-2019-06-07_19.22.40-report.txt
 ```
 
-_The output will differ based on whether you are running with a Vigiles subscription or in Demo Mode_.
 
-
-##### Subscription Mode Console Output
+##### Console Output
 ```
 Vigiles: Requesting image analysis ...
 
@@ -102,48 +100,13 @@ Vigiles: Requesting image analysis ...
 	  vigiles/core-image-minimal/core-image-minimal-2019-06-07_19.22.40-report.txt
 ```
 
-##### Demo Mode Console Output
-```
--- Vigiles Demo Mode Notice --
-	No API keyfile was found, or the contents were invalid.
-
-	Please see this document for API key information:
-	https://vigiles.lynx.com/docs/vigiles_api_key_file.html
-
-	The script will continue in demo mode, which will link you to temporarily available online results only.
-	To request a trial account, please contact us at sales@timesys.com
-
-	For more information on the vulnerability management service, please visit:
-	https://www.lynx.com/solutions/vulnerability-mitigation-management
-
-Vigiles: Requesting image analysis ...
-
-
--- Vigiles CVE Report --
-
-	Complete online report at:
-	  https://vigiles.lynx.com/cves/reports/ODUyMA.D9wwnQ.9MTUnSVk6Xi-Q1kO0ea--e4wVJ4
-	  NOTE: Running in Demo Mode will cause this URL to expire after one day.
-
--- Vigiles CVE Overview --
-
-	Unfixed: 62
-	Unfixed, Patch Available: 7
-	Fixed: 0
-	CPU: 0
-
-
-	Local summary written to:
-	  vigiles/core-image-minimal/core-image-minimal-2019-06-07_17.29.31-report.txt
-```
-
 
 Interpreting the Results
 ========================
 
 ### Console Output
 
-A CVE summary is printed in both Subscription and Demo modes and contains the following. 
+A CVE summary is printed and contains the following:
 
 * "Unfixed" CVEs are existing CVEs that have been reported against packages to be installed.
 
@@ -154,10 +117,9 @@ A CVE summary is printed in both Subscription and Demo modes and contains the fo
 
 * "CPU" CVEs are filed against the hardware. They may be fixed or mitigated in other components such as the kernel or compiler.
 
-* "High CVSS" (_Subscription Mode Only_) CVEs are those that are of utmost priority and require immediate attention, based on their Common Vulnerability Scoring System (v3) ranking.
+* "High CVSS" CVEs are those that are of utmost priority and require immediate attention, based on their Common Vulnerability Scoring System (v3) ranking.
 
-
-Additionally, in Subscription Mode, the distribution of the vulnerabilities across system components will be displayed.
+Additionally, the distribution of the vulnerabilities across system components will be displayed.
 
 
 ### Online Report
@@ -167,7 +129,7 @@ The Vigiles CVE online report specified in the output provides a dashboard inter
 
 ### Local Summary
 
-In both operating modes, the local summary will include the console output as well as descriptive information about the report instance. In Subscription Mode, additional information is included about each CVE that the scan detects, as well as any fixes that have been applied. This is an example from the reports generated above.
+The local summary includes console output and descriptive information about the report instance. It also includes detailed information about each CVE detected during the scan and any fixes that have been applied. Below is an example from a generated report.
 
 ```
 -- Recipe CVEs --
@@ -305,8 +267,7 @@ VIGILES_UBOOT_CONFIG = "</projects/uboot/uboot-2020.04/.config>"
 
 ### Specifying a Vigiles API Key File
 
-Full CVE reporting requires a Vigiles API Key, though the Vigiles CVE Scanner will still execute in
-Demo Mode and produce an abbreviated report if one is not configured.
+A Vigiles API Key is required to run the Vigiles CVE Scanner and generate CVE reports.
 
 To use an alternate key, or a key in a non-default location, you can specify the location in _conf/local.conf_ with a statement like the following:
 
