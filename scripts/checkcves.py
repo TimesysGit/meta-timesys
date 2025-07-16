@@ -76,22 +76,16 @@ def get_usage():
            % API_DOC)
 
 
-def print_demo_notice(bad_key=False):
-    notice = '\n-- Vigiles Demo Mode Notice --\n'
+def print_bad_keyfile_notice(keyfile):
+    notice = f'API key doesn\'t exist at {keyfile}, or the contents were invalid.\n\n'
 
-    if bad_key:
-        notice += '\tNo Vigiles API keyfile was found, or the contents were invalid.\n\n'
-        notice += '\tPlease see this document for Vigiles API key information:\n'
-        notice += '\t%s\n\n' % API_DOC
-    else:
-        notice += '\tNo active subscription for this account.\n'
-
-    notice += '\tThe script will continue in demo mode, which will link you to '
-    notice += 'temporarily available online results only.\n'
-    notice += '\tTo request a trial account, please contact us at sales@timesys.com\n\n'
+    notice += '\tPlease see this document for API key information:\n'
+    notice += '\t%s\n\n' % API_DOC
+    notice += '\tTo request a trial account, please get in touch with us at sales@timesys.com\n\n'
     notice += '\tFor more information on the vulnerability management service, please visit:\n'
     notice += '\t%s\n' % INFO_PAGE
-    warn(notice)
+    error(notice)
+    sys.exit(1)
 
 
 def handle_cmdline_args():
@@ -232,7 +226,7 @@ def print_report_header(result, f_out=None):
   print('\t%s' % report_time, file=f_out)
 
 
-def print_report_overview(result, is_demo=False, f_out=None):
+def print_report_overview(result, f_out=None):
   report_path = result.get('report_path', '')
   product_path = result.get('product_path', '')
 
@@ -247,10 +241,6 @@ def print_report_overview(result, is_demo=False, f_out=None):
     print('\n-- Vigiles Dashboard --', file=f_out)
     print('\n\tThe manifest has been uploaded to the \'%s\' Product Workspace:\n\n'
             '\t  %s\n' % (product_name, product_url), file=f_out)
-
-  if (is_demo):
-    print('\t  NOTE: Running in Demo Mode will cause this URL to expire '
-      'after one day.', file=f_out)
 
 
 def print_summary(result, outfile=None):
@@ -283,23 +273,8 @@ def print_summary(result, outfile=None):
               cvss_total, cvss_rfs, cvss_kernel, cvss_toolchain),
             file=f_out)
 
-    def show_demo_summary(f_out=outfile):
-      cves = result.get('cves', {})
-      print('\n-- Vigiles Vulnerability Overview --', file=f_out)
-      print('\n\tUnfixed: %d\n'
-      '\tUnfixed, Patch Available: %d\n'
-      '\tFixed: %d'
-      % (cves.get('unfixed_count', 0),
-         cves.get('unapplied_count', 0),
-         cves.get('fixed_count', 0)),
-            file=f_out)
-
-    is_demo = result.get('demo', False)
-
     if 'counts' in result:
       show_subscribed_summary(outfile)
-    elif is_demo:
-      show_demo_summary(outfile)
 
 
 def print_foootnotes(f_out=None):
@@ -355,9 +330,7 @@ def check_dashboard_config(conf_dashboard, default_dc_used):
     raise InvalidDashboardConfig(err_msg)
 
 
-def check_linuxlink_key(key, default_key_used):
-    err_prefix = "Invalid API key."
-    err_suffix = " Report will be generated in Demo mode instead."
+def check_linuxlink_key(key):
     
     try:
         with open(key, "r") as f:
@@ -370,15 +343,13 @@ def check_linuxlink_key(key, default_key_used):
                         return
                 else:
                     return
-            err_msg = err_prefix + err_suffix
+            err_msg = "Invalid API key."
     except FileNotFoundError:
-        if default_key_used:
-            return
-        err_msg = "API key doesn't exists at %s." %key + err_suffix
+        err_msg = "API key doesn't exists at %s." %key
     except json.decoder.JSONDecodeError:
-        err_msg = err_prefix + err_suffix
+        err_msg = "Invalid API key."
     except Exception as e:
-        err_msg = "Unable to parse API key: %s." %e + err_suffix
+        err_msg = "Unable to parse API key: %s." %e
     raise InvalidLinuxlinkKey(err_msg)
 
 
@@ -395,7 +366,6 @@ def _get_credentials(kf_param, dc_param, sf_param):
     sf_env = os.getenv('VIGILES_SUBFOLDER_NAME', '')
     sf_default = ''
 
-    default_key_used = False
     default_dc_used = False
     if kf_env:
         debug("Using Key from Environment: %s" % kf_env)
@@ -406,7 +376,6 @@ def _get_credentials(kf_param, dc_param, sf_param):
     else:
         debug("Trying Key Default: %s" % kf_default)
         key_file = kf_default
-        default_key_used = True
 
     if dc_env:
         debug("Using Dashboard Config from Environment: %s" % dc_env)
@@ -433,7 +402,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
     dashboard_tokens = {}
 
     try:
-        check_linuxlink_key(key_file, default_key_used)
+        check_linuxlink_key(key_file)
         key_info = llapi.read_keyfile(key_file)
         email = key_info.get('email', None)
         key = key_info.get('key', key_info.get('organization_key', None))
@@ -442,7 +411,6 @@ def _get_credentials(kf_param, dc_param, sf_param):
             llapi.VigilesURL = key_info.get('server_url', llapi.VigilesURL)
 
         # Validate dashboard config
-        # Bypass Validation check for demo mode
         if email and key:
             check_dashboard_config(dashboard_config, default_dc_used)
 
@@ -450,8 +418,7 @@ def _get_credentials(kf_param, dc_param, sf_param):
             dashboard_tokens = llapi.read_dashboard_config(dashboard_config)
         
     except InvalidLinuxlinkKey as e:
-        warn("%s\n" % e)
-        return vgls_creds
+        print_bad_keyfile_notice(key_file)
     except InvalidDashboardConfig as e:
         warn("%s\n" % e)
     except Exception as e:
@@ -472,20 +439,12 @@ def _get_credentials(kf_param, dc_param, sf_param):
 
 if __name__ == '__main__':
     resource = '/api/v1/vigiles/manifests'
-    demo = False
     args = handle_cmdline_args()
 
     vgls_creds = _get_credentials(args.llkey, args.lldashboard, args.subfolder_name)
     email = vgls_creds.get('email')
     key = vgls_creds.get('key')
     is_enterprise = vgls_creds.get('is_enterprise')
-
-    # If there was no proper API keyfile, operate in demo mode.
-    if not email or not key:
-        demo = True
-        resource += '/demo'
-        print_demo_notice(bad_key=True)
-
     upload_only = args.upload_only
 
     if args.outfile:
@@ -587,13 +546,6 @@ if __name__ == '__main__':
     whitelist = [ item for item in manifest.get('whitelist', []) 
       if not any(bogon == item for bogon in bogus_whitelist.split()) ]
 
-    # If no Vigiles subscription or bogus user/key, it will have fallen back
-    # to demo mode
-    demo_result = result.get('demo', False)
-    if not demo and demo_result:
-        print_demo_notice()
-        demo = demo_result
-
     # If notification subscription was requested but there was no Enterprise Vigiles
     # account / seat:
     if subscribe in valid_subscribe and subscribe != "none":
@@ -609,13 +561,12 @@ if __name__ == '__main__':
                 'Vigiles preferences.\n', file=outfile)
 
     print_report_header(result, outfile)
-    print_report_overview(result, demo, outfile)
+    print_report_overview(result, outfile)
 
     print_summary(result, outfile=outfile)
 
-    if not demo:
-      print_cves(result, outfile=outfile)
-      if is_enterprise and ecosystems:
+    print_cves(result, outfile=outfile)
+    if is_enterprise and ecosystems:
         print_ecosystem_vulns(result, outfile=outfile)
 
     if not upload_only:
@@ -623,7 +574,7 @@ if __name__ == '__main__':
       print_foootnotes(f_out=outfile)
 
     if outfile is not None:
-      print_report_overview(result, demo)
+      print_report_overview(result)
       print_summary(result)
       print('\n\tLocal summary written to:\n\t  %s' %
             os.path.relpath(outfile.name))
