@@ -27,6 +27,7 @@ tsmeta_machine_dir = "${tsmeta_dir}/machine"
 tsmeta_preferred_dir = "${tsmeta_dir}/preferred"
 tsmeta_build_deps_dir = "${tsmeta_dir}/build_deps"
 tsmeta_runtime_deps_dir = "${tsmeta_dir}/runtime_deps"
+tsmeta_vulnerabilities_dir = "${tsmeta_dir}/vulnerabilities"
 
 tsmeta_lvars_pkg = " \
     ALTERNATIVE     \

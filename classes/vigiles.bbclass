@@ -277,6 +277,105 @@ def get_package_annotations(d):
     return annotations
 
 
+python () {
+    from oe.cve_check import extend_cve_status
+
+    # Expand CVE_STATUS_GROUPS into CVE_STATUS
+    extend_cve_status(d)
+}
+
+
+def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, source="Recipe", patches=None, external=False):
+    from tsmeta.util import get_vuln_status, get_vuln_justification, get_vuln_description
+    
+    vuln_data = {"id": cve}
+    if not external:
+        vuln_data = tsmeta_read_dictname(d, "vulnerabilities", cve) or vuln_data
+
+    # Add CVE_status
+    vuln_data["analysis"] = {
+        "state": get_vuln_status(cve_status),
+        "justification": get_vuln_justification(cve_status),
+        "detail": get_vuln_description(cve_status)
+    }
+
+    # Add Source
+    vuln_data["source"] = dict(name=source)
+
+    # Add affected products
+    if pkg_name:
+        status = (
+            "unaffected" 
+            if vuln_data["analysis"]["state"] in ["not_affected", "false_positive"]
+            else "affected"
+        )
+        version = {
+            "status": status,
+            "version": pkg_version
+        }
+        if vuln_data.get("affects"):
+            products = [pd.get("product") for pd in vuln_data["affects"]]
+            if pkg_name and pkg_name not in products:
+                vuln_data["affects"].append({
+                        "product": pkg_name,
+                        "versions": [version]
+                    })
+            for product_dict in vuln_data["affects"]:
+                if product_dict.get("product") == pkg_name:
+                    if version in product_dict["versions"]:
+                        continue
+                    else:
+                        product_dict["versions"].append(version)
+        else:
+            vuln_data["affects"] = [{
+                "product": pkg_name,
+                "versions": [version]
+            }]
+
+    # Add patch information
+    if patches:
+        vuln_data["properties"] = {
+            "name": "patches",
+            "value": ", ".join(patches)
+        }
+    
+    if not external:
+        tsmeta_write_dictname(d, "vulnerabilities", cve, vuln_data)
+    return vuln_data
+
+
+def vigiles_collect_vulnerability_info(d, pkg_name, pkg_version, patched_cves=None):
+    from oe.cve_check import decode_cve_status
+
+    # cves declared using CVE_STATUS var
+    for cve in (d.getVarFlags("CVE_STATUS") or {}):
+        status_info = decode_cve_status(d, cve)
+        cve_status = {}
+
+        if isinstance(status_info, tuple):  # nanbield and scarthgap
+            cve_status["decoded_status"] = status_info[0]
+            cve_status["detail"] = status_info[1]
+            cve_status["description"] = status_info[2]
+        elif isinstance(status_info, dict):     # styhead and later
+            cve_status["decoded_status"] = status_info.get("mapping")
+            cve_status["detail"] = status_info.get("detail")
+            cve_status["description"] = status_info.get("description")
+        else:
+            bb.warn("Invalid return type %s for decode_cve_status" % type(status_info))
+            continue
+        update_vuln_info(d, cve, cve_status, pkg_name, pkg_version)
+
+    # cves derived from patches
+    if patched_cves:
+        for cve, patches in patched_cves.items():
+            cve_status = {
+                "decoded_status": "Patched",
+                "detail": "fix-file-included",
+                "description": f"Fixed by Patches: {patches}"
+            }
+            update_vuln_info(d, cve, cve_status, pkg_name, pkg_version, source="Patch", patches=patches)
+
+
 def vigiles_collect_pkg_info(d):
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -288,7 +387,6 @@ def vigiles_collect_pkg_info(d):
         'pv'
     ]
     src_vars = [
-        'cve_check_ignore',
         'cve_product',
         'cve_version',
         'layer',
@@ -334,9 +432,15 @@ def vigiles_collect_pkg_info(d):
         manifest['patches'] = sorted(patches)
 
         patched_dict = _get_patched(src_patches)
+    else:
+        patched_dict = {}
 
-        if len(patched_dict):
-            manifest['patched_cves'] = patched_dict
+    vigiles_collect_vulnerability_info(
+        d,
+        pkg_name=manifest['name'],
+        pkg_version=manifest['cve_version'],
+        patched_cves=patched_dict
+    )
 
     if not len(manifest['srcrev']):
         manifest.pop('srcrev')
@@ -584,6 +688,82 @@ def _get_packages(d, pn_list):
             dict_out[pn]["component_type"] = ["component"]
     return dict_out
 
+
+def _get_vulnerabilities(d, pn_list):
+    import csv
+    import os
+    from tsmeta.util import validate_vuln_id
+
+    vulnerabilities = []
+    cve_dict_base = tsmeta_read_dictdir(d, "vulnerabilities")
+    for cve, cve_dict in cve_dict_base.items():
+        for prod_dict in cve_dict.get("affects", {}):
+            if prod_dict.get("product") in pn_list:
+                vulnerabilities.append(cve_dict)
+
+    # Add cves from global whitelist
+    external_whitelists = set(
+        oe.utils.squashspaces(d.getVar('VIGILES_WHITELIST') or "").split()
+    )
+
+    csv_headers = ["cve_id", "package", "version", "description"]
+    default_description = "Vulnerability included from user's external not affected list"
+
+    for external_vuln in external_whitelists:
+        external_vuln = external_vuln.strip()
+        if os.path.exists(external_vuln):
+            with open(external_vuln, "r") as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if not len(row):
+                        continue
+
+                    if row[0].strip().lower() in ["cve_id", "cve-id"]: # header
+                        continue
+
+                    padded_row = row + [None] * (len(csv_headers) - len(row))
+                    row_dict=dict(zip(csv_headers, padded_row))
+                    if not validate_vuln_id(row_dict["cve_id"]):
+                        continue
+
+                    cve_status = {
+                        "decoded_status": "Ignored",
+                        "detail": "ignored",
+                        "description": row_dict["description"] or default_description
+                    }
+                    vuln_dict = update_vuln_info(
+                        d,
+                        row_dict["cve_id"],
+                        cve_status,
+                        row_dict["package"],
+                        row_dict["version"],
+                        source="External Whitelist",
+                        external=True
+                    )
+                    vulnerabilities.append(vuln_dict)
+        elif validate_vuln_id(external_vuln):
+            # For Backward compatibility check if the value corresponds to a vuln id
+            cve_status = {
+                "decoded_status": "Ignored",
+                "detail": "ignored",
+                "description": default_description
+            }
+
+            vuln_dict = update_vuln_info(
+                d,
+                external_vuln,
+                cve_status,
+                source="External Whitelist",
+                external=True
+            )
+            vulnerabilities.append(vuln_dict)
+            bb.warn("Adding CVEs directly to VIGILES_WHITELIST as a plain string is deprecated and will be removed in a future release. Please refer to the README.md at https://github.com/TimesysGit/meta-timesys for the recommended usage.")
+        else:
+            bb.warn("Invalid path for whitelist cves: %s" % external_vuln)
+
+    return vulnerabilities
+
+
 def vigiles_image_collect(d):
     from datetime import datetime, timezone
 
@@ -731,15 +911,6 @@ def vigiles_image_collect(d):
     # already present
     pn_list = list(sorted(backfill_list + rdep_list))
 
-    vgls_pkgs = _get_packages(d, pn_list)
-    vigiles_ignored = set(
-        oe.utils.squashspaces(d.getVar('VIGILES_WHITELIST') or "").split()
-    )
-    for pkg_name, pkg_dict in vgls_pkgs.items():
-        pkg_ignored = pkg_dict.get('cve_check_ignore', [])
-        if pkg_ignored:
-            bb.debug(1, "Vigiles: Package: '%s' is ignoring %s" % (pkg_name, pkg_ignored))
-        vigiles_ignored.update(pkg_ignored)
 
     # truncate manifest_name to acceptable configured length
     _name = d.getVar('VIGILES_MANIFEST_NAME')[:int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH'))]
@@ -754,7 +925,7 @@ def vigiles_image_collect(d):
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
             manifest_name    = _name,
             packages         = _get_packages(d, pn_list),
-            whitelist        = sorted(list(vigiles_ignored))
+            vulnerabilities   = _get_vulnerabilities(d, pn_list)
         )
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
