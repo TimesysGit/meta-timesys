@@ -207,17 +207,34 @@ Instead of e.g.
 ```
 
 
-### Vigiles Whitelist
+### Whitelisting CVEs
+Some packages may have CVEs associated with them that are known to not affect
+a particular machine or configuration. 
+A user may set the VIGILES_WHITELIST variable in local.conf to
+the path of a CSV file containing a list of CVEs to omit from the Vigiles
+Report.
 
-"Whitelist" Recipes and CVEs are listed in the "VIGILES_WHITELIST" variable. They are NOT included in the report.
+The CSV expects CVE ID (required field) and package, version, and description (optional fields) per line. 
+Any additional fields will be ignored.
 
-The Whitelist can be adjusted in _conf/local.conf_ by appending **VIGILES_WHITELIST**:
+For example both are valid
 
-```
-VIGILES_WHITELIST += "\
-	CVE-1234-ABCD \
-"
-```
+<pre>
+$ cat $HOME/projects/yocto/vigiles-not-affected.csv
+
+cve-id,package,version,description
+CVE-2019-1010023,glibc,2.39,External whitelist
+CVE-2019-1010024,glibc,2.39,External whitelist
+
+</pre>
+
+<pre>
+$ cat $HOME/projects/yocto/vigiles-not-affected.csv
+
+CVE-2019-1010023
+CVE-2019-1010024
+</pre>
+
 
 
 ### Kernel Config Filter
