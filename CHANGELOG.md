@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.13.0+jethro] - 2025-08-11
+
+### Changed
+
+* [update] remove demo mode
+* [general] Replace deprecated utcnow with datetime.now(timezone.utc)
+
+### Fixed
+
+* [vigiles.bbclass] Fixed handling of 'update' part in version for cpe_id
+
 ## [v2.23.0+sumo] - 2025-07-08
 
 ### Changed
