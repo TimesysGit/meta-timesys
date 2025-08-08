@@ -1,5 +1,20 @@
 # Changelog
 
+## [v2.26.0+walnascar] - 2025-08-08
+
+### Added
+
+* [layer] Make compatible with Yocto release Walnascar(5.2)
+
+### Changed
+
+* [update] remove demo mode
+* [general] Replace deprecated utcnow with datetime.now(timezone.utc)
+
+### Fixed
+
+* [vigiles.bbclass] Fixed handling of 'update' part in version for cpe_id
+
 ## [v2.25.0] - 2025-07-08
 
 ### Changed
