@@ -10,6 +10,8 @@ jobs:
   fetch-updates:
     runs-on: ubuntu-latest
     environment: upstream-link
+    outputs:
+      outcomes: ${{ steps.outputs.outputs.results }}
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +28,9 @@ jobs:
           ref: ${{ matrix.branch_name }}
           submodules: recursive
           fetch-depth: 0
+
+      - name: Set job start time
+        run: echo "JOB_START_TIME=$(date -u +%s)" >> $GITHUB_ENV
 
       - name: Update
         run: |
@@ -50,6 +55,29 @@ jobs:
           git config --global user.name "Device Platform GitHub Bot"
 
           git push
+
+      - name: Create outcome file
+        run: |
+          jq -cn \
+            --arg job_result "${{ job.status }}" \
+            --arg workflow_name "${{ github.workflow }}-${{ matrix.release }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_number "${{ github.run_number }}" \
+            --arg start_time "${{ env.JOB_START_TIME }}" \
+            --arg github_event_schedule "${{ github.event_schedule }}" \
+            --arg github_repo_name "${{ github.repository }}" \
+            --arg update_date "${{ env.UPDATE_DATE }}" \
+            '{
+              job_success: ($job_result == "success"),
+              job_result: $job_result,
+              workflow_name: $workflow_name,
+              run_id: $run_id,
+              run_number: $run_number,
+              start_time: $start_time,
+              github_event_schedule: $github_event_schedule,
+              github_repo_name: $github_repo_name,
+              update_date: $update_date
+            }' > outcome
 
       - name: Post job success status to slack
         if: ${{ success() }}
@@ -81,3 +109,37 @@ jobs:
           # dennis
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  collect-outputs:
+    runs-on: ubuntu-latest
+    needs: [fetch-updates]
+    if: ${{ !cancelled() }}
+    outputs:
+      results_data: ${{ steps.collect.outputs.results_data }}
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - id: collect
+        run: |
+          outcomes="$(cat */outcome | jq -c --slurp .)"
+          echo "results_data=$outcomes" >> $GITHUB_OUTPUT
+
+  post-to-turnstile:
+    needs: [collect-outputs]
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.collect-outputs.outputs.results_data) }}
+    uses: verkada/verkada-linux/.github/workflows/post-to-turnstile.yml@main
+    with:
+      job_success: ${{ matrix.job_success }}
+      job_result: ${{ matrix.job_result }}
+      workflow_name: ${{ matrix.workflow_name }}
+      run_id: ${{ matrix.run_id }}
+      run_number: ${{ matrix.run_number }}
+      start_time: ${{ matrix.start_time }}
+      github_event_schedule: ${{ matrix.github_event_schedule }}
+      github_repo_name: ${{ matrix.github_repo_name }}
+      aws_role_arn: "arn:aws:iam::126591796557:role/vlnx-mirror-ci-github-action-role"
