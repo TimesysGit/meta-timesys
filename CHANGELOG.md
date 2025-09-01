@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.28.0+scarthgap] - 2025-09-01
+
+### Added
+
+* [feature] Add vulnerability data in generated SBOM
+
 ## [v2.27.0+scarthgap] - 2025-08-11
 
 ### Changed
