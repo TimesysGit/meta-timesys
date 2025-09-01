@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.27.0+walnascar] - 2025-09-01
+
+### Added
+
+* [feature] Add vulnerability data in generated SBOM
+
 ## [v2.26.0+walnascar] - 2025-08-08
 
 ### Added
