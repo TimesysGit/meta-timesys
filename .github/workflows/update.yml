@@ -124,22 +124,22 @@ jobs:
           outcomes="$(cat */outcome | jq -c --slurp .)"
           echo "results_data=$outcomes" >> $GITHUB_OUTPUT
 
-  post-to-turnstile:
-    needs: [collect-outputs]
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      matrix:
-        include: ${{ fromJSON(needs.collect-outputs.outputs.results_data) }}
-    uses: verkada/verkada-linux/.github/workflows/post-to-turnstile.yml@main
-    with:
-      job_success: ${{ matrix.job_success }}
-      job_result: ${{ matrix.job_result }}
-      workflow_name: ${{ matrix.workflow_name }}
-      run_id: ${{ matrix.run_id }}
-      run_number: ${{ matrix.run_number }}
-      start_time: ${{ matrix.start_time }}
-      github_event_schedule: ${{ matrix.github_event_schedule }}
-      github_repo_name: ${{ matrix.github_repo_name }}
-      aws_role_arn: "arn:aws:iam::126591796557:role/vlnx-mirror-ci-github-action-role"
+  # post-to-turnstile:
+  #   needs: [collect-outputs]
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   strategy:
+  #     matrix:
+  #       include: ${{ fromJSON(needs.collect-outputs.outputs.results_data) }}
+  #   uses: verkada/verkada-linux/.github/workflows/post-to-turnstile.yml@main
+  #   with:
+  #     job_success: ${{ matrix.job_success }}
+  #     job_result: ${{ matrix.job_result }}
+  #     workflow_name: ${{ matrix.workflow_name }}
+  #     run_id: ${{ matrix.run_id }}
+  #     run_number: ${{ matrix.run_number }}
+  #     start_time: ${{ matrix.start_time }}
+  #     github_event_schedule: ${{ matrix.github_event_schedule }}
+  #     github_repo_name: ${{ matrix.github_repo_name }}
+  #     aws_role_arn: "arn:aws:iam::126591796557:role/vlnx-mirror-ci-github-action-role"
