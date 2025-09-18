@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.16.0+krogoth] - 2025-09-22
+
+### Changed
+
+* [vigiles.bbclass] Remove do_unpack dependency to prevent unnecessary fetch/unpack operations
+
+### Fixed
+
+* [tsmeta.bbclass] Add lockfiles when writing and reading from intermediate json file to avoid race conditions
+
 ## [v2.15.0+krogoth] - 2025-08-11
 
 ### Changed
