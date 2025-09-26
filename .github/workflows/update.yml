@@ -97,16 +97,15 @@ jobs:
         if: ${{ ! success() }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          # device-platform-newsfeed
-          channel-id: 'GQ968L7RC'
+          # device-platform-alerts
+          channel-id: 'C083RN0EPEE'
           # For posting a simple plain text message
           slack-message: |
             ${{ github.repository }}: ${{ github.workflow }}: *${{ job.status }}*
             Branch: ${{ matrix.branch_name }}
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            <@UCUGH2DGQ>
-
-          # dennis
+            <@UCUGH2DGQ> <@U025XPBNJR5> <@U07KST2PE23> <@U024C1144BE>
+          # dennis, nick, chris, sam
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
