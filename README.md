@@ -566,6 +566,37 @@ avahi,0.6,MIT,2025-09-01,2026-01-01,Actively maintained
 The valid values for both ```LIFECYCLE_SUPPORT_LEVEL``` and the CSV column level_of_support are: ```Actively maintained```, ```No longer maintained```, ```Not available```, ```Abandoned```.
 
 
+### Specifying vulnerability report format
+
+User can export the vulnerability report in various formats. 
+To export the report set `VIGILES_EXPORT_FORMAT` to any of the below choices in local.conf
+- pdf
+- pdfsummary
+- xlsx
+- csv
+- cyclonedx-vex
+- cyclonedx-sbom-vex
+
+```
+VIGILES_EXPORT_FORMAT = "pdf"
+```
+
+If you choose to export the report in cyclonedx format, you need to specify additional details like
+`VIGILES_CYCLONEDX_FORMAT`
+- json [default]
+- xml
+
+`VIGILES_CYCLONEDX_VERSION`
+- 1.6 [default]
+- 1.5
+- 1.4
+
+```
+VIGILES_EXPORT_FORMAT = "cyclonedx-vex"
+VIGILES_CYCLONEDX_FORMAT = "xml"
+VIGILES_CYCLONEDX_VERSION = "1.5"
+```
+
 Maintenance
 ===========
 
