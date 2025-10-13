@@ -279,6 +279,9 @@ def vigiles_collect_pkg_info(d):
         'homepage',
         'src_uri',
         'pkg_cpe_id',
+        'release_date',
+        'end_of_life',
+        'level_of_support'
     ]
     pn_dict = tsmeta_read_dictname_vars(d, 'pn', pn, pn_vars)
     manifest = tsmeta_read_dictname_vars(d, 'src', pn, src_vars)
@@ -321,6 +324,12 @@ def vigiles_collect_pkg_info(d):
         manifest.pop('srcrev')
     if not len(manifest['patched_cves']):
         manifest.pop('patched_cves')
+    if not manifest['release_date']:
+        manifest.pop('release_date')
+    if not manifest['end_of_life']:
+        manifest.pop('end_of_life')
+    if not manifest['level_of_support']:
+        manifest.pop('level_of_support')
 
     manifest['checksums'] = get_package_checksum(d)
 
@@ -437,7 +446,8 @@ def _get_extra_packages(d):
 
     additional = {
         'additional_licenses': defaultdict(str),
-        'additional_packages': defaultdict(dict)
+        'additional_packages': defaultdict(dict),
+        'additional_packages_info': defaultdict(dict)
     }
 
     extra_rows = []
@@ -463,7 +473,11 @@ def _get_extra_packages(d):
                         license = row[2].strip()
                     else:
                         license = 'unknown'
-                    extra_rows.append([pkg,ver,license])
+                    release_date = row[3].strip() if len(row) > 3 else ''
+                    end_of_life = row[4].strip() if len(row) > 4 else ''
+                    level_of_support = row[5].strip() if len(row) > 5 else ''
+
+                    extra_rows.append([pkg, ver, license, release_date, end_of_life, level_of_support])
         except Exception as e:
             bb.warn("Vigiles Extras File: %s" % e)
             return {}
@@ -471,7 +485,7 @@ def _get_extra_packages(d):
     if not extra_rows:
         return {}
 
-    # Check for a CSV header of e.g. "package,version,license" and skip it
+    # Skip CSV header if present
     header = extra_rows[0]
     if header[0].lower() == "product":
         extra_rows = extra_rows[1:]
@@ -484,6 +498,9 @@ def _get_extra_packages(d):
         pkg = row[0].replace(' ', '-')
         ver = row[1].replace(' ', '.')
         license = row[2]
+        release_date = row[3]
+        end_of_life = row[4]
+        level_of_support = row[5]
 
         if not include_closed_license and license == "CLOSED":
             continue
@@ -498,6 +515,29 @@ def _get_extra_packages(d):
 
         additional['additional_packages'][pkg] = sorted(list(pkg_vers))
         additional['additional_licenses'][license_key] = license
+
+        # Update lifecycle info dictionary if any value exists
+        lifecycle = {}
+        if release_date:
+            lifecycle['release_date'] = release_date
+        if end_of_life:
+            lifecycle['end_of_life'] = end_of_life
+        if level_of_support:
+            los_value =_get_valid_los(level_of_support)
+            if los_value:
+                lifecycle["level_of_support"] = los_value
+            else:
+                bb.warn(
+                    "Invalid level_of_support '%s' for additional package '%s'. Refer to the README for valid values."
+                    % (level_of_support, pkg)
+                )
+
+        if lifecycle:
+            key = pkg + ver if ver else pkg
+            additional['additional_packages_info'][key] = lifecycle
+
+    if not additional['additional_packages_info']:
+        additional.pop('additional_packages_info',None)
 
     return additional
 
