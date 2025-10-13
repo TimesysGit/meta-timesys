@@ -546,6 +546,26 @@ VIGILES_NOTIFICATION_FREQUENCY = "weekly"
 ```
 
 
+### Package Lifecycle Information
+
+Some users may want to set package lifecycle information in the package recipes and have it included in the SBOM. This can be done using the following custom variables in the package recipes:
+
+```
+LIFECYCLE_RELEASE_DATE = "2025-01-15"
+LIFECYCLE_END_OF_LIFE   = "2027-01-15"
+LIFECYCLE_SUPPORT_LEVEL = "Actively maintained"
+```
+These values will be collected and included in the SBOM for the corresponding packages.
+
+You can also provide lifecycle information for additional packages using a CSV file referenced in ```VIGILES_EXTRA_PACKAGES```. Example CSV format:
+```
+product,version,license,release_date,end_of_life,level_of_support
+avahi,0.6,MIT,2025-09-01,2026-01-01,Actively maintained
+```
+
+The valid values for both ```LIFECYCLE_SUPPORT_LEVEL``` and the CSV column level_of_support are: ```Actively maintained```, ```No longer maintained```, ```Not available```, ```Abandoned```.
+
+
 Maintenance
 ===========
 
