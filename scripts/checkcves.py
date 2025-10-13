@@ -17,6 +17,9 @@ import sys
 import json
 import urllib.parse
 import logging
+import base64
+import gzip
+from io import BytesIO
 
 from lib import llapi
 
@@ -122,7 +125,27 @@ def handle_cmdline_args():
                         help='Comma separated string of ecosystems that should be \
                             used to include ecosystem specific vulnerabilities \
                             into the vulnerability report')
-    return parser.parse_args()
+    parser.add_argument('--export-format', dest='export_format',
+                        help='Filetype for the exported report', 
+                        choices=['pdf', 'pdfsummary', 'xlsx', 'csv', 'cyclonedx-vex', 'cyclonedx-sbom-vex'])
+    parser.add_argument('--cyclonedx-format', dest='cyclonedx_format', default='json',
+                        help='CycloneDX file format to download report in VEX format',
+                        choices=['json', 'xml'])
+    parser.add_argument('--cyclonedx-version', dest='cyclonedx_version', default='1.6',
+                        help='CycloneDX spec version to download report in VEX format',
+                        choices=['1.4', '1.5', '1.6'])
+    parser.add_argument('--export-path', metavar="PATH",
+                        help='Filepath for the exported report')
+    
+    args = parser.parse_args()
+
+    if args.export_format and not args.export_path:
+        parser.error("--export-path is required when --export-format is specified")
+
+    if args.export_path and os.path.isdir(args.export_path):
+        parser.error(f"Export path '{args.export_path}' is an existing directory, not a filepath")
+
+    return args
 
 
 def read_manifest(manifest_file):
@@ -446,6 +469,19 @@ def _get_credentials(kf_param, dc_param, sf_param):
 
     return vgls_creds
 
+
+def save_exported_report(exported_report_data, export_path):
+    decoded_data = base64.b64decode(exported_report_data)
+
+    with gzip.GzipFile(fileobj=BytesIO(decoded_data), mode="rb") as f:
+        file_content = f.read()
+
+    with open(export_path, "wb") as report_file:
+        report_file.write(file_content)
+
+    info("Exported report saved to %s" % export_path)
+
+
 if __name__ == '__main__':
     resource = '/api/v1/vigiles/manifests'
     args = handle_cmdline_args()
@@ -540,6 +576,14 @@ if __name__ == '__main__':
         else:
             warn('The subscribe option is currently only supported with the Enterprise edition')
 
+    export_format = args.export_format
+    if export_format:
+        request["export_format"] = export_format
+        
+        if export_format.startswith("cyclonedx"):
+            request["cyclonedx_format"] = args.cyclonedx_format
+            request["cyclonedx_version"] = args.cyclonedx_version
+
     _image = manifest.get('image', '')
     _name = manifest.get('manifest_name', _image)
     info('Requesting image analysis for %s (%s) \n'
@@ -587,3 +631,16 @@ if __name__ == '__main__':
       print_summary(result)
       print('\n\tLocal summary written to:\n\t  %s' %
             os.path.relpath(outfile.name))
+    
+    exported_report_data = result.get("exported_report")
+    if exported_report_data:
+        file_extension = args.export_format
+        if file_extension.startswith('pdf'):
+            file_extension = file_extension[:3]
+        elif file_extension.startswith('cyclonedx'):
+            file_extension = args.cyclonedx_format
+        
+        root, _ = os.path.splitext(args.export_path)
+        export_path = "%s.%s" % (root, file_extension)
+
+        save_exported_report(exported_report_data, export_path)
