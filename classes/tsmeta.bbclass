@@ -79,6 +79,9 @@ tsmeta_vars_src = "\
     SUMMARY                 \
     HOMEPAGE                \
     CVE_CHECK_CVE_WHITELIST \
+    LIFECYCLE_RELEASE_DATE  \
+    LIFECYCLE_END_OF_LIFE   \
+    LIFECYCLE_SUPPORT_LEVEL \
 "
 
 
@@ -347,6 +350,36 @@ def _get_cve_version(d):
         cve_v = cve_v.replace("+", ".")
     return cve_v
 
+def _get_valid_los(level_of_support):
+    valid = ['actively maintained', 'no longer maintained','not available', 'abandoned']
+
+    if level_of_support.lower() in valid:
+        return level_of_support.capitalize()
+    return None
+
+def _get_lifecycle_info(d):
+    lifecycle = {}
+
+    release_date = (d.getVar("LIFECYCLE_RELEASE_DATE") or "").strip()
+    if release_date:
+        lifecycle["release_date"] = release_date
+
+    end_of_life = (d.getVar("LIFECYCLE_END_OF_LIFE") or "").strip()
+    if end_of_life:
+        lifecycle["end_of_life"] = end_of_life
+
+    level_of_support = (d.getVar("LIFECYCLE_SUPPORT_LEVEL") or "").strip()
+    if level_of_support:
+        los_value =_get_valid_los(level_of_support)
+        if los_value:
+            lifecycle["level_of_support"] = los_value
+        else:
+            bb.warn(
+                "Invalid LIFECYCLE_SUPPORT_LEVEL '%s'. Refer to the README for valid values."
+                % level_of_support
+            )
+
+    return lifecycle
 
 def tsmeta_get_src(d):
     import oe.recipeutils as oe
@@ -362,6 +395,7 @@ def tsmeta_get_src(d):
 
     src_dict["summary"] = d.getVar('SUMMARY', True )
     src_dict["homepage"] = d.getVar('HOMEPAGE', True )
+    src_dict.update(_get_lifecycle_info(d))
 
     uri_dict = dict()
 
