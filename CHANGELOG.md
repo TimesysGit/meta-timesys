@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.26.0+morty] - 2025-11-05
+
+### Added
+
+* [feature] Add support for package lifecycle information in SBOM
+
 ## [v2.25.0+morty] - 2025-09-22
 
 ### Changed
