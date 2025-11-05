@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.28.0+langdale] - 2025-11-05
+
+### Added
+
+* [feature] Add support for package lifecycle information in SBOM
+
 ## [v2.27.0+langdale] - 2025-09-22
 
 ### Changed
