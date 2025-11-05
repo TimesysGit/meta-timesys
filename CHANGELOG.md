@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.29.0+kirkstone] - 2025-11-05
+
+### Added
+
+* [feature] Add support for package lifecycle information in SBOM
+
 ## [v2.28.0+kirkstone] - 2025-09-22
 
 ### Changed
