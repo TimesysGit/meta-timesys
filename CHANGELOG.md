@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.15.0+jethro] - 2025-11-05
+
+### Added
+
+* [feature] Add support for package lifecycle information in SBOM
+
 ## [v2.14.0+jethro] - 2025-09-22
 
 ### Changed
