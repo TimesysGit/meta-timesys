@@ -1068,6 +1068,35 @@ def log_vigiles_response(d, log_type="INFO", msg="", response=""):
         log(log_type, log_buffer)
 
 
+def _get_export_details(d, vigiles_out):
+    export_format = d.getVar('VIGILES_EXPORT_FORMAT', True)
+    export_args = []
+    export_path = ""
+
+    if not export_format:
+        return export_args, export_path, export_format
+
+    file_format = export_format.strip().lower()
+    export_args += ['--export-format', file_format]
+
+    if file_format.startswith("cyclonedx"):
+        cyclonedx_format = d.getVar('VIGILES_CYCLONEDX_FORMAT', True)
+        if cyclonedx_format:
+            file_format = cyclonedx_format.strip().lower()
+            export_args += ['--cyclonedx-format', cyclonedx_format.strip().lower()]
+
+        cyclonedx_version = d.getVar('VIGILES_CYCLONEDX_VERSION', True)
+        if cyclonedx_version:
+            export_args += ['--cyclonedx-version', cyclonedx_version.strip().lower()]
+    elif file_format == "pdfsummary":
+        file_format = file_format[:3]
+
+    export_path = vigiles_out.replace(".txt", "") + "." + file_format
+    export_args += ['--export-path', export_path]
+
+    return export_args, export_path, file_format
+
+
 python do_vigiles_check() {
     v_dir = d.getVar('VIGILES_DIR',True)
     m_max_len = int(d.getVar('VIGILES_MANIFEST_NAME_MAX_LENGTH',True))
@@ -1174,9 +1203,10 @@ python do_vigiles_check() {
 
     bb.utils.mkdirhier(os.path.dirname(vigiles_out))
 
+    vigiles_export_args, vigiles_export_report_path, file_format = _get_export_details(d, vigiles_out)
     try:
         check_out, _ = run_checkcves(d, "checkcves.py", 
-            [ '-m', vigiles_in, '-o', vigiles_out ])
+            [ '-m', vigiles_in, '-o', vigiles_out ] + vigiles_export_args)
 
         log_vigiles_response(d, response=check_out)
 
@@ -1184,6 +1214,11 @@ python do_vigiles_check() {
             os.remove(vigiles_link)
         if os.path.exists(vigiles_out):
             os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
+        if os.path.exists(vigiles_export_report_path):
+            export_vlink = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_REPORT_SUFFIX', True).replace('.txt', '')) + '.' + file_format
+            if os.path.lexists(export_vlink):
+                os.remove(export_vlink)
+            os.symlink(os.path.relpath(vigiles_export_report_path, os.path.dirname(export_vlink)), export_vlink)
 
     except bb.process.NotFoundError as err:
         log_vigiles_response(d, "ERROR", "Vigiles: checkcves.py could not be found:\n", str(err))
