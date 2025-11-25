@@ -756,9 +756,30 @@ python() {
 do_vigiles_kconfig[nostamp] = "1"
 
 
-def _get_uboot_pf(d):
-    from oe import recipeutils as oe
+def _get_recipe_pv_without_srcpv(pv, uri_type):
+    """
+    Parse version string and extract base version, prefix, and suffix.
+    Replacement for oe.recipeutils.get_recipe_pv_without_srcpv which
+    is not available in newer Yocto versions.
+    """
+    import re
+    
+    if not pv or pv == 'unset':
+        return (pv, '', '')
+    
+    if uri_type == 'git':
+        # Handle git versions like "2024.04+gitAUTOINC+..." or "2024.04+gitr0+..."
+        # Extract base version before +git
+        match = re.match(r'^([^+]+)(\+.*)?$', pv)
+        if match:
+            bpv = match.group(1)
+            suffix = match.group(2) if match.group(2) else ''
+            return (bpv, '', suffix)
+    
+    # For non-git versions, return as-is
+    return (pv, '', '')
 
+def _get_uboot_pf(d):
     pn = d.getVar('PN')
     boot_pn = d.getVar('VIGILES_UBOOT_PN') or \
         d.getVar('PREFERRED_PROVIDER_virtual/bootloader') or ''
@@ -769,7 +790,7 @@ def _get_uboot_pf(d):
     pv = tsmeta_read_dictname_single(d, 'pn', boot_pn, 'pv')
     if not pv:
         pv = 'unset'
-    (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, 'git')
+    (bpv, pfx, sfx) = _get_recipe_pv_without_srcpv(pv, 'git')
 
     vgls_pf = '-'.join([boot_pn, bpv])
     return vgls_pf

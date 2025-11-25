@@ -309,9 +309,30 @@ def _detect_uboot_version(d):
             _version += _extra
     return _version
 
-def _get_cve_version(d):
-    import oe.recipeutils as oe
+def _get_recipe_pv_without_srcpv(pv, uri_type):
+    """
+    Parse version string and extract base version, prefix, and suffix.
+    Replacement for oe.recipeutils.get_recipe_pv_without_srcpv which
+    is not available in newer Yocto versions.
+    """
+    import re
+    
+    if not pv or pv == 'unset':
+        return (pv, '', '')
+    
+    if uri_type == 'git':
+        # Handle git versions like "2024.04+gitAUTOINC+..." or "2024.04+gitr0+..."
+        # Extract base version before +git
+        match = re.match(r'^([^+]+)(\+.*)?$', pv)
+        if match:
+            bpv = match.group(1)
+            suffix = match.group(2) if match.group(2) else ''
+            return (bpv, '', suffix)
+    
+    # For non-git versions, return as-is
+    return (pv, '', '')
 
+def _get_cve_version(d):
     cve_v = d.getVar('CVE_VERSION')
     if bb.data.inherits_class('kernel', d):
         cve_v = _detect_kernel_version(d)
@@ -328,7 +349,7 @@ def _get_cve_version(d):
     if not cve_v:
         pv = d.getVar('PV')
         uri_type = 'git' if ('git' in pv or 'AUTOINC' in pv) else ''
-        (bpv, pfx, sfx) = oe.get_recipe_pv_without_srcpv(pv, uri_type)
+        (bpv, pfx, sfx) = _get_recipe_pv_without_srcpv(pv, uri_type)
         cve_v = bpv
     return cve_v
 
