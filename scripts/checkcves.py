@@ -578,8 +578,11 @@ if __name__ == '__main__':
 
     _image = manifest.get('image', '')
     _name = manifest.get('manifest_name', _image)
-    info('Requesting image analysis for %s (%s) \n'
-          % (_name, _image))
+
+    if upload_only:
+        info('Uploading SBOM for %s (%s) to vigiles \n' % (_name, _image))
+    else:
+        info('Requesting image analysis for %s (%s) \n' % (_name, _image))
 
     result = llapi.api_post(email, key, resource, request)
 
@@ -605,34 +608,44 @@ if __name__ == '__main__':
                 '\tMake sure that you are allowing update emails in your '
                 'Vigiles preferences.\n' % subscribe, file=outfile)
 
-    print_report_header(result, outfile)
-    print_report_overview(result, outfile)
+    if upload_only:
+        url_parts = [llapi.VigilesURL.strip("/"), "groups"]
 
-    print_summary(result, outfile=outfile)
+        for key in ("group_token", "folder_token"):
+            token = result.get(key)
+            if token:
+                url_parts.append(token)
 
-    print_cves(result, outfile=outfile)
-    if is_enterprise and ecosystems:
-        print_ecosystem_vulns(result, outfile=outfile)
+        sbom_url = "/".join(url_parts)
+        info('SBOM uploaded successfully. To view or scan it for a vulnerability report, visit:\n\t %s \n' % sbom_url)
+    else:
+        print_report_header(result, outfile)
+        print_report_overview(result, outfile)
 
-    if not upload_only:
-      print_whitelist(whitelist, outfile=outfile)
-      print_foootnotes(f_out=outfile)
+        print_summary(result, outfile=outfile)
 
-    if outfile is not None:
-      print_report_overview(result)
-      print_summary(result)
-      print('\n\tLocal summary written to:\n\t  %s' %
-            os.path.relpath(outfile.name))
-    
-    exported_report_data = result.get("exported_report")
-    if exported_report_data:
-        file_extension = args.export_format
-        if file_extension.startswith('pdf'):
-            file_extension = file_extension[:3]
-        elif file_extension.startswith('cyclonedx'):
-            file_extension = args.cyclonedx_format
+        print_cves(result, outfile=outfile)
+        if is_enterprise and ecosystems:
+            print_ecosystem_vulns(result, outfile=outfile)
+
+        print_whitelist(whitelist, outfile=outfile)
+        print_foootnotes(f_out=outfile)
+
+        if outfile is not None:
+            print_report_overview(result)
+            print_summary(result)
+            print('\n\tLocal summary written to:\n\t %s \n' %
+                os.path.relpath(outfile.name))
         
-        root, _ = os.path.splitext(args.export_path)
-        export_path = "%s.%s" % (root, file_extension)
+        exported_report_data = result.get("exported_report")
+        if exported_report_data:
+            file_extension = args.export_format
+            if file_extension.startswith('pdf'):
+                file_extension = file_extension[:3]
+            elif file_extension.startswith('cyclonedx'):
+                file_extension = args.cyclonedx_format
+            
+            root, _ = os.path.splitext(args.export_path)
+            export_path = "%s.%s" % (root, file_extension)
 
-        save_exported_report(exported_report_data, export_path)
+            save_exported_report(exported_report_data, export_path)
