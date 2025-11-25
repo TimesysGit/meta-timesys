@@ -428,8 +428,9 @@ VIGILES_UPLOAD_ONLY = "1"
 ```
 
 Instead of a text report and a link to the online report, a link to the
-Vigiles Dashboard Product Workspace (as specified with
-VIGILES_DASHBOARD_CONFIG) will be displayed, from where it can be then be
+Vigiles Dashboard (as specified with VIGILES_DASHBOARD_CONFIG) or Private Workspace
+(if no dashboard config is specified)
+will be displayed, from where it can be then be
 scanned by the Vigiles Service.
 
 
