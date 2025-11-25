@@ -1383,14 +1383,10 @@ python do_vigiles_check() {
         if _upload_only:
             args = args + ['-U']
 
-        #
         # Vigiles uses python3, and needs to use the Host-installed instance
-        #  to avoid racing against the removal of the Yocto-built native
-        #  instance when 'INHERIT += rm_work' is used.
-        #
-        # Note that python3 is a required HOSTTOOL by the poky tree, as of the
-        #  pyro release, so we don't need to do 'HOSTTOOLs += python3'.
-        #  See poky/meta/conf/bitbake.conf for definition.
+        # to avoid racing against the removal of the Yocto-built native
+        # instance when 'INHERIT += rm_work' is used.
+
         env_path = vigiles_env.get('PATH').split(os.path.pathsep)
         hosttools_dir = d.getVar('HOSTTOOLS_DIR')
 

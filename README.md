@@ -20,25 +20,53 @@ A BitBake build environment is required for the Vigiles CVE Scanner to evaluate 
 
 The fastest way to use the Vigiles CVE Scanner is to integrate it into your existing BSP (clone alongside other layers, add to bblayers.conf). 
 
-
-If you do not already have an environment configured, please use the following to boot-strap a minimal setup.
-
+If you do not already have an environment configured, you can bootstrap a minimal setup. This can be done either using a manual setup or the `bitbake-setup` method.
 
 ### Review the Yocto system requirements here:
 
 https://docs.yoctoproject.org/dev/ref-manual/system-requirements.html#system-requirements
 
-### Clone poky and meta-timesys
+### *Using manual setup*
+
+Clone bitbake and openembedded-core
 
 ```sh
-git clone git://git.yoctoproject.org/poky.git
-git clone https://github.com/TimesysGit/meta-timesys.git
+git clone https://git.openembedded.org/bitbake
+git clone https://git.openembedded.org/openembedded-core
+```
+If you also want to include the poky reference distro, clone meta-yocto
+
+```sh
+git clone https://git.yoctoproject.org/meta-yocto
 ```
 
-### Activate yocto build environment (needed for manifest creation)
+Activate the build environment
 
 ```sh
-source poky/oe-init-build-env
+source openembedded-core/oe-init-build-env
+```
+
+
+### *Using bitbake-setup*
+
+Clone bitbake
+
+```sh
+git clone https://git.openembedded.org/bitbake
+```
+
+Run the bitbake-setup tool included in the bitbake source tree
+
+```sh
+./bitbake/bin/bitbake-setup init
+```
+
+This will start an interactive prompt where you can choose the target distro, machine, and other configuration options. Once complete, it will automatically fetch the layers and prepare the build environment.
+
+Activate the build environment
+
+```sh
+source bitbake-builds/<setup_dir>/build/init-build-env
 ```
 
 
@@ -47,10 +75,16 @@ Using Vigiles
 
 ### Add meta-timesys to _conf/bblayers.conf_
 
-Follow format of the file, just add meta-timesys after the default poky/meta, etc. 
+Clone meta-timesys
+
+```sh
+git clone https://github.com/TimesysGit/meta-timesys.git
+```
+
+Follow the format of the file and add the path to meta-timesys after the layers you have included.
 
 ```
-BBLAYERS += "${TOPDIR}/../meta-timesys"
+BBLAYERS += "${TOPDIR}/../layers/meta-timesys"
 ```
 
 
