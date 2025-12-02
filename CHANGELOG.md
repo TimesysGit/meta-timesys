@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.16.0+jethro] - 2025-12-03
+
+### Added
+
+* [feature] Add option to download report in specified format
+
 ## [v2.15.0+jethro] - 2025-11-05
 
 ### Added
