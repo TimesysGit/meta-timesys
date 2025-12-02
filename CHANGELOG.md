@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.27.0+morty] - 2025-12-03
+
+### Added
+
+* [feature] Add option to download report in specified format
+
 ## [v2.26.0+morty] - 2025-11-05
 
 ### Added
