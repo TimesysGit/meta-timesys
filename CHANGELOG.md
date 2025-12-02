@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.28.0+mickledore] - 2025-12-03
+
+### Added
+
+* [feature] Add option to download report in specified format
+
 ## [v2.27.0+mickledore] - 2025-11-05
 
 ### Added
