@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.31.0+scarthgap] - 2025-12-03
+
+### Added
+
+* [feature] Add option to download report in specified format
+
 ## [v2.30.0+scarthgap] - 2025-11-05
 
 ### Added
