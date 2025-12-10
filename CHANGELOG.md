@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.31.0] - 2025-12-10
+
+### Changed
+
+* [README.md] Updated yocto build steps as per new master build procedure
+
+### Fixed
+
+* [checkcves.py] Fix output message when SBOM_UPLOAD_ONLY is set to 1
+
 ## [v2.30.0] - 2025-12-03
 
 ### Added
