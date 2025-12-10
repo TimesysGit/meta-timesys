@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.28.1+warrior] - 2025-12-10
+
+### Fixed
+
+* [checkcves.py] Fix output message when SBOM_UPLOAD_ONLY is set to 1
+
 ## [v2.28.0+warrior] - 2025-12-03
 
 ### Added
