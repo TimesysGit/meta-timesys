@@ -17,6 +17,7 @@ require conf/vigiles.conf
 addtask do_vigiles_pkg after do_packagedata before do_rm_work
 do_vigiles_pkg[nostamp] = "1"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
+do_vigiles_pkg[depends] += "${PN}:do_vigiles_patchmeta"
 
 SPDX_ORG ??= "OpenEmbedded ()"
 SPDX_SUPPLIER ??= "Organization: ${SPDX_ORG}"
@@ -257,9 +258,50 @@ def get_package_checksum(d):
     
     return checksums
 
+python do_vigiles_patchmeta() {
+    import json
+    import oe.recipeutils
+    import os
+
+    src_patches_raw = oe.recipeutils.get_recipe_patches(d)
+    src_patches = { os.path.basename(p) : p for p in src_patches_raw }
+
+    patched_cves = _get_patched(src_patches)
+
+    patch_meta = {
+        "src_patches": src_patches,
+        "patched_cves": patched_cves
+    }
+
+    workdir = d.getVar("VIGILES_PATCHMETA_DIR")
+    os.makedirs(workdir, exist_ok=True)
+
+    outfile = os.path.join(workdir, "vigiles-patches.json")
+
+    with open(outfile, "w") as f:
+        bb.debug(2, "Writing patchmeta to: %s" % outfile)
+        f.write(json.dumps(patch_meta, indent=2))
+}
+
+addtask vigiles_patchmeta after do_patch before do_compile
+
+SSTATETASKS += "do_vigiles_patchmeta"
+
+do_vigiles_patchmeta[dirs] = "${VIGILES_PATCHMETA_DIR} ${VIGILES_PATCHMETA_DEPLOY}"
+do_vigiles_patchmeta[vardeps] += "SRC_URI"
+do_vigiles_patchmeta[sstate-inputdirs] = "${VIGILES_PATCHMETA_DIR}"
+do_vigiles_patchmeta[sstate-outputdirs] = "${VIGILES_PATCHMETA_DEPLOY}"
+do_vigiles_patchmeta[cleandirs] = "${VIGILES_PATCHMETA_DEPLOY}"
+
+python do_vigiles_patchmeta_setscene () {
+    sstate_setscene(d)
+}
+addtask do_vigiles_patchmeta_setscene
+
 
 def vigiles_collect_pkg_info(d):
     import ast
+    import json
     
     pn = d.getVar('PN')
     bpn = d.getVar('BPN')
@@ -316,15 +358,20 @@ def vigiles_collect_pkg_info(d):
     manifest["cve_check_cve_whitelist"] = list(check_cve_whitelist.keys())
 
     sources = manifest.pop('sources')
-    src_patches = sources.get('patches', {})
-    if len(src_patches.keys()):
-        patches = list(src_patches.keys())
+    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DIR"), "vigiles-patches.json")
+    patches = []
+    patched_dict = {}
+
+    if os.path.exists(patch_metafile):
+        with open(patch_metafile, "r") as f:
+            patch_meta = json.load(f)
+            patches = list(patch_meta.get("src_patches", {}).keys())
+            patched_dict = patch_meta.get("patched_cves", {})
+
+    if patches:
         manifest['patches'] = sorted(patches)
-
-        patched_dict = _get_patched(src_patches)
-
-        if len(patched_dict):
-            manifest['patched_cves'] = patched_dict
+    if len(patched_dict):
+        manifest['patched_cves'] = patched_dict
 
     if not len(manifest['srcrev']):
         manifest.pop('srcrev')
