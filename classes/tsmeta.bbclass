@@ -384,6 +384,7 @@ def _get_lifecycle_info(d):
 
 def tsmeta_get_src(d):
     import oe.recipeutils as oe
+    import json
 
     tsm_type = "src"
     src_dict = dict()
@@ -405,8 +406,16 @@ def tsmeta_get_src(d):
             uri_dict[u_type] = list()
         uri_dict[u_type].append(u_path)
 
-    src_patches_raw = oe.get_recipe_patches(d)
-    src_patches = { os.path.basename(p) : p for p in src_patches_raw }
+    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DIR"), "vigiles-patches.json")
+    src_patches = {}
+
+    if os.path.exists(patch_metafile):
+        try:
+            with open(patch_metafile, "r") as f:
+                patch_meta = json.load(f)
+                src_patches = patch_meta.get("src_patches", {})
+        except Exception as e:
+            bb.debug(1, "Failed to read Vigiles patch metadata: %s" % e)
 
     uri_dict["patches"] = src_patches
 
