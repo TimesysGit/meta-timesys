@@ -17,6 +17,7 @@ require conf/vigiles.conf
 addtask do_vigiles_pkg after do_packagedata before do_rm_work
 do_vigiles_pkg[nostamp] = "1"
 do_vigiles_pkg[rdeptask] += "do_packagedata"
+do_vigiles_pkg[depends] += "${PN}:do_vigiles_patchmeta"
 
 SPDX_ORG ??= "OpenEmbedded ()"
 SPDX_SUPPLIER ??= "Organization: ${SPDX_ORG}"
@@ -78,7 +79,7 @@ def get_cpe_ids(cve_product, version):
     import re
 
     version = version.split("+git")[0]
-    match = re.match(r"^(.*)[~-]([a-zA-Z].+)$", version)
+    match = re.match(r"^(.*?)[~-]([a-zA-Z].*)$", version)
     if match:
         version = match.group(1)
         update = match.group(2)
@@ -315,10 +316,9 @@ def vigiles_collect_pkg_info(d):
     # Clean up cve_version by removing leading '-' or '~' if present
     import re
     cve_version = manifest['cve_version']
-    match = re.match(r"^(.*)([~-])([a-zA-Z].+)$", cve_version)
+    match = re.match(r"^(.*?)[~-]([a-zA-Z].*)$", cve_version)
     if match:
-        sep = match.group(2)
-        manifest['cve_version'] = cve_version.replace(sep, "", 1)
+        manifest['cve_version'] = match.group(1) + match.group(2)
 
     # Add download location in manifest json
     src_uri_list = manifest.pop('src_uri')
