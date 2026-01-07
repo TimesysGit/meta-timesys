@@ -889,12 +889,8 @@ do_vigiles_image[depends] += " ${@vigiles_image_depends(d)} "
 
 def _get_kernel_pf(d):
     bpn = d.getVar('PREFERRED_PROVIDER_virtual/kernel', True )
-    cve_v = "unset"
-    if bb.data.inherits_class('kernel', d):
-        cve_v = _detect_kernel_version(d)
-    else:
-        kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version'])
-        cve_v = kdict.get('cve_version') or cve_v
+    kdict = tsmeta_read_dictname_vars(d, 'cve', bpn, ['name', 'cve_version']) or {}
+    cve_v = kdict.get('cve_version', 'unset')
 
     vgls_pf = '-'.join([bpn, cve_v])
     return vgls_pf
