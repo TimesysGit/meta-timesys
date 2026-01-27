@@ -437,7 +437,7 @@ def tsmeta_get_src(d):
 
     src_dict["sources"] = uri_dict
 
-    if src_dict["srcrev"] == "INVALID":
+    if src_dict.get("srcrev", "") == "INVALID":
         src_dict.pop("srcrev")
 
     recipe_path = src_dict.pop('file')
