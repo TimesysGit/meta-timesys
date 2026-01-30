@@ -1222,6 +1222,11 @@ python do_vigiles_check() {
         if subscribe:
             bb.debug(1, "Setting SBOM report notification frequency to: %s" % subscribe)
             args = args + ['-s', subscribe]
+        
+        sbom_token_path = d.getVar('VIGILES_DOWNLOAD_SBOM_TOKEN_PATH')
+        if sbom_token_path:
+            bb.debug(1, "SBOM token will be saved to : %s" % sbom_token_path)
+            args = args + ['--sbom-token-path', sbom_token_path]
 
         vigiles_env = os.environ.copy()
 
@@ -1313,3 +1318,170 @@ addtask do_vigiles_check after do_image before do_image_complete
 do_vigiles_check[nostamp] = "1"
 do_vigiles_check[vardepsexclude] = "BB_ORIGENV"
 do_vigiles_check[network] = "1"
+
+def _validate_sbom_download_args(d):
+    sbom_type = (d.getVar("VIGILES_DOWNLOAD_SBOM_SPEC") or "").lower()
+    sbom_format = (d.getVar("VIGILES_DOWNLOAD_SBOM_FORMAT") or "").lower()
+    sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
+
+    valid_types = (d.getVar("VIGILES_VALID_SBOM_SPEC") or "").split()
+    valid_spdx_formats = (d.getVar("VIGILES_VALID_SPDX_FORMATS") or "").split()
+    valid_cyclonedx_formats = (d.getVar("VIGILES_VALID_CYCLONEDX_FORMATS") or "").split()
+    valid_spdx_versions = (d.getVar("VIGILES_VALID_SPDX_VERSIONS") or "").split()
+    valid_cyclonedx_versions = (d.getVar("VIGILES_VALID_CYCLONEDX_VERSIONS") or "").split()
+
+    if sbom_type not in valid_types:
+        raise ValueError(
+            "Invalid sbom specification '%s' selected. Choose from %s" % (
+                sbom_type,
+                valid_types
+            ))
+
+    if sbom_type == "cyclonedx":
+        if sbom_format not in valid_cyclonedx_formats:
+            raise ValueError(
+                "Invalid file format '%s' for %s. Choose from %s" % (
+                    sbom_format,
+                    sbom_type, 
+                    valid_cyclonedx_formats
+                ))
+        if sbom_version not in valid_cyclonedx_versions:
+            raise ValueError(
+                "Invalid sbom version '%s' for %s. Choose from %s" % (
+                    sbom_version,
+                    sbom_type, 
+                    valid_cyclonedx_versions
+                ))
+    else:
+        if sbom_format not in valid_spdx_formats:
+            raise ValueError(
+                "sbom_format file format '%s' for %s. Choose from %s" % (
+                    sbom_format,
+                    sbom_type, 
+                    valid_spdx_formats
+                ))
+        if sbom_version not in valid_spdx_versions:
+            raise ValueError(
+                "Invalid sbom version '%s' for %s. Choose from %s" % (
+                    sbom_version,
+                    sbom_type, 
+                    valid_spdx_versions
+                ))
+
+
+python do_vigiles_download_sbom() {
+    import os
+    import datetime
+
+    token_path = d.getVar("VIGILES_DOWNLOAD_SBOM_TOKEN_PATH")
+    if not os.path.exists(token_path):
+        log_vigiles_response(d, "ERROR", "Vigiles: SBOM token file not found: %s" % token_path)
+        return
+
+    try:
+        with open(token_path, "r") as f:
+            token = f.read().strip()
+    except IOError as e:
+        log_vigiles_response(d, "ERROR", "Vigiles: Failed to read token file %s: %s" % (token_path, str(e)))
+        return
+
+    if not token:
+        log_vigiles_response(d, "ERROR", "Vigiles: SBOM token file is empty: %s" % token_path)
+        return
+
+    keyfile = d.getVar("VIGILES_KEY_FILE")
+    if not os.path.exists(keyfile):
+        log_vigiles_response(d, "ERROR", "Vigiles: API key not found")
+        return
+
+    vigiles_bin = d.getVar("VIGILES_BIN_PATH")
+    if not vigiles_bin:
+        vigiles_bin = os.path.join(d.getVar("STAGING_BINDIR_NATIVE"), "vigiles")
+
+    if not os.path.exists(vigiles_bin):
+        log_vigiles_response(d, "ERROR", "Vigiles: vigiles binary not found at %s" % vigiles_bin)
+        return
+    
+    bb.plain("Vigiles: Using vigiles binary at %s" % vigiles_bin)
+
+    img_dir = d.getVar("VIGILES_DOWNLOAD_SBOM_DEPLOY_DIR")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+    sbom_type = (d.getVar("VIGILES_DOWNLOAD_SBOM_SPEC") or "").lower()
+    sbom_format = (d.getVar("VIGILES_DOWNLOAD_SBOM_FORMAT") or "").lower()
+    sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
+
+    if sbom_type and not sbom_version:
+        if sbom_type == "cyclonedx":
+            d.setVar("VIGILES_DOWNLOAD_SBOM_VERSION", d.getVar("VIGILES_DEFAULT_CYCLONEDX_VERSION"))
+        else:
+            d.setVar("VIGILES_DOWNLOAD_SBOM_VERSION", d.getVar("VIGILES_DEFAULT_SPDX_VERSION"))
+
+        sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
+
+    try:
+        _validate_sbom_download_args(d)
+    except ValueError as err:
+        log_vigiles_response(d, "ERROR", "Vigiles: %s" % str(err))
+        return
+    
+    sbom_name = "%s-%s" % (d.getVar("VIGILES_MANIFEST_NAME"), d.getVar("MACHINE"))
+    sbom_suffix = "-sbom.%s" % ("spdx" if sbom_format == "tag" else sbom_format)
+    sbom_max_len = int(d.getVar("VIGILES_MANIFEST_NAME_MAX_LENGTH"))
+
+    output_path = _get_vout_path(img_dir, sbom_name, sbom_max_len, timestamp, sbom_suffix)
+    link_path = _get_vlink(img_dir, sbom_name, sbom_max_len, sbom_suffix)
+
+    cmd = [
+        vigiles_bin,
+        "-k", keyfile,
+        "manifest", "download", token,
+        "-f", sbom_type,
+        "-i", sbom_format,
+        "-v", sbom_version,
+        "-o", output_path
+    ]
+
+    bb.plain("Vigiles: Downloading %s-%s SBOM" % (sbom_type, sbom_version))
+
+    try:
+        stdout, stderr = bb.process.run(cmd)
+        log_vigiles_response(d, response=stdout)
+    except Exception as err:
+        log_vigiles_response(d, "ERROR", "Vigiles: SBOM download failed:\n", str(err))
+        return
+
+    if stderr:
+        log_vigiles_response(d, "WARNING", "Vigiles: %s" % stderr)
+        
+    if os.path.exists(output_path):
+        if os.path.lexists(link_path):
+            os.remove(link_path)
+
+        os.symlink(os.path.relpath(output_path, os.path.dirname(link_path)), link_path)
+        bb.debug(1, "Vigiles: Created symlink: %s -> %s" % (link_path, output_path))
+        bb.plain("Vigiles: Successfully downloaded SBOM to %s" % link_path)
+    else:
+        log_vigiles_response(d, "ERROR", "Vigiles: Failed to download SBOM")
+        return
+}
+
+do_vigiles_download_sbom[network] = "1"
+
+python () {
+    import os
+    
+    if not bb.utils.to_boolean(d.getVar("VIGILES_ENABLE_DOWNLOAD_SBOM")):
+        return
+    
+    if not bb.data.inherits_class('image', d):
+        return
+    
+    bb.build.addtask("do_vigiles_download_sbom", "do_image_complete", "do_vigiles_check", d)
+             
+    vigiles_bin = d.getVar("VIGILES_BIN_PATH")
+    if not os.path.exists(vigiles_bin):
+        bb.debug(1, "Vigiles: User defined vigiles binary not found, vigiles-cli will be installed.")
+        d.appendVarFlag("do_vigiles_download_sbom", "depends", " vigiles-cli-native:do_populate_sysroot")      
+}
+
