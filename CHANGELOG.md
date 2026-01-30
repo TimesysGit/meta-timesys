@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.30.0+langdale] - 2026-02-02
+
+### Added
+
+* [feature] Use sstate to capture patch metadata
+
+### Fixed
+
+* [vigiles.bbclass] Fix incorrect version splitting in cpe generation
+* [vigiles.bbclass] Fix kernel config not getting uploaded
+
 ## [v2.29.1+langdale] - 2025-12-10
 
 ### Fixed
