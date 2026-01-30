@@ -579,6 +579,79 @@ VIGILES_CYCLONEDX_FORMAT = "xml"
 VIGILES_CYCLONEDX_VERSION = "1.5"
 ```
 
+### Downloading converted SBOMs
+
+This option allows SBOMs generated in vigiles format to be converted into standard SPDX or CycloneDX formats. When enabled, the converted SBOM is downloaded to `build/tmp/deploy/images/<machine>/`.
+
+#### Enabling SBOM Download
+To enable SBOM conversion and download, add the following to local.conf
+```
+VIGILES_ENABLE_DOWNLOAD_SBOM = "1"
+```
+
+If enabled, it will download a CycloneDX 1.6 json format SBOM. To specify the spec, format and version of the SBOM, refer below:
+
+#### Specifying path to vigiles binary
+If `VIGILES_BIN_PATH` variable is set, meta-timesys uses the specified binary to communicate with the Vigiles server and download the SBOM.
+If it is not set, meta-timesys automatically installs [vigiles-cli](https://github.com/TimesysGit/vigiles-cli) into the native sysroot using the vigiles-cli-native recipe and uses it for SBOM downloads by default.
+
+**Note:** Using the latest version of vigiles-cli is recommended. However, if you need to use an older version, ensure it is v1.0.3 or higher.
+
+Path can be specified as below in local.conf
+
+```
+VIGILES_BIN_PATH = "/usr/local/bin/vigiles"
+```
+
+#### Selecting SBOM Specification
+You can select the target SBOM specification using `VIGILES_DOWNLOAD_SBOM_SPEC`. Select any of the below choices:
+- spdx
+- spdx-lite
+- cyclonedx [default]
+
+```
+VIGILES_DOWNLOAD_SBOM_SPEC = "spdx"
+```
+
+#### Selecting the Output Format
+Use `VIGILES_DOWNLOAD_SBOM_FORMAT` to specify the output format of the converted SBOM:
+
+**Supported SPDX formats:**
+- tag
+- json
+- xlsx
+- xls
+- rdfxml
+- yaml
+- xml
+
+**Supported CycloneDX formats:**
+- json [default]
+- xml
+
+```
+VIGILES_DOWNLOAD_SBOM_FORMAT = "tag"
+```
+
+#### Selecting the Output Version
+Use `VIGILES_DOWNLOAD_SBOM_VERSION` to specify the output version of the converted SBOM:
+
+**SPDX versions:**
+- 2.2
+- 2.3
+
+**CycloneDX versions:**
+- 1.1
+- 1.2
+- 1.3
+- 1.4
+- 1.5
+- 1.6 [default]
+
+```
+VIGILES_DOWNLOAD_SBOM_VERSION = "2.3"
+```
+
 Maintenance
 ===========
 
