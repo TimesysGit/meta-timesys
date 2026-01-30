@@ -1,5 +1,17 @@
 # Changelog
 
+## [v2.17.0+jethro] - 2026-02-02
+
+### Added
+
+* [feature] Use sstate to capture patch metadata
+
+### Fixed
+
+* [tsmeta.bbclass] Fix KeyError when SRCREV is not defined 
+* [vigiles.bbclass] Fix incorrect version splitting in cpe generation
+* [vigiles.bbclass] Fix kernel config not getting uploaded
+
 ## [v2.16.1+jethro] - 2025-12-10
 
 ### Fixed
