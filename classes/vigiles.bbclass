@@ -28,6 +28,7 @@ def _get_patched(src_patches):
     # This is originally from cve-check.bbclass; input/output adapted for our needs.
 
     import re
+    from pathlib import Path
 
     patched_dict = dict()
 
@@ -46,6 +47,12 @@ def _get_patched(src_patches):
         if fname_match:
             cve = fname_match.group(1).upper()
             found_cves.append(cve)
+
+        patch_path = Path(patch_file)
+
+        if not patch_path.is_file():
+          bb.warn(f"Skip patch CVE check - is not a file: {patch_file}")
+          continue
 
         with open(patch_file, "r", encoding="utf-8") as f:
             try:
