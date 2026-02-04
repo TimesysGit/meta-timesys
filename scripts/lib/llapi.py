@@ -178,7 +178,7 @@ def _do_api_call(request_dict, json_response):
 def api_get(email, key, resource, data_dict={}, json=True):
     data_dict['email'] = email
     msg = make_msg('GET', resource, data_dict)
-    params = urllib.parse.urlencode(data_dict).encode('utf-8')
+    params = urllib.parse.urlencode(sorted(data_dict.items()), doseq=True)
     request = {
         'headers': {
             'X-Auth-Signature': create_hmac(key, msg),

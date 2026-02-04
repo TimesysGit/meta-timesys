@@ -138,6 +138,8 @@ def handle_cmdline_args():
                         choices=['1.4', '1.5', '1.6'])
     parser.add_argument('--export-path', metavar="PATH",
                         help='Filepath for the exported report')
+    parser.add_argument('--sbom-token-path', metavar="PATH",
+                        help='Filepath to save SBOM token')
     
     args = parser.parse_args()
 
@@ -588,6 +590,15 @@ if __name__ == '__main__':
 
     if not result:
       sys.exit(1)
+
+    if args.sbom_token_path:
+        sbom_token = result.get("manifest_token")
+        if not sbom_token:
+            error("Manifest token missing from the API response")
+            sys.exit(1)
+
+        with open(args.sbom_token_path, "w") as token_file:
+            token_file.write(sbom_token)
 
     # the default list contains a harmless but bogus example CVE ID,
     # don't print it here in case that is confusing.
