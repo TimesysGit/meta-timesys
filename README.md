@@ -579,6 +579,67 @@ VIGILES_CYCLONEDX_FORMAT = "xml"
 VIGILES_CYCLONEDX_VERSION = "1.5"
 ```
 
+### Downloading converted SBOMs
+
+This option allows SBOMs generated in vigiles format to be converted into standard SPDX or CycloneDX formats. When enabled, the converted SBOM is downloaded to `build/tmp/deploy/images/<machine>/`.
+
+#### Enabling SBOM Download
+To enable SBOM conversion and download, add the following to local.conf
+```
+VIGILES_ENABLE_DOWNLOAD_SBOM = "1"
+```
+
+If enabled, it will download a CycloneDX 1.6 json format SBOM. To specify the spec, format and version of the SBOM, refer below:
+
+#### Selecting SBOM Specification
+You can select the target SBOM specification using `VIGILES_DOWNLOAD_SBOM_SPEC`. Select any of the below choices:
+- spdx
+- spdx-lite
+- cyclonedx [default]
+
+```
+VIGILES_DOWNLOAD_SBOM_SPEC = "spdx"
+```
+
+#### Selecting the Output Format
+Use `VIGILES_DOWNLOAD_SBOM_FORMAT` to specify the output format of the converted SBOM:
+
+**Supported SPDX formats:**
+- tag
+- json
+- xlsx
+- xls
+- rdfxml
+- yaml
+- xml
+
+**Supported CycloneDX formats:**
+- json [default]
+- xml
+
+```
+VIGILES_DOWNLOAD_SBOM_FORMAT = "tag"
+```
+
+#### Selecting the Output Version
+Use `VIGILES_DOWNLOAD_SBOM_VERSION` to specify the output version of the converted SBOM:
+
+**SPDX versions:**
+- 2.2
+- 2.3
+
+**CycloneDX versions:**
+- 1.1
+- 1.2
+- 1.3
+- 1.4
+- 1.5
+- 1.6 [default]
+
+```
+VIGILES_DOWNLOAD_SBOM_VERSION = "2.3"
+```
+
 Maintenance
 ===========
 
