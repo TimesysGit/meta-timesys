@@ -275,7 +275,7 @@ def _get_version_from_makefile(d):
     source_dir = os.path.relpath(d.getVar('S', True ))
     makefile_path = os.path.join(source_dir, 'Makefile')
     if not os.path.exists(makefile_path):
-        return None
+        return None, None, None, None
 
     try:
         with open(makefile_path) as f_in:
