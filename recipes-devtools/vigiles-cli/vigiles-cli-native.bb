@@ -16,8 +16,6 @@ SRC_URI = "git://github.com/TimesysGit/vigiles-cli.git;branch=main;protocol=http
 SRCREV = "c8386b449b57097e1a7fb7d7e6a046384d97732d"
 PV = "1.6.1"
 
-S = "${WORKDIR}/git"
-
 inherit python_setuptools_build_meta native
 
 RDEPENDS:${PN} += "python3-requests-native python3-urllib3-native"
