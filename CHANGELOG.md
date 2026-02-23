@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.29.0+sumo] - 2026-02-24
+
+### Added
+
+* [feature] Add option to download converted SBOMs to deploy image dir
+
+### Fixed
+
+* [tsmeta.bbclass] Fix TypeError when Makefile doesnt exists for kernel
+* [tsmeta.bbclass] Set BPN as fallback for cve_product
+
 ## [v2.28.0+sumo] - 2026-02-02
 
 ### Added
