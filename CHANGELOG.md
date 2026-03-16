@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.30.1+mickledore] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.30+mickledore] - 2026-02-24
 
 ### Added
