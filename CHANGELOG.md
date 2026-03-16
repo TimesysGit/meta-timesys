@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.34.0+whinlatter] - 2026-03-16
+
+### Changed
+
+* [README.md] updated for whinlatter 5.3 references
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.33.0] - 2026-02-24
 
 ### Added
