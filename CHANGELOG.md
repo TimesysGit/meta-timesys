@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.31.1+honister] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.31.0+honister] - 2026-02-24
 
 ### Added
