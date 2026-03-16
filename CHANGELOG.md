@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.20.1+krogoth] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.20.0+krogoth] - 2026-02-24
 
 ### Added
