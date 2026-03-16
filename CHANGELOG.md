@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.18.1+jethro] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.18.0+jethro] - 2026-02-24
 
 ### Added
