@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.33.1+scarthgap] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.33.0+scarthgap] - 2026-02-24
 
 ### Added
