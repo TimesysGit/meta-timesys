@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.32.1+kirkstone] - 2026-03-17
+
+### Fixed
+
+* [misc.] add .gitignore to repo root
+
 ## [v2.32.0+kirkstone] - 2026-02-24
 
 ### Added
