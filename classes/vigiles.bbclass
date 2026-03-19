@@ -42,7 +42,7 @@ def _get_patched(src_patches):
         found_cves = list()
 
         # Check patch file name for CVE ID
-        fname_match = cve_file_name_match.search(patch_file)
+        fname_match = cve_file_name_match.search(patch_base)
         if fname_match:
             cve = fname_match.group(1).upper()
             found_cves.append(cve)
