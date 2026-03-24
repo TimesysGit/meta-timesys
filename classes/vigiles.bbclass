@@ -275,11 +275,11 @@ addtask vigiles_patchmeta after do_patch before do_compile
 
 SSTATETASKS += "do_vigiles_patchmeta"
 
-do_vigiles_patchmeta[dirs] = "${VIGILES_PATCHMETA_DIR} ${VIGILES_PATCHMETA_DEPLOY}"
+do_vigiles_patchmeta[dirs] = "${VIGILES_PATCHMETA_DIR}"
 do_vigiles_patchmeta[vardeps] += "SRC_URI"
 do_vigiles_patchmeta[sstate-inputdirs] = "${VIGILES_PATCHMETA_DIR}"
 do_vigiles_patchmeta[sstate-outputdirs] = "${VIGILES_PATCHMETA_DEPLOY}"
-do_vigiles_patchmeta[cleandirs] = "${VIGILES_PATCHMETA_DEPLOY}"
+do_vigiles_patchmeta[cleandirs] = "${VIGILES_PATCHMETA_DIR}"
 
 python do_vigiles_patchmeta_setscene () {
     sstate_setscene(d)
@@ -372,7 +372,7 @@ def vigiles_collect_pkg_info(d):
         manifest['download_location'] = "UNKNOWN"
 
     sources = manifest.pop('sources')
-    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DIR"), "vigiles-patches.json")
+    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DEPLOY"), "vigiles-patches.json")
     patches = []
     patched_dict = {}
 
