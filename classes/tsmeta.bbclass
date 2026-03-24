@@ -406,7 +406,7 @@ def tsmeta_get_src(d):
             uri_dict[u_type] = list()
         uri_dict[u_type].append(u_path)
 
-    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DIR"), "vigiles-patches.json")
+    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DEPLOY"), "vigiles-patches.json")
     src_patches = {}
 
     if os.path.exists(patch_metafile):
