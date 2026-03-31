@@ -53,7 +53,7 @@ def handle_cmdline_args():
     valid_spdx_formats = ["tag", "json", "xlsx", "xls", "rdfxml", "yaml", "xml"]
     valid_cyclonedx_formats = ["json", "xml"]
     valid_spdx_versions = ["2.2", "2.3"]
-    valid_cyclonedx_versions = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]
+    valid_cyclonedx_versions = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"]
     
     if args.sbom_spec == "cyclonedx":
         if args.sbom_file_format not in valid_cyclonedx_formats:

@@ -133,7 +133,7 @@ def handle_cmdline_args():
                         choices=['json', 'xml'])
     parser.add_argument('--cyclonedx-version', dest='cyclonedx_version', default='1.6',
                         help='CycloneDX spec version to download report in VEX format',
-                        choices=['1.4', '1.5', '1.6'])
+                        choices=['1.4', '1.5', '1.6', '1.7'])
     parser.add_argument('--export-path', metavar="PATH",
                         help='Filepath for the exported report')
     parser.add_argument('--sbom-token-path', metavar="PATH",
