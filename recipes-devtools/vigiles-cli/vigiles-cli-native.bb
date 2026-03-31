@@ -13,8 +13,8 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSES/MIT.txt;md5=4582f62afbc1e801d09547e6d9544165"
 
 SRC_URI = "git://github.com/TimesysGit/vigiles-cli.git;branch=main;protocol=https"
-SRCREV = "c8386b449b57097e1a7fb7d7e6a046384d97732d"
-PV = "1.6.1"
+SRCREV = "5f47ff661f2fb578bd389aa786d780245fc32d8b"
+PV = "1.9.0"
 
 S = "${WORKDIR}/git"
 
