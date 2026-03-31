@@ -571,6 +571,7 @@ If you choose to export the report in cyclonedx format, you need to specify addi
 - xml
 
 `VIGILES_CYCLONEDX_VERSION`
+- 1.7
 - 1.6 [default]
 - 1.5
 - 1.4
@@ -649,6 +650,7 @@ Use `VIGILES_DOWNLOAD_SBOM_VERSION` to specify the output version of the convert
 - 1.4
 - 1.5
 - 1.6 [default]
+- 1.7
 
 ```
 VIGILES_DOWNLOAD_SBOM_VERSION = "2.3"
