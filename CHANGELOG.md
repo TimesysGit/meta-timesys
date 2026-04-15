@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.20.2+krogoth] - 2026-04-17
+
+### Fixed
+
+* [vigiles.bbclass] Fix: Patches are incorrectly added to patched cves
+* [vigiles-patchmeta] Fix: Patches not included when rebuilding after rm_work
+
 ## [v2.20.1+krogoth] - 2026-03-17
 
 ### Fixed
