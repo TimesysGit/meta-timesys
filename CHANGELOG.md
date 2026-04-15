@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.34.0] - 2026-03-17
+
+### Added
+
+* [layer] Make layer compatible with Wrynose(6.0) release
+
+### Fixed
+
+* [vigiles.bbclass] Fix: Patches are incorrectly added to patched cves
+* [vigiles-patchmeta] Fix: Patches not included when rebuilding after rm_work
+
 ## [v2.33.1] - 2026-03-17
 
 ### Fixed
