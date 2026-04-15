@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.34.1+whinlatter] - 2026-04-16
+
+### Fixed
+
+* [vigiles.bbclass] Fix: Patches are incorrectly added to patched cves
+* [vigiles-patchmeta] Fix: Patches not included when rebuilding after rm_work
+
 ## [v2.34.0+whinlatter] - 2026-03-16
 
 ### Changed
