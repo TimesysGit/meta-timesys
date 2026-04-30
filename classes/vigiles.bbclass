@@ -326,11 +326,13 @@ python () {
 
 
 def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, source="Recipe", patches=None, external=False):
-    from tsmeta.util import get_vuln_status, get_vuln_justification, get_vuln_description
+    from tsmeta.util import get_vuln_status, get_vuln_justification, get_vuln_description, get_yocto_status_detail
     
     vuln_data = {"id": cve}
     if not external:
         vuln_data = tsmeta_read_dictname(d, "vulnerabilities", cve) or vuln_data
+
+    vuln_data.setdefault("properties", [])
 
     # Add CVE_status
     vuln_data["analysis"] = {
@@ -338,6 +340,34 @@ def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, sou
         "justification": get_vuln_justification(cve_status),
         "detail": get_vuln_description(cve_status)
     }
+
+    yocto_status_detail = get_yocto_status_detail(cve_status)
+
+    # Add yocto_status_detail
+    if yocto_status_detail and source == "Recipe":
+        vuln_data["properties"] = [
+            prop for prop in vuln_data["properties"]
+            if prop.get("name") != "yocto_status_detail"
+        ]
+        vuln_data["properties"].append({
+            "name": "yocto_status_detail",
+            "value": yocto_status_detail
+        })
+
+    # Add patch information
+    if patches:
+        vuln_data["analysis"]["state"] = "resolved_with_pedigree"
+        vuln_data["properties"] = [
+            prop for prop in vuln_data["properties"]
+            if not (
+                prop.get("name") == "patches"
+                and prop.get("value") == ", ".join(patches)  # Avoid duplicate patch info if already exists
+            )
+        ]
+        vuln_data["properties"].append({
+            "name": "patches",
+            "value": ", ".join(patches)
+        })
 
     # Add Source
     vuln_data["source"] = dict(name=source)
@@ -371,13 +401,6 @@ def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, sou
                 "product": pkg_name,
                 "versions": [version]
             }]
-
-    # Add patch information
-    if patches:
-        vuln_data["properties"] = {
-            "name": "patches",
-            "value": ", ".join(patches)
-        }
     
     if not external:
         tsmeta_write_dictname(d, "vulnerabilities", cve, vuln_data)

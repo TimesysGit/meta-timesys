@@ -32,6 +32,9 @@ VALID_VULN_REGEX = [
     r"^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$", # Github Advisory
 ]
 
+def valid_status_detail(detail):
+    supported_details = {key[0] for key in VIGILES_STATUS_MAP.keys()}
+    return detail in supported_details
 
 def get_vuln_status(cve_status):
     detail = cve_status.get("detail")
@@ -53,3 +56,11 @@ def validate_vuln_id(vuln_id):
         if match:
             return True
     return False
+
+def get_yocto_status_detail(cve_status):
+    raw_detail = cve_status.get("detail", "").strip().lower()
+
+    if not valid_status_detail(raw_detail):
+        return None
+
+    return raw_detail
