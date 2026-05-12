@@ -24,7 +24,7 @@ If you do not already have an environment configured, you can bootstrap a minima
 
 ### Review the Yocto system requirements here:
 
-https://docs.yoctoproject.org/next/ref-manual/system-requirements.html#system-requirements
+https://docs.yoctoproject.org/wrynose/ref-manual/system-requirements.html#system-requirements
 
 ### *Using manual setup*
 
@@ -43,7 +43,7 @@ git clone https://git.yoctoproject.org/meta-yocto -b wrynose
 Activate the build environment
 
 ```sh
-TEMPLATECONF="openembedded-core/meta/conf/templates/default"
+TEMPLATECONF="$PWD/openembedded-core/meta/conf/templates/default"
 source openembedded-core/oe-init-build-env
 ```
 

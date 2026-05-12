@@ -1004,8 +1004,8 @@ def vigiles_image_collect(d):
 
     dict_out = dict(
             date             = datetime.now(timezone.utc).isoformat(),
-            distro           = sys_dict["distro"]["codename"],
-            distro_version   = sys_dict["distro"]["version"],
+            distro           = _get_distro_name(d, sys_dict),
+            distro_version   = _get_distro_version(d, sys_dict),
             image            = sys_dict["image"]["basename"],
             layers           = sys_dict["layers"],
             machine          = sys_dict["machine"]["title"],
@@ -1022,6 +1022,51 @@ def vigiles_image_collect(d):
     dict_out = set_package_field_defaults(dict_out)
 
     return dict_out
+
+def _get_distro_name(d, sys_dict):
+    """
+    Return the distro codename, falling back to the core layer series.
+    """
+    distro_codename = sys_dict["distro"]["codename"]
+    if distro_codename and not distro_codename.startswith("nodistro"):
+        return distro_codename
+
+    return _get_yocto_release_codename(d) or distro_codename
+
+def _get_distro_version(d, sys_dict):
+    """
+    Return the distro version, falling back to the tagged core layer version.
+    """
+    distro_version = sys_dict["distro"]["version"]
+    if distro_version and not distro_version.startswith("nodistro"):
+        return distro_version
+    
+    return _get_yocto_release_version(d) or distro_version
+
+def _get_yocto_release_version(d):
+    """
+    Parse the Yocto release version from the latest tag in COREBASE.
+    """
+    import subprocess
+
+    core_layer_path = d.getVar('COREBASE')
+
+    try:
+        raw_version = subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=core_layer_path
+        ).decode().strip().split("-")
+        
+        if len(raw_version) >= 2:
+            return raw_version[1]
+    except:
+        return None
+
+def _get_yocto_release_codename(d):
+    """
+    Return the core layer compatible Yocto release codename.
+    """
+    return d.getVar('LAYERSERIES_COMPAT_core')
 
 python () {
     pn = d.getVar("PN")
@@ -1652,4 +1697,3 @@ python () {
         bb.debug(1, "Vigiles: User defined vigiles binary not found, vigiles-cli will be installed.")
         d.appendVarFlag("do_vigiles_download_sbom", "depends", " vigiles-cli-native:do_populate_sysroot")      
 }
-
