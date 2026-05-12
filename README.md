@@ -24,25 +24,26 @@ If you do not already have an environment configured, you can bootstrap a minima
 
 ### Review the Yocto system requirements here:
 
-https://docs.yoctoproject.org/dev/ref-manual/system-requirements.html#system-requirements
+https://docs.yoctoproject.org/next/ref-manual/system-requirements.html#system-requirements
 
 ### *Using manual setup*
 
 Clone bitbake and openembedded-core
 
 ```sh
-git clone https://git.openembedded.org/bitbake
-git clone https://git.openembedded.org/openembedded-core
+git clone https://git.openembedded.org/bitbake -b 2.18
+git clone https://git.openembedded.org/openembedded-core -b wrynose
 ```
 If you also want to include the poky reference distro, clone meta-yocto
 
 ```sh
-git clone https://git.yoctoproject.org/meta-yocto
+git clone https://git.yoctoproject.org/meta-yocto -b wrynose
 ```
 
 Activate the build environment
 
 ```sh
+TEMPLATECONF="openembedded-core/meta/conf/templates/default"
 source openembedded-core/oe-init-build-env
 ```
 
@@ -52,7 +53,7 @@ source openembedded-core/oe-init-build-env
 Clone bitbake
 
 ```sh
-git clone https://git.openembedded.org/bitbake
+git clone https://git.openembedded.org/bitbake -b 2.18
 ```
 
 Run the bitbake-setup tool included in the bitbake source tree
@@ -78,7 +79,7 @@ Using Vigiles
 Clone meta-timesys
 
 ```sh
-git clone https://github.com/TimesysGit/meta-timesys.git
+git clone https://github.com/TimesysGit/meta-timesys.git -b wrynose
 ```
 
 Follow the format of the file and add the path to meta-timesys after the layers you have included.
