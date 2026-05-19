@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.35.0+wrynose] - 2026-05-19
+
+### Added
+
+* [layer] Make layer compatible with wrynose (6.0) Release
+
+### Fixed
+
+* [vigiles.bbclass] Add fallback for missing distro information
+
 ## [v2.34.0] - 2026-03-17
 
 ### Added
