@@ -1359,6 +1359,8 @@ def _get_export_details(d, vigiles_out):
         cyclonedx_version = d.getVar('VIGILES_CYCLONEDX_VERSION')
         if cyclonedx_version:
             export_args += ['--cyclonedx-version', cyclonedx_version.strip().lower()]
+    elif file_format == "spdx_3-sbom-vex":
+        file_format = "json"
     elif file_format == "pdfsummary":
         file_format = file_format[:3]
 
@@ -1511,15 +1513,13 @@ do_vigiles_check[vardepsexclude] = "BB_ORIGENV"
 do_vigiles_check[network] = "1"
 
 def _validate_sbom_download_args(d):
+    from tsmeta.constants import DOWNLOAD_SBOM_OPTIONS
+
     sbom_type = (d.getVar("VIGILES_DOWNLOAD_SBOM_SPEC") or "").lower()
     sbom_format = (d.getVar("VIGILES_DOWNLOAD_SBOM_FORMAT") or "").lower()
     sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
 
-    valid_types = (d.getVar("VIGILES_VALID_SBOM_SPEC") or "").split()
-    valid_spdx_formats = (d.getVar("VIGILES_VALID_SPDX_FORMATS") or "").split()
-    valid_cyclonedx_formats = (d.getVar("VIGILES_VALID_CYCLONEDX_FORMATS") or "").split()
-    valid_spdx_versions = (d.getVar("VIGILES_VALID_SPDX_VERSIONS") or "").split()
-    valid_cyclonedx_versions = (d.getVar("VIGILES_VALID_CYCLONEDX_VERSIONS") or "").split()
+    valid_types = list(DOWNLOAD_SBOM_OPTIONS)
 
     if sbom_type not in valid_types:
         raise ValueError(
@@ -1528,36 +1528,25 @@ def _validate_sbom_download_args(d):
                 valid_types
             ))
 
-    if sbom_type == "cyclonedx":
-        if sbom_format not in valid_cyclonedx_formats:
-            raise ValueError(
-                "Invalid file format '%s' for %s. Choose from %s" % (
-                    sbom_format,
-                    sbom_type, 
-                    valid_cyclonedx_formats
-                ))
-        if sbom_version not in valid_cyclonedx_versions:
-            raise ValueError(
-                "Invalid sbom version '%s' for %s. Choose from %s" % (
-                    sbom_version,
-                    sbom_type, 
-                    valid_cyclonedx_versions
-                ))
-    else:
-        if sbom_format not in valid_spdx_formats:
-            raise ValueError(
-                "sbom_format file format '%s' for %s. Choose from %s" % (
-                    sbom_format,
-                    sbom_type, 
-                    valid_spdx_formats
-                ))
-        if sbom_version not in valid_spdx_versions:
-            raise ValueError(
-                "Invalid sbom version '%s' for %s. Choose from %s" % (
-                    sbom_version,
-                    sbom_type, 
-                    valid_spdx_versions
-                ))
+    download_options = DOWNLOAD_SBOM_OPTIONS[sbom_type]
+    valid_versions = tuple(download_options.keys())
+    if sbom_version not in valid_versions:
+        raise ValueError(
+            "Invalid sbom version '%s' for '%s'. Choose from %s" % (
+                sbom_version,
+                sbom_type,
+                valid_versions
+            ))
+
+    valid_formats = download_options[sbom_version]
+    if sbom_format not in valid_formats:
+        raise ValueError(
+            "Invalid file format '%s' for '%s' version '%s'. Choose from %s" % (
+                sbom_format,
+                sbom_type,
+                sbom_version,
+                valid_formats
+            ))
 
 
 python do_vigiles_download_sbom() {
@@ -1599,7 +1588,6 @@ python do_vigiles_download_sbom() {
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
     sbom_type = (d.getVar("VIGILES_DOWNLOAD_SBOM_SPEC") or "").lower()
-    sbom_format = (d.getVar("VIGILES_DOWNLOAD_SBOM_FORMAT") or "").lower()
     sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
 
     if sbom_type and not sbom_version:
@@ -1610,6 +1598,8 @@ python do_vigiles_download_sbom() {
 
         sbom_version = (d.getVar("VIGILES_DOWNLOAD_SBOM_VERSION") or "").strip()
 
+    sbom_format = (d.getVar("VIGILES_DOWNLOAD_SBOM_FORMAT") or "").lower()
+
     try:
         _validate_sbom_download_args(d)
     except ValueError as err:
@@ -1617,7 +1607,14 @@ python do_vigiles_download_sbom() {
         return
     
     sbom_name = "%s-%s" % (d.getVar("VIGILES_MANIFEST_NAME"), d.getVar("MACHINE"))
-    sbom_suffix = "-sbom.%s" % ("spdx" if sbom_format == "tag" else sbom_format)
+    if sbom_format == "tag":
+        output_extension = "spdx"
+    elif sbom_format == "json-ld":
+        output_extension = "json"
+    else:
+        output_extension = sbom_format
+
+    sbom_suffix = "-sbom.%s" % output_extension
     sbom_max_len = int(d.getVar("VIGILES_MANIFEST_NAME_MAX_LENGTH"))
 
     output_path = _get_vout_path(img_dir, sbom_name, sbom_max_len, timestamp, sbom_suffix)
@@ -1675,4 +1672,3 @@ python () {
         bb.debug(1, "Vigiles: User defined vigiles binary not found, vigiles-cli will be installed.")
         d.appendVarFlag("do_vigiles_download_sbom", "depends", " vigiles-cli-native:do_populate_sysroot")      
 }
-
