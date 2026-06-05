@@ -16,6 +16,7 @@ import os
 import sys
 
 from checkcves import error, debug, _get_credentials, API_DOC
+from lib.constants import DOWNLOAD_SBOM_OPTIONS
 from lib import llapi
 
 
@@ -38,10 +39,10 @@ def handle_cmdline_args():
     parser.add_argument('-s', '--sbom-spec', dest='sbom_spec', default="cyclonedx",
                         choices=["spdx", "spdx-lite", "cyclonedx"],
                         help='SBOM specification like spdx, spdx-lite or cyclonedx')
-    parser.add_argument('-f', '--sbom-format', dest='sbom_file_format', default="json",
-                        help='SBOM format. Refer README.md for list of valid formats for each SBOM spec')
     parser.add_argument('-v', '--sbom-version', dest='sbom_version', default="1.6",
                         help='SBOM version. Refer README.md for list of valid versions for each SBOM spec')
+    parser.add_argument('-f', '--sbom-format', dest='sbom_file_format', default="json",
+                        help='SBOM format. Refer README.md for list of valid formats for each SBOM spec')
     parser.add_argument('-o', '--outfile', metavar='FILE', required=True,
                         help='Path where the downloaded sbom will be saved')
     
@@ -50,41 +51,25 @@ def handle_cmdline_args():
     if os.path.isdir(args.outfile):
         parser.error("%s is a directory. Please provide a filepath" % args.outfile)
     
-    valid_spdx_formats = ["tag", "json", "xlsx", "xls", "rdfxml", "yaml", "xml"]
-    valid_cyclonedx_formats = ["json", "xml"]
-    valid_spdx_versions = ["2.2", "2.3"]
-    valid_cyclonedx_versions = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"]
-    
-    if args.sbom_spec == "cyclonedx":
-        if args.sbom_file_format not in valid_cyclonedx_formats:
-            parser.error(
-                "Invalid file format %s for %s. Choose from %s" % (
-                    args.sbom_file_format,
-                    args.sbom_spec, 
-                    valid_cyclonedx_formats
-                ))
-        if args.sbom_version not in valid_cyclonedx_versions:
-            parser.error(
-                "Invalid sbom version %s for %s. Choose from %s" % (
-                    args.sbom_version,
-                    args.sbom_spec, 
-                    valid_cyclonedx_versions
-                ))
-    else:
-        if args.sbom_file_format not in valid_spdx_formats:
-            parser.error(
-                "Invalid file format %s for %s. Choose from %s" % (
-                    args.sbom_file_format,
-                    args.sbom_spec, 
-                    valid_spdx_formats
-                ))
-        if args.sbom_version not in valid_spdx_versions:
-            parser.error(
-                "Invalid sbom version %s for %s. Choose from %s" % (
-                    args.sbom_version,
-                    args.sbom_spec, 
-                    valid_spdx_versions
-                ))
+    download_options = DOWNLOAD_SBOM_OPTIONS[args.sbom_spec]
+    valid_versions = tuple(download_options.keys())
+    if args.sbom_version not in valid_versions:
+        parser.error(
+            "Invalid sbom version %s for %s. Choose from %s" % (
+                args.sbom_version,
+                args.sbom_spec,
+                valid_versions
+            ))
+
+    valid_formats = download_options[args.sbom_version]
+    if args.sbom_file_format not in valid_formats:
+        parser.error(
+            "Invalid file format %s for %s version %s. Choose from %s" % (
+                args.sbom_file_format,
+                args.sbom_spec,
+                args.sbom_version,
+                valid_formats
+            ))
     return args
 
 
@@ -119,6 +104,4 @@ if __name__ == '__main__':
     key = vgls_creds.get('key')
 
     download_sbom(args, email, key)
-
-
 
