@@ -129,7 +129,7 @@ def handle_cmdline_args():
                             into the vulnerability report')
     parser.add_argument('--export-format', dest='export_format',
                         help='Filetype for the exported report', 
-                        choices=['pdf', 'pdfsummary', 'xlsx', 'csv', 'cyclonedx-vex', 'cyclonedx-sbom-vex'])
+                        choices=['pdf', 'pdfsummary', 'xlsx', 'csv', 'cyclonedx-vex', 'cyclonedx-sbom-vex', 'spdx_3-sbom-vex'])
     parser.add_argument('--cyclonedx-format', dest='cyclonedx_format', default='json',
                         help='CycloneDX file format to download report in VEX format',
                         choices=['json', 'xml'])
@@ -655,6 +655,8 @@ if __name__ == '__main__':
                 file_extension = file_extension[:3]
             elif file_extension.startswith('cyclonedx'):
                 file_extension = args.cyclonedx_format
+            elif file_extension == 'spdx_3-sbom-vex':
+                file_extension = 'json'
             
             root, _ = os.path.splitext(args.export_path)
             export_path = "%s.%s" % (root, file_extension)

@@ -408,10 +408,8 @@ VIGILES_UPLOAD_ONLY = "1"
 
 Instead of a text report and a link to the online report, a link to the
 Vigiles Dashboard (as specified with VIGILES_DASHBOARD_CONFIG) or Private Workspace
-(if no dashboard config is specified)
-will be displayed, from where it can be then be
+(if no dashboard config is specified) will be displayed, from where it can then be
 scanned by the Vigiles Service.
-
 
 ### Exclude packages with "CLOSED" License in SBOM
 
@@ -557,6 +555,7 @@ To export the report set `VIGILES_EXPORT_FORMAT` to any of the below choices in 
 - csv
 - cyclonedx-vex
 - cyclonedx-sbom-vex
+- spdx_3-sbom-vex
 
 ```
 VIGILES_EXPORT_FORMAT = "pdf"
@@ -589,56 +588,26 @@ To enable SBOM conversion and download, add the following to local.conf
 VIGILES_ENABLE_DOWNLOAD_SBOM = "1"
 ```
 
-If enabled, it will download a CycloneDX 1.6 json format SBOM. To specify the spec, format and version of the SBOM, refer below:
+#### Selecting SBOM Download Options
+Use `VIGILES_DOWNLOAD_SBOM_SPEC` to select the target SBOM specification:
+* `cyclonedx` [default], `spdx`, and `spdx-lite`
 
-#### Selecting SBOM Specification
-You can select the target SBOM specification using `VIGILES_DOWNLOAD_SBOM_SPEC`. Select any of the below choices:
-- spdx
-- spdx-lite
-- cyclonedx [default]
+Use `VIGILES_DOWNLOAD_SBOM_VERSION` and `VIGILES_DOWNLOAD_SBOM_FORMAT` to specify the output version and file format.
 
+Supported options are:
+
+* SBOM versions for `cyclonedx`: `1.7`, `1.6` [default], `1.5`, `1.4`, `1.3`, `1.2`, and `1.1`
+* SBOM file types for `cyclonedx`: `json` [default] and `xml`
+* SBOM versions for `spdx` and `spdx-lite`: `3.0.1`, `2.3`, and `2.2`
+* SBOM file types for `spdx` and `spdx-lite`:
+  * `3.0.1`: `json-ld`
+  * `2.3` and `2.2`: `tag`, `json`, `xlsx`, `xls`, `rdfxml`, `yaml`, `xml`
+
+For example, to download an SPDX 2.3 SBOM in tag format:
 ```
 VIGILES_DOWNLOAD_SBOM_SPEC = "spdx"
-```
-
-#### Selecting the Output Format
-Use `VIGILES_DOWNLOAD_SBOM_FORMAT` to specify the output format of the converted SBOM:
-
-**Supported SPDX formats:**
-- tag
-- json
-- xlsx
-- xls
-- rdfxml
-- yaml
-- xml
-
-**Supported CycloneDX formats:**
-- json [default]
-- xml
-
-```
-VIGILES_DOWNLOAD_SBOM_FORMAT = "tag"
-```
-
-#### Selecting the Output Version
-Use `VIGILES_DOWNLOAD_SBOM_VERSION` to specify the output version of the converted SBOM:
-
-**SPDX versions:**
-- 2.2
-- 2.3
-
-**CycloneDX versions:**
-- 1.1
-- 1.2
-- 1.3
-- 1.4
-- 1.5
-- 1.6 [default]
-- 1.7
-
-```
 VIGILES_DOWNLOAD_SBOM_VERSION = "2.3"
+VIGILES_DOWNLOAD_SBOM_FORMAT = "tag"
 ```
 
 Maintenance
@@ -647,10 +616,6 @@ Maintenance
 The Vigiles CVE Scanner and meta-timesys are maintained by [The Lynx Security team](mailto:vigiles@timesys.com).
 
 For Updates, Support and More Information, please see:
-
 [Vigiles Website](https://www.lynx.com/solutions/vulnerability-mitigation-management)
-
 and
-
 [meta-timesys @ GitHub](https://github.com/TimesysGit/meta-timesys)
-
