@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.21.0+krogoth] - 2026-06-15
+
+### Added
+
+* [feature] Add support for CycloneDX 1.7
+
 ## [v2.20.2+krogoth] - 2026-04-17
 
 ### Fixed
