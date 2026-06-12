@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.19.0+jethro] - 2026-06-15
+
+### Added
+
+* [feature] Add support for CycloneDX 1.7
+
 ## [v2.18.2+jethro] - 2026-04-17
 
 ### Fixed
