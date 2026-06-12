@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.30.0+pyro] - 2026-06-15
+
+### Added
+
+* [feature] Add support for CycloneDX 1.7
+
 ## [v2.29.2+pyro] - 2026-04-17
 
 ### Fixed
