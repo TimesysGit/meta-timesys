@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.36.0+wrynose] - 2026-06-15
+
+### Added
+
+* [feature] Add yocto cve status detail in vigiles sboms
+* [feature] Add support for CycloneDX 1.7
+
+### Fixed
+
+* [lib/tsmeta/utils.py] Update Vigiles status mappings
+
 ## [v2.35.0+wrynose] - 2026-05-19
 
 ### Added
