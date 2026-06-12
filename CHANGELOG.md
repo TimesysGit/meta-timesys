@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.33.0+nanbield] - 2026-06-15
+
+### Added
+
+* [feature] Add yocto cve status detail in vigiles sboms
+* [feature] Add support for CycloneDX 1.7
+
+### Fixed
+
+* [lib/tsmeta/utils.py] Update Vigiles status mappings
+
 ## [v2.32.2+nanbield] - 2026-04-17
 
 ### Fixed
