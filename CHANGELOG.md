@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.31.0+thud] - 2026-06-30
+
+### Added
+
+* [feature] Add support for SPDX 3.0.1
+
 ## [v2.30.0+thud] - 2026-06-15
 
 ### Added
