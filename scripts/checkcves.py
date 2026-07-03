@@ -153,7 +153,7 @@ def handle_cmdline_args():
 def read_manifest(manifest_file):
     try:
         with open(manifest_file, 'r') as f:
-            manifest_data = ''.join(line.rstrip() for line in f)
+            manifest_data = f.read()
     except (OSError, IOError, UnicodeDecodeError) as e:
         error('Could not open manifest: %s' % e)
         sys.exit(1)
@@ -491,12 +491,10 @@ if __name__ == '__main__':
         outfile = None
 
     manifest_data = read_manifest(args.manifest)
-    m = json.loads(manifest_data)
-    if len(m['packages']) == 0:
+    manifest = json.loads(manifest_data)
+    if len(manifest['packages']) == 0:
         error('No packages found in manifest.\n')
         sys.exit(1)
-
-    manifest = json.loads(manifest_data)
 
     # If -k is specified, the given config file is submitted along with the
     # manifest to filter out irrelevant kernel CVEs
