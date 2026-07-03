@@ -339,7 +339,7 @@ python () {
 
 def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, source="Recipe", patches=None, external=False):
     from tsmeta.util import get_vuln_status, get_vuln_justification, get_vuln_description, get_yocto_status_detail
-    
+
     vuln_data = {"id": cve}
     if not external:
         vuln_data = tsmeta_read_dictname(d, "vulnerabilities", cve) or vuln_data
@@ -387,7 +387,7 @@ def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, sou
     # Add affected products
     if pkg_name:
         status = (
-            "unaffected" 
+            "unaffected"
             if vuln_data["analysis"]["state"] in ["not_affected", "false_positive"]
             else "affected"
         )
@@ -395,25 +395,30 @@ def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, sou
             "status": status,
             "version": pkg_version
         }
-        if vuln_data.get("affects"):
-            products = [pd.get("product") for pd in vuln_data["affects"]]
-            if pkg_name and pkg_name not in products:
-                vuln_data["affects"].append({
-                        "product": pkg_name,
-                        "versions": [version]
-                    })
-            for product_dict in vuln_data["affects"]:
-                if product_dict.get("product") == pkg_name:
-                    if version in product_dict["versions"]:
-                        continue
-                    else:
-                        product_dict["versions"].append(version)
-        else:
-            vuln_data["affects"] = [{
+        affects = vuln_data.get("affects")
+        if not isinstance(affects, list):
+            affects = []
+            vuln_data["affects"] = affects
+
+        product_dict = next(
+            (pd for pd in affects if pd.get("product") == pkg_name),
+            None
+        )
+        if product_dict is None:
+            product_dict = {
                 "product": pkg_name,
-                "versions": [version]
-            }]
-    
+                "versions": []
+            }
+            affects.append(product_dict)
+
+        versions = product_dict.get("versions")
+        if not isinstance(versions, list):
+            versions = []
+            product_dict["versions"] = versions
+
+        if version not in versions:
+            versions.append(version)
+
     if not external:
         tsmeta_write_dictname(d, "vulnerabilities", cve, vuln_data)
     return vuln_data
@@ -421,6 +426,11 @@ def update_vuln_info(d, cve, cve_status={}, pkg_name=None, pkg_version=None, sou
 
 def vigiles_collect_vulnerability_info(d, pkg_name, pkg_version, patched_cves=None):
     from oe.cve_check import decode_cve_status
+
+    try:
+        from oe.cve_check import has_cve_product_match
+    except ImportError:
+        has_cve_product_match = None
 
     # cves declared using CVE_STATUS var
     for cve in (d.getVarFlags("CVE_STATUS") or {}):
@@ -432,6 +442,12 @@ def vigiles_collect_vulnerability_info(d, pkg_name, pkg_version, patched_cves=No
             cve_status["detail"] = status_info[1]
             cve_status["description"] = status_info[2]
         elif isinstance(status_info, dict):     # styhead and later
+            if (
+                has_cve_product_match
+                and not has_cve_product_match(status_info, d.getVar("CVE_PRODUCT") or "")
+            ):
+                continue
+
             cve_status["decoded_status"] = status_info.get("mapping")
             cve_status["detail"] = status_info.get("detail")
             cve_status["description"] = status_info.get("description")
@@ -602,8 +618,7 @@ def vigiles_write_manifest(d, tdw_tag, dict_out):
 
     f_path = _get_vout_path(v_imgdir, _name, m_max_len, v_tstamp, d.getVar('VIGILES_MANIFEST_SUFFIX'))
     with open(f_path, "w") as f_out:
-        s = json.dumps(dict_out, indent=2, sort_keys=True)
-        f_out.write(s)
+        json.dump(dict_out, f_out, sort_keys=True, separators=(",", ":"))
 
     l_path = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_MANIFEST_SUFFIX'))
 
@@ -817,11 +832,11 @@ def _get_vulnerabilities(d, pn_list):
     from tsmeta.util import validate_vuln_id
 
     vulnerabilities = []
+    pn_set = set(pn_list)
     cve_dict_base = tsmeta_read_dictdir(d, "vulnerabilities")
-    for cve, cve_dict in cve_dict_base.items():
-        for prod_dict in cve_dict.get("affects", {}):
-            if prod_dict.get("product") in pn_list:
-                vulnerabilities.append(cve_dict)
+    for cve_dict in cve_dict_base.values():
+        if any(prod_dict.get("product") in pn_set for prod_dict in cve_dict.get("affects", [])):
+            vulnerabilities.append(cve_dict)
 
     # Add cves from global whitelist
     external_whitelists = set(
@@ -889,9 +904,8 @@ def _get_vulnerabilities(d, pn_list):
 def vigiles_image_collect(d):
     from datetime import datetime, timezone
 
-    def get_dep_pns(pn, deps, tsmeta_dir):
+    def get_dep_pns(pn, deps, dep_reference):
         dep_pns = set()
-        dep_reference = tsmeta_read_dictdir(d, tsmeta_dir)
         for dep in deps:
             dep_pn = dep_reference.get(dep, {}).get("pn", "")
             if dep_pn and dep_pn != pn:
@@ -920,6 +934,8 @@ def vigiles_image_collect(d):
         parsed_keys = set()
         build_deps = set()
         runtime_deps = set()
+        build_dep_ref = tsmeta_read_dictdir(d, "build_deps")
+        runtime_dep_ref = tsmeta_read_dictdir(d, "runtime_deps")
 
         while queue:
             key = queue.popleft()
@@ -928,8 +944,8 @@ def vigiles_image_collect(d):
 
             parsed_keys.add(key)
 
-            bdep_dict = tsmeta_read_dictname(d, "build_deps", key)
-            rdep_dict = tsmeta_read_dictname(d, "runtime_deps", key)
+            bdep_dict = build_dep_ref.get(key, {})
+            rdep_dict = runtime_dep_ref.get(key, {})
 
             bdeps = get_pkgs(bdep_dict)
             rdeps = get_pkgs(rdep_dict)
@@ -937,13 +953,15 @@ def vigiles_image_collect(d):
             key_pn = bdep_dict.get("pn", rdep_dict.get("pn")) or key
 
             # Collect PN's of the package to avoid multiple packages with same cve_product
-            bdep_pns = get_dep_pns(key_pn, bdeps, "build_deps")
-            rdep_pns = get_dep_pns(key_pn, rdeps, "runtime_deps")
+            bdep_pns = get_dep_pns(key_pn, bdeps, build_dep_ref)
+            rdep_pns = get_dep_pns(key_pn, rdeps, runtime_dep_ref)
 
             deps[key_pn]["build"].update(bdep_pns)
             deps[key_pn]["runtime"].update(rdep_pns)
 
-            queue.extend(bdeps + rdeps)
+            for dep in bdeps + rdeps:
+                if dep not in parsed_keys:
+                    queue.append(dep)
 
             build_deps.update(bdep_pns)
             runtime_deps.update(rdep_pns)
@@ -1046,8 +1064,7 @@ def vigiles_image_collect(d):
             machine          = sys_dict["machine"]["title"],
             manifest_version = d.getVar('VIGILES_MANIFEST_VERSION'),
             manifest_name    = _name,
-            packages         = _get_packages(d, pn_list),
-            vulnerabilities   = _get_vulnerabilities(d, pn_list)
+            packages         = _get_packages(d, pn_list)
         )
     dict_out.update(_get_extra_packages(d))
     _filter_excluded_packages(d, dict_out['packages'])
@@ -1055,6 +1072,10 @@ def vigiles_image_collect(d):
     add_dependencies(dict_out)
     # Add default package fields
     dict_out = set_package_field_defaults(dict_out)
+    dict_out["vulnerabilities"] = _get_vulnerabilities(
+        d,
+        dict_out["packages"].keys()
+    )
 
     return dict_out
 
