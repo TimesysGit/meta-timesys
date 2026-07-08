@@ -521,15 +521,12 @@ def vigiles_collect_pkg_info(d):
         manifest['download_location'] = "UNKNOWN"
 
     sources = manifest.pop('sources')
-    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DEPLOY"), "vigiles-patches.json")
-    patches = []
-    patched_dict = {}
-
-    if os.path.exists(patch_metafile):
-        with open(patch_metafile, "r") as f:
-            patch_meta = json.load(f)
-            patches = list(patch_meta.get("src_patches", {}).keys())
-            patched_dict = patch_meta.get("patched_cves", {})
+    patch_meta = tsmeta_get_vigiles_patchmeta(d)
+    src_patches = patch_meta.get("src_patches", {})
+    patches = list(src_patches.keys())
+    patched_dict = patch_meta.get("patched_cves", {})
+    if patches and patch_meta.get("_vigiles_patchmeta_fallback"):
+        patched_dict = _get_patched(src_patches)
 
     vigiles_collect_vulnerability_info(
         d,
