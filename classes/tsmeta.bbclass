@@ -150,6 +150,33 @@ def tsmeta_write_dictdir(d, tsm_type, twd_dict):
         tsmeta_write_dictname(d, tsm_type, twd_name, twd_dict[twd_name])
 
 
+def tsmeta_get_vigiles_patchmeta(d):
+    import json
+    import oe.recipeutils
+
+    patch_meta = {
+        "src_patches": {},
+        "patched_cves": {}
+    }
+    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DEPLOY", True), "vigiles-patches.json")
+
+    if os.path.exists(patch_metafile):
+        try:
+            with open(patch_metafile, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            bb.debug(1, "Failed to read Vigiles patch metadata: %s" % e)
+
+    try:
+        src_patches_raw = oe.recipeutils.get_recipe_patches(d)
+        patch_meta["src_patches"] = { os.path.basename(p) : p for p in src_patches_raw }
+        patch_meta["_vigiles_patchmeta_fallback"] = True
+    except Exception as e:
+        bb.debug(1, "Failed to collect recipe patches: %s" % e)
+
+    return patch_meta
+
+
 TSMETA_DEBUG ?= "0"
 tsmeta_debug_dir = "${tsmeta_dir}/debug"
 
@@ -382,9 +409,6 @@ def _get_lifecycle_info(d):
     return lifecycle
 
 def tsmeta_get_src(d):
-    import oe.recipeutils as oe
-    import json
-
     tsm_type = "src"
     src_dict = dict()
 
@@ -405,16 +429,8 @@ def tsmeta_get_src(d):
             uri_dict[u_type] = list()
         uri_dict[u_type].append(u_path)
 
-    patch_metafile = os.path.join(d.getVar("VIGILES_PATCHMETA_DEPLOY", True), "vigiles-patches.json")
-    src_patches = {}
-
-    if os.path.exists(patch_metafile):
-        try:
-            with open(patch_metafile, "r") as f:
-                patch_meta = json.load(f)
-                src_patches = patch_meta.get("src_patches", {})
-        except Exception as e:
-            bb.debug(1, "Failed to read Vigiles patch metadata: %s" % e)
+    patch_meta = tsmeta_get_vigiles_patchmeta(d)
+    src_patches = patch_meta.get("src_patches", {})
 
     uri_dict["patches"] = src_patches
 
