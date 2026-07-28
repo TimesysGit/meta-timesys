@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.34.1+kirkstone] - 2026-07-28
+
+### Fixed
+
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.34.0+kirkstone] - 2026-06-30
 
 ### Added
