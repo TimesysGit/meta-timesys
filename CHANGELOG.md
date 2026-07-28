@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.34.1+walnascar] - 2026-07-28
+
+### Fixed
+
+* Fixed duplicate vulnerability entries 
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.34.0+walnascar] - 2026-06-30
 
 ### Added
