@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.22.1+krogoth] - 2026-07-28
+
+### Fixed
+
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.22.0+krogoth] - 2026-06-30
 
 ### Added
