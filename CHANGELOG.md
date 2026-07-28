@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.35.1+scarthgap] - 2026-07-28
+
+### Fixed
+
+* Fixed duplicate vulnerability entries 
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.35.0+scarthgap] - 2026-06-30
 
 ### Added
