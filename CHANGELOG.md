@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.32.1+zeus] - 2026-07-28
+
+### Fixed
+
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.32.0+zeus] - 2026-06-30
 
 ### Added
