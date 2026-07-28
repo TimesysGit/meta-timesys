@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.33.1+honister] - 2026-07-28
+
+### Fixed
+
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.33.0+honister] - 2026-06-30
 
 ### Added
