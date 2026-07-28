@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.31.1+sumo] - 2026-07-28
+
+### Fixed
+
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.31.0+sumo] - 2026-06-30
 
 ### Added
