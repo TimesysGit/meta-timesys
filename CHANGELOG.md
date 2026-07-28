@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.36.1] - 2026-07-28
+
+### Fixed
+
+* Fixed duplicate vulnerability entries 
+* [tsmeta] Restore patches when patchmeta is unavailable
+
 ## [v2.36.0] - 2026-06-30
 
 ### Added
