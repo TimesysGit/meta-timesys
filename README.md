@@ -646,6 +646,33 @@ VIGILES_DOWNLOAD_SBOM_VERSION = "2.3"
 VIGILES_DOWNLOAD_SBOM_FORMAT = "tag"
 ```
 
+
+### Queue SBOM Upload and Report Generation
+
+The Vigiles server supports asynchronous SBOM uploads and vulnerability report generation. To submit the
+SBOM upload and report-generation jobs without waiting for them to finish, use the
+following option:
+
+```
+VIGILES_QUEUE_JOBS = '1'
+```
+
+Vigiles prints a message confirming that the jobs were submitted and does not wait for them to finish. No report is generated locally.
+
+
+### Background Job Timeout
+
+When **Queue SBOM Upload and Report Generation** is disabled, Vigiles waits for the
+asynchronous SBOM-upload or report-generation job to finish. To configure the maximum wait time, set:
+
+```
+VIGILES_JOB_TIMEOUT_SECONDS = '600'
+```
+
+The default wait time is 10 minutes. This timeout does not apply when **Queue SBOM
+Upload and Report Generation** is enabled because Vigiles exits immediately after the jobs are submitted.
+
+
 Maintenance
 ===========
 
