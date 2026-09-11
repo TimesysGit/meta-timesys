@@ -1181,6 +1181,15 @@ python do_vigiles_check() {
                                    '.'.join([_get_kernel_pf(d), 'config']))
     vigiles_uconfig = os.path.join(d.getVar('VIGILES_DIR', True ),
                                    '.'.join([_get_uboot_pf(d), 'config']))
+    queue_jobs = bb.utils.to_boolean(d.getVar('VIGILES_QUEUE_JOBS', True), False)
+    export_format = d.getVar('VIGILES_EXPORT_FORMAT', True)
+    if queue_jobs and export_format:
+        log_vigiles_response(
+            d,
+            "ERROR",
+            "Vigiles: 'VIGILES_QUEUE_JOBS' and 'VIGILES_EXPORT_FORMAT' cannot be used together."
+        )
+        return
 
     bb.utils.export_proxies(d)
 
@@ -1206,9 +1215,8 @@ python do_vigiles_check() {
         if subscribe:
             bb.debug(1, "Setting SBOM report notification frequency to: %s" % subscribe)
             args = args + ['-s', subscribe]
-
         sbom_token_path = d.getVar('VIGILES_DOWNLOAD_SBOM_TOKEN_PATH', True)
-        if sbom_token_path:
+        if sbom_token_path and not queue_jobs:
             bb.debug(1, "SBOM token will be saved to : %s" % sbom_token_path)
             args = args + ['--sbom-token-path', sbom_token_path]
 
@@ -1244,6 +1252,13 @@ python do_vigiles_check() {
         if _upload_only:
             args = args + ['-U']
 
+        if queue_jobs:
+            args = args + ['--queue-jobs']
+
+        job_timeout = d.getVar('VIGILES_JOB_TIMEOUT_SECONDS', True)
+        if job_timeout:
+            args = args + ['--timeout', job_timeout]
+
         layerdir = d.getVar('VIGILES_LAYERDIR', True )
 
         path = os.path.join(layerdir, "scripts", cmd)
@@ -1262,14 +1277,14 @@ python do_vigiles_check() {
 
     vigiles_export_args, vigiles_export_report_path, file_format = _get_export_details(d, vigiles_out)
     try:
-        check_out, _ = run_checkcves(d, "checkcves.py", 
-            [ '-m', vigiles_in, '-o', vigiles_out ] + vigiles_export_args)
+        check_args = [ '-m', vigiles_in, '-o', vigiles_out ] + vigiles_export_args
+        check_out, _ = run_checkcves(d, "checkcves.py", check_args)
 
         log_vigiles_response(d, response=check_out)
 
-        if os.path.lexists(vigiles_link):
-            os.remove(vigiles_link)
         if os.path.exists(vigiles_out):
+            if os.path.lexists(vigiles_link):
+                os.remove(vigiles_link)
             os.symlink(os.path.relpath(vigiles_out, os.path.dirname(vigiles_link)), vigiles_link)
         if os.path.exists(vigiles_export_report_path):
             export_vlink = _get_vlink(v_dir, _name, m_max_len, d.getVar('VIGILES_REPORT_SUFFIX', True).replace('.txt', '')) + '.' + file_format
@@ -1343,6 +1358,10 @@ def _validate_sbom_download_args(d):
 python do_vigiles_download_sbom() {
     import os
     import datetime
+
+    if bb.utils.to_boolean(d.getVar("VIGILES_QUEUE_JOBS", True), False):
+        bb.warn("Vigiles: SBOM download skipped because VIGILES_QUEUE_JOBS is enabled")
+        return
 
     _orig_env = d.getVar('BB_ORIGENV', False)
     vigiles_env = os.environ.copy()
