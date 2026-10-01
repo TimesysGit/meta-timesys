@@ -832,6 +832,18 @@ def vigiles_image_collect(d):
     # Add default package fields
     dict_out = set_package_field_defaults(dict_out)
 
+    root_component = {
+        'name': d.getVar('PN', True),
+        'version': d.getVar('PV', True),
+        'package_supplier': d.getVar('SPDX_SUPPLIER', True),
+    }
+    image_license = d.getVar('LICENSE', True)
+
+    if image_license:
+        root_component['license'] = image_license
+
+    dict_out['root_component'] = root_component
+
     return dict_out
 
 python () {
