@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.38.0+wrynose] - 2026-10-05
+
+### Added
+
+* [feature] Add support for async SBOM upload and report generation
+
 ## [v2.37.1+wrynose] - 2026-07-28
 
 ### Fixed
