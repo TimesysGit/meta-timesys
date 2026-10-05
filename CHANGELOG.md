@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.35.0+nanbield] - 2026-10-05
+
+### Added
+
+* [feature] Add support for async SBOM upload and report generation
+
 ## [v2.34.1+nanbield] - 2026-07-28
 
 ### Fixed
