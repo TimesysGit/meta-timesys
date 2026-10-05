@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.34.0+honister] - 2026-10-05
+
+### Added
+
+* [feature] Add support for async SBOM upload and report generation
+
 ## [v2.33.1+honister] - 2026-07-28
 
 ### Fixed
