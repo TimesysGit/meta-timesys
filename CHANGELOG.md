@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.32.0+rocko] - 2026-10-05
+
+### Added
+
+* [feature] Add support for async SBOM upload and report generation
+
 ## [v2.31.1+rocko] - 2026-07-28
 
 ### Fixed
