@@ -1015,22 +1015,38 @@ python do_vigiles_uboot_config() {
                  (os.path.relpath(config_in), os.path.relpath(config_out)))
         shutil.copy(config_in, config_out)
     elif config_in == 'auto':
-        build_dir = os.path.relpath(d.getVar('B', True ))
-        uboot_machine = d.getVar('UBOOT_MACHINE', True ) or None
+        build_dir = os.path.relpath(d.getVar('B', True))
+        uboot_machines = (d.getVar('UBOOT_MACHINE', True) or '').split()
+        uboot_configs = (d.getVar('UBOOT_CONFIG', True) or '').split()
         config_dirs = set([build_dir])
-        for cfg in uboot_machine.split():
-            config_dirs.add(os.path.join(build_dir, cfg))
+
+        # Use the configured root directory for single-config builds.
+        config_root = d.getVar('KCONFIG_CONFIG_ROOTDIR', True)
+        if config_root:
+            config_dirs.add(config_root)
+
+        # Match the variant directories used by uboot-configure.inc.
+        for machine, config in zip(uboot_machines, uboot_configs):
+            config_dirs.add(os.path.join(build_dir, '%s-%s' % (machine, config)))
+
+        # Support recipes that build in machine-specific directories.
+        for machine in uboot_machines:
+            config_dirs.add(os.path.join(build_dir, machine))
 
         config_files = []
         autoconf_files = []
 
-        for ddd in config_dirs:
+        for ddd in sorted(config_dirs):
             dot_config = os.path.join(ddd, '.config')
             if os.path.exists(dot_config):
                 config_files.append(dot_config)
             header = os.path.join(ddd, 'include', 'autoconf.mk')
             if os.path.exists(header):
                 autoconf_files.append(header)
+
+        if not config_files and not autoconf_files:
+            bb.warn("No U-Boot configuration found in: %s" % ', '.join(sorted(config_dirs)))
+            return
 
         config_set = set()
         config_preamble = list()
