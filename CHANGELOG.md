@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.35.0+gatesgarth] - 2026-11-06
+
+### Added
+
+* feature: Add root element to the SBOM
+
+### Fixed
+
+* U-boot: find U-Boot configs in variant build directories
+
 ## [v2.34.0+gatesgarth] - 2026-10-05
 
 ### Added
