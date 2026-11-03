@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.33.0+rocko] - 2026-11-06
+
+### Added
+
+* feature: Add root element to the SBOM
+
+### Fixed
+
+* U-boot: find U-Boot configs in variant build directories
+
 ## [v2.32.0+rocko] - 2026-10-05
 
 ### Added
