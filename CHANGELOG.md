@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.22.0+jethro] - 2026-11-06
+
+### Added
+
+* feature: Add root element to the SBOM
+
+### Fixed
+
+* U-boot: find U-Boot configs in variant build directories
+
 ## [v2.21.0+jethro] - 2026-10-05
 
 ### Added
